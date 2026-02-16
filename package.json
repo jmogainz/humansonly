@@ -1,0 +1,33 @@
+{
+  "name": "humansonly",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "dev:https": "node server.js --https",
+    "dev:lan": "node server.js -H 0.0.0.0 --https",
+    "dev:next": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.35.7",
+    "@vercel/analytics": "^1.6.1",
+    "next": "^15.5.9",
+    "next-auth": "^4.24.13",
+    "pg": "^8.13.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.5.9",
+    "typescript": "^5.5.3"
+  }
+}

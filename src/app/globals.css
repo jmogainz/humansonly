@@ -1,0 +1,135 @@
+:root {
+  --font-body: Inter, system-ui, sans-serif;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --bg: #323437;
+  --surface: #2c2e31;
+  --surface-raised: #3a3c40;
+  --text-primary: #d1d0c5;
+  --text-muted: #8f8f84;
+  --border: #494b4f;
+  --accent: #e2b714;
+  --danger: #e45d5d;
+  --success: #6bc47a;
+}
+
+:root[data-theme='light'] {
+  --bg: #f5f5f5;
+  --surface: #ffffff;
+  --surface-raised: #f0f0f0;
+  --text-primary: #1a1a1a;
+  --text-muted: #5e5e5e;
+  --border: #dddddd;
+  --accent: #cf9e00;
+  --danger: #c83535;
+  --success: #1f8f45;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at top, color-mix(in srgb, var(--accent) 14%, transparent), transparent 44%),
+    var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.backgroundGlow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(40rem 20rem at 10% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent),
+    radial-gradient(40rem 20rem at 90% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent);
+  opacity: 0.8;
+  z-index: -1;
+}
+
+main {
+  width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  font-family: var(--font-heading);
+}
+
+.button {
+  appearance: none;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: var(--accent);
+  color: #161616;
+  border-radius: 10px;
+  padding: 0.5rem 0.9rem;
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.05);
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.buttonGhost {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.authActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.table th {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, black 8%);
+  color: var(--text-primary);
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+}

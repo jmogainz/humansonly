@@ -1,0 +1,201 @@
+name: Deploy to Production
+
+permissions:
+  contents: write  # Needed for merge commit to develop
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'migrations/migration_runs.txt'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      # Set to '1' to re-enable Fly backend deploy.
+      DEPLOY_BACKEND: '0'
+
+    steps:
+      # 1) Check out code with submodules
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          submodules: recursive
+          fetch-depth: 0  # Full history for merge operations
+
+      # 2) Place SSH key for submodule access
+      - name: Place SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ci
+          chmod 600 ~/.ssh/id_ci
+
+      # ---------- Install GNU Make 4.4.1 (cached) ----------
+      - name: Cache GNU make 4.4.1 build
+        id: cache-make
+        uses: actions/cache@v4
+        with:
+          path: ~/opt/make-4.4.1
+          key: make-4.4.1-${{ runner.os }}
+
+      - name: Build + install GNU make 4.4.1
+        if: steps.cache-make.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends build-essential wget tar
+          wget -q https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
+          tar -xzf make-4.4.1.tar.gz
+          cd make-4.4.1
+          ./configure --prefix=$HOME/opt/make-4.4.1 --quiet
+          make -j"$(nproc)"
+          make install
+
+      - name: Add make 4.4.1 to PATH
+        run: echo "$HOME/opt/make-4.4.1/bin" >> "$GITHUB_PATH"
+
+      - name: Verify make version
+        run: make --version
+
+      # ---------- Detect Changes ----------
+      - name: Filter changed paths
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'generator-rust/**'
+              - 'devops-toolkit'
+              - 'Makefile'
+            frontend:
+              - 'src/**'
+              - 'public/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - 'next.config.mjs'
+              - 'tsconfig.json'
+              - 'mazle.Dockerfile'
+              - 'mazle.compose.yaml'
+              - 'devops-toolkit'
+              - 'Makefile'
+
+      # ---------- Install Bitwarden Secrets Manager CLI ----------
+      - name: Install BWS CLI
+        if: steps.changes.outputs.backend == 'true' || steps.changes.outputs.frontend == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ca-certificates curl jq unzip
+          BWS_VERSION="1.0.0"
+          curl -L -o /tmp/bws.zip "https://github.com/bitwarden/sdk/releases/download/bws-v${BWS_VERSION}/bws-x86_64-unknown-linux-gnu-${BWS_VERSION}.zip"
+          sudo unzip -o /tmp/bws.zip -d /usr/local/bin/
+          rm -f /tmp/bws.zip
+          bws --version
+
+      # ---------- Install Fly.io CLI ----------
+      - name: Install Fly.io CLI
+        if: env.DEPLOY_BACKEND == '1' && steps.changes.outputs.backend == 'true'
+        run: |
+          curl -L https://fly.io/install.sh | sh
+          echo "$HOME/.fly/bin" >> "$GITHUB_PATH"
+
+      - name: Verify Fly CLI
+        if: env.DEPLOY_BACKEND == '1' && steps.changes.outputs.backend == 'true'
+        run: |
+          export PATH="$HOME/.fly/bin:$PATH"
+          flyctl version
+
+      # ---------- Install Vercel CLI ----------
+      - name: Setup Node.js
+        if: steps.changes.outputs.frontend == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Vercel CLI
+        if: steps.changes.outputs.frontend == 'true'
+        run: npm install -g vercel
+
+      - name: Verify Vercel CLI
+        if: steps.changes.outputs.frontend == 'true'
+        run: vercel --version
+
+      # ---------- Deploy backend (generator-rust) to Fly ----------
+      - name: Deploy mazle-generator to Fly
+        if: env.DEPLOY_BACKEND == '1' && steps.changes.outputs.backend == 'true'
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+          UNIQUE_RUNNER_ID: ${{ secrets.UNIQUE_RUNNER_ID }}
+        run: |
+          export PATH="$HOME/.fly/bin:$PATH"
+          make -C generator-rust up ENV=prod
+
+      # ---------- Deploy frontend to Vercel ----------
+      - name: Deploy to Production
+        if: steps.changes.outputs.frontend == 'true'
+        env:
+          BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+          UNIQUE_RUNNER_ID: ${{ secrets.UNIQUE_RUNNER_ID }}
+        run: |
+          export PATH="$HOME/.fly/bin:$PATH"
+          # Backend already deployed above (or skipped), skip deps
+          make up ENV=prod WITH_DEPS=0 WASM_ONLY=1 ALLOW_PROD_MIGRATIONS=1
+
+      - name: Commit prod migration record
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          if git diff --quiet -- migrations/migration_runs.txt; then
+            echo "[INFO] No prod migration record changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_ci
+
+          git add migrations/migration_runs.txt
+          git commit -m "Record prod migration run [automated] [skip ci]"
+          git push origin HEAD:main
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: ${{ needs.deploy.result == 'success' }}
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fetch-depth: 0
+
+      - name: Place SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ci
+          chmod 600 ~/.ssh/id_ci
+
+      # ---------- Merge main into develop ----------
+      - name: Merge main into develop
+        continue-on-error: true
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Configure SSH for git operations
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_ci
+
+          git fetch origin main develop
+          git checkout develop
+          git merge origin/main -m "Merge main into develop [automated]"
+          git push origin develop
+
+      - name: Warn if merge failed
+        if: steps.merge.outcome == 'failure'
+        run: |
+          echo "::warning::Auto-merge of main into develop failed. Manual merge may be required (likely due to conflicts)."

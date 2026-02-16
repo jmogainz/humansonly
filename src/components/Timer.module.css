@@ -1,0 +1,33 @@
+.timer {
+  width: 100%;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+}
+
+.row span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.row strong {
+  font-size: 0.95rem;
+}
+
+.barTrack {
+  height: 4px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--surface-raised) 70%, var(--border));
+}
+
+.bar {
+  height: 100%;
+  background: var(--accent);
+  transition: width 80ms linear;
+}

@@ -1,0 +1,127 @@
+---
+alwaysApply: true
+description: Core engineering standards for Mazle project
+---
+
+# Mazle - AI Agent Guide
+
+## What is Mazle?
+
+A daily Wordle-style puzzle game inspired by Pokémon ice gym puzzles. Players navigate compact rooms using step movement, ice sliding, and one-way ledges. Browser-first (Next.js + Phaser 3).
+
+**Game Mechanic:** Binary lives system - player must complete puzzle in exactly the optimal number of moves or they lose that life. Backtracking cost is irrelevant.
+
+## Development Workflow
+
+**NOTE:** `make up` automatically builds before starting. You do NOT need to run `make build` first.
+
+```bash
+# Required env var (add to shell profile)
+export UNIQUE_RUNNER_ID=$(whoami)
+
+# Common workflows - make up BUILDS AND STARTS
+make up                       # Quick start (WASM fallback)
+make up ENV=dev               # Full stack (builds + starts frontend + Rust backend)
+make up ENV=dev WITH_DEPS=0   # Dev mode, frontend only
+make up ENV=prod              # Deploy both frontend (Vercel) + backend (Fly.io)
+make down                     # Stop containers
+make clean                    # Full cleanup
+make help                     # List all targets
+
+# Backend development (single command builds AND restarts!)
+cd generator-rust && UNIQUE_RUNNER_ID=$(whoami) make up ENV=dev 2>&1 | tail -5
+```
+
+## Iterative Backend Testing
+
+**The standard workflow for tuning puzzle generation:**
+
+```bash
+# 1. Edit code
+vi generator-rust/src/generators/ice.rs
+
+# 2. Build and restart (single command!)
+cd generator-rust && UNIQUE_RUNNER_ID=$(whoami) make up ENV=dev 2>&1 | tail -5
+
+# 3. Test with inline Python parsing
+curl -s "http://10.0.0.240:8080/api/generate/test-1" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+p=d['puzzle']
+print(f\"paths={p.get('nearOptimalPaths',0)} olap={p.get('pathOverlap',1.0):.3f} ediv={p.get('earlyDivergence',0):.2f} time={d['generationTimeMs']/1000:.1f}s\")
+"
+
+# 4. Check fail rates
+docker logs mazle-generator_instance 2>&1 | grep "fail rates:" | tail -1
+
+# 5. Batch test (10 puzzles)
+for i in $(seq 1 10); do
+  curl -s "http://10.0.0.240:8080/api/generate/batch-$i" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+p=d['puzzle']
+print(f\"paths={p.get('nearOptimalPaths',0)} olap={p.get('pathOverlap',1.0):.3f} time={d['generationTimeMs']/1000:.1f}s\")
+"
+done
+```
+
+## Environment Behavior
+
+| ENV | WITH_DEPS | Notes |
+|-----|-----------|-------|
+| `dev-test` (default) | 0 | WASM fallback, fast iteration |
+| `dev` | 1 (override with =0) | Full local stack |
+| `staging` | 1 | Pre-prod (Fly.io) |
+| `prod` | 1 (override with =0) | Deploy backend to Fly.io, frontend to Vercel |
+
+## Architecture
+
+```
+mazle/
+├── src/                    # Next.js 14 + Phaser 3 game
+│   ├── app/               # App router, API routes
+│   ├── components/        # React UI (GameUI, ShareCard, etc.)
+│   ├── game/              # Phaser: GameScene, movement, maps
+│   └── wasm/generator/    # Compiled WASM (from generator-rust)
+├── generator-rust/         # Rust puzzle generator
+│   └── src/               # Rust sources → WASM + HTTP server
+├── devops-toolkit/         # Build system (git submodule)
+└── Makefile               # Root orchestration
+```
+
+## Key Files
+
+- `Makefile` - Root build targets, WASM build, backend wiring
+- `mazle.compose.yaml` - Docker Compose for frontend
+- `generator-rust/Makefile` - Backend build/deploy (Fly.io)
+- `generator-rust/src/generators/ice.rs` - **MAIN FILE** for puzzle generation
+- `src/game/GameScene.ts` - Main Phaser game logic
+
+## Puzzle Generation Metrics
+
+**TIER 1 - Core Difficulty (keep strict):**
+- `paths` (near_optimal_paths) - More paths = more confusion
+- `olap` (path_overlap) - Low overlap = truly different routes
+- `ediv` (early_divergence) - Confusion from move 1
+
+**TIER 2 - Per-Move Confusion:**
+- `dir` (direction_changes) - Zigzags harder to visualize
+- `amb` (decision_ambiguity) - More choices per move
+
+**DISABLED (irrelevant with binary lives):**
+- `gate`, `bt`, `loc`, `ci`, `dec`, `fp`
+
+## Deployment
+
+- **Full stack**: `make up ENV=prod` (requires `VERCEL_TOKEN` and `FLY_API_TOKEN`)
+- **Frontend only**: `make up ENV=prod WITH_DEPS=0`
+- **Backend only**: `cd generator-rust && UNIQUE_RUNNER_ID=$(whoami) make up ENV=prod`
+
+## Rules
+
+1. ✅ Use `make up` to build AND start (not separate `make build` then `make up`)
+2. ✅ Always set `UNIQUE_RUNNER_ID=$(whoami)` first
+3. ✅ Test with curl + Python parsing after changes
+4. ✅ Check fail rates in logs when tuning
+5. ❌ Never use `npm`, `cargo`, `docker` commands directly
+6. ❌ Never deploy to prod unless explicitly requested

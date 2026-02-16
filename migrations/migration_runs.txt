@@ -1,0 +1,1 @@
+# Migration runs are recorded by deployment tooling.
