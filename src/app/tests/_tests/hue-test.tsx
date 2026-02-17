@@ -15,7 +15,7 @@ function makeRound(level: number): Round {
   const grid = Math.min(6, 2 + Math.floor((level - 1) / 2));
   const total = grid * grid;
   const hue = randomInt(0, 359);
-  const delta = Math.max(2, 18 - level * 1.1);
+  const delta = Math.max(1, 20 - Math.log2(level + 1) * 5.2);
   const oddHue = (hue + delta) % 360;
   const oddIndex = randomInt(0, total - 1);
 

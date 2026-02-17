@@ -6,6 +6,8 @@ import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 
+const FACE_URI_CACHE = new Map<number, string>();
+
 function seeded(seed: number) {
   let value = seed * 9301 + 49297;
   return () => {
@@ -15,6 +17,11 @@ function seeded(seed: number) {
 }
 
 function faceDataUri(seed: number): string {
+  const cached = FACE_URI_CACHE.get(seed);
+  if (cached) {
+    return cached;
+  }
+
   const rand = seeded(seed + 1);
   const skin = `hsl(${18 + rand() * 22} ${35 + rand() * 30}% ${58 + rand() * 20}%)`;
   const hair = `hsl(${18 + rand() * 32} ${20 + rand() * 30}% ${15 + rand() * 18}%)`;
@@ -34,7 +41,9 @@ function faceDataUri(seed: number): string {
     <rect x='44' y='176' width='132' height='72' rx='14' fill='${shirt}'/>
   </svg>`;
 
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  const uri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  FACE_URI_CACHE.set(seed, uri);
+  return uri;
 }
 
 type LevelState = {
@@ -127,6 +136,14 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
   const currentFace = phase === 'study'
     ? null
     : levelState.testIds[testIndex];
+  const studyFaceUris = useMemo(
+    () => levelState.studyIds.map((faceId) => ({ faceId, src: faceDataUri(faceId) })),
+    [levelState.studyIds]
+  );
+  const currentFaceUri = useMemo(
+    () => (currentFace !== null ? faceDataUri(currentFace) : null),
+    [currentFace]
+  );
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
@@ -140,10 +157,10 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
         <div style={{ display: 'grid', gap: '0.7rem' }}>
           <p style={{ margin: 0, color: 'var(--text-muted)' }}>Study these faces, then identify them in the next phase.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.7rem' }}>
-            {levelState.studyIds.map((faceId) => (
+            {studyFaceUris.map(({ faceId, src }) => (
               <img
                 key={faceId}
-                src={faceDataUri(faceId)}
+                src={src}
                 alt="Study face"
                 style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--border)' }}
               />
@@ -155,9 +172,9 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
           <p style={{ margin: 0, color: 'var(--text-muted)' }}>
             Face {testIndex + 1}/{levelState.testIds.length}
           </p>
-          {currentFace !== null ? (
+          {currentFaceUri ? (
             <img
-              src={faceDataUri(currentFace)}
+              src={currentFaceUri}
               alt="Face memory test"
               style={{ width: 'min(260px, 80vw)', borderRadius: '14px', border: '1px solid var(--border)' }}
             />

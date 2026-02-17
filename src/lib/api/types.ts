@@ -41,6 +41,17 @@ export type AroundMeResponse = {
   entries: LeaderboardEntry[];
 };
 
+export type CategoryHistoryResponse = {
+  scores: Array<{
+    id: string;
+    testSlug: string;
+    scoreValue: number;
+    scoreUnit: string;
+    createdAt: string;
+    metadata: Record<string, unknown> | null;
+  }>;
+};
+
 export type ProfileResponse = {
   user: {
     id: string;

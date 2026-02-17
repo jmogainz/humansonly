@@ -2,6 +2,129 @@ export function cn(...tokens: Array<string | false | null | undefined>): string 
   return tokens.filter(Boolean).join(' ');
 }
 
+const RECENT_SIGNATURE_PREFIX = 'humansonly_recent_signatures_v1:';
+const RECENT_SIGNATURE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+type RecentSignaturePayload = {
+  updatedAt: number;
+  signatures: string[];
+};
+
+type RecentSignatureTracker = {
+  queue: string[];
+  set: Set<string>;
+  maxSize: number;
+  hydrated: boolean;
+};
+
+const RECENT_SIGNATURE_TRACKERS = new Map<string, RecentSignatureTracker>();
+
+function hydrateRecentTracker(storageKey: string, tracker: RecentSignatureTracker): void {
+  if (tracker.hydrated || typeof window === 'undefined') return;
+  tracker.hydrated = true;
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as RecentSignaturePayload;
+    if (!parsed?.updatedAt || !Array.isArray(parsed.signatures)) return;
+    if (Date.now() - parsed.updatedAt > RECENT_SIGNATURE_TTL_MS) return;
+    const clipped = parsed.signatures.slice(-tracker.maxSize);
+    tracker.queue = clipped;
+    tracker.set = new Set(clipped);
+  } catch {
+    // Best effort only.
+  }
+}
+
+function persistRecentTracker(storageKey: string, tracker: RecentSignatureTracker): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const payload: RecentSignaturePayload = {
+      updatedAt: Date.now(),
+      signatures: tracker.queue,
+    };
+    window.localStorage.setItem(storageKey, JSON.stringify(payload));
+  } catch {
+    // Best effort only.
+  }
+}
+
+function getRecentTracker(testKey: string, maxRecent: number): {
+  tracker: RecentSignatureTracker;
+  storageKey: string;
+} {
+  const storageKey = `${RECENT_SIGNATURE_PREFIX}${testKey}`;
+  const existing = RECENT_SIGNATURE_TRACKERS.get(storageKey);
+  if (existing) {
+    if (maxRecent !== existing.maxSize) {
+      existing.maxSize = maxRecent;
+      if (existing.queue.length > maxRecent) {
+        existing.queue = existing.queue.slice(-maxRecent);
+        existing.set = new Set(existing.queue);
+      }
+    }
+    hydrateRecentTracker(storageKey, existing);
+    return { tracker: existing, storageKey };
+  }
+
+  const tracker: RecentSignatureTracker = {
+    queue: [],
+    set: new Set<string>(),
+    maxSize: maxRecent,
+    hydrated: false,
+  };
+  RECENT_SIGNATURE_TRACKERS.set(storageKey, tracker);
+  hydrateRecentTracker(storageKey, tracker);
+  return { tracker, storageKey };
+}
+
+function pushRecentSignature(
+  tracker: RecentSignatureTracker,
+  signature: string
+): void {
+  if (tracker.set.has(signature)) return;
+  if (tracker.queue.length >= tracker.maxSize) {
+    const oldest = tracker.queue.shift();
+    if (oldest !== undefined) {
+      tracker.set.delete(oldest);
+    }
+  }
+  tracker.queue.push(signature);
+  tracker.set.add(signature);
+}
+
+export function generateRecentUnique<T>(
+  testKey: string,
+  maxRecent: number,
+  factory: () => T,
+  signatureOf: (value: T) => string,
+  maxAttempts = 64
+): T {
+  const { tracker, storageKey } = getRecentTracker(testKey, maxRecent);
+
+  let chosen = factory();
+  let signature = signatureOf(chosen);
+  if (!tracker.set.has(signature)) {
+    pushRecentSignature(tracker, signature);
+    persistRecentTracker(storageKey, tracker);
+    return chosen;
+  }
+
+  for (let attempt = 1; attempt < maxAttempts; attempt += 1) {
+    const candidate = factory();
+    const candidateSignature = signatureOf(candidate);
+    chosen = candidate;
+    signature = candidateSignature;
+    if (!tracker.set.has(candidateSignature)) {
+      break;
+    }
+  }
+
+  pushRecentSignature(tracker, signature);
+  persistRecentTracker(storageKey, tracker);
+  return chosen;
+}
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }

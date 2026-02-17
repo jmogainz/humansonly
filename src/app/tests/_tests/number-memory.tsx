@@ -22,7 +22,7 @@ export default function NumberMemoryTest({ onComplete }: TestGameProps) {
 
   useEffect(() => {
     if (phase !== 'show') return;
-    const visibleMs = digits * 1000;
+    const visibleMs = Math.min(7000, 900 + digits * 550);
     const id = window.setTimeout(() => {
       setPhase('input');
     }, visibleMs);
@@ -61,15 +61,17 @@ export default function NumberMemoryTest({ onComplete }: TestGameProps) {
               nextLevel(digits + 1);
               return;
             }
+            const bestDigits = Math.max(0, digits - 1);
             onComplete({
-              score: digits,
+              score: bestDigits,
               unit: 'digits',
               metadata: {
                 target,
                 guess,
-                digits,
+                attemptedDigits: digits,
+                bestDigits,
               },
-              label: `${digits} digits`,
+              label: `${bestDigits} digits`,
             });
           }}
         >

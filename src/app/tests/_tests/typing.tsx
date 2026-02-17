@@ -10,6 +10,22 @@ const PASSAGES = [
   'Elite performance is built on tiny improvements repeated daily under focused and deliberate practice.',
   'Reaction speed, memory, and pattern recognition improve when effort stays sustained and feedback stays immediate.',
   'The best benchmark is your own past performance under the same conditions and the same level of effort.',
+  'High performers protect attention by removing distractions before each session and reviewing mistakes right after.',
+  'Consistency beats intensity when small gains are tracked daily and weak patterns are corrected without excuses.',
+  'Accurate timing, clean technique, and honest scoring matter more than dramatic effort in short practice bursts.',
+  'Mental endurance improves when tasks stay challenging enough to force focus but not so hard they become chaotic.',
+  'Fast decisions become reliable only when fundamentals are repeated slowly, then tested under strict time limits.',
+  'Great training sessions end with notes on what failed, what improved, and what should be repeated tomorrow.',
+  'Precision under pressure comes from routines that reduce hesitation and keep every action intentionally controlled.',
+  'Skill grows faster when feedback is immediate, specific, and tied to repeatable behaviors instead of vague goals.',
+  'Benchmarking is useful only when tests are completed under comparable conditions with the same level of effort.',
+  'Attention is a trainable resource, and it strengthens when interruptions are removed and priorities stay clear.',
+  'Reliable progress appears when difficult drills are revisited often enough that weak spots cannot hide for long.',
+  'Small timing errors compound quickly, so disciplined pacing and clean execution should always come before speed.',
+  'Focused repetition builds confidence because each attempt clarifies patterns that were previously missed or ignored.',
+  'Objective scoring prevents guesswork and helps you compare today with last week using the same performance rules.',
+  'Deliberate practice means choosing hard tasks, tracking outcomes, and adjusting strategy instead of repeating habits.',
+  'Steady improvement requires patient refinement, not random effort, especially when tests punish careless responses.',
 ];
 
 function countCorrect(reference: string, typed: string): number {
@@ -80,6 +96,9 @@ export default function TypingTest({ onComplete }: TestGameProps) {
 
       <textarea
         value={typed}
+        onPaste={(event) => {
+          event.preventDefault();
+        }}
         onChange={(event) => {
           const next = event.target.value;
           if (!startRef.current && next.length > 0) {
@@ -109,11 +128,14 @@ export default function TypingTest({ onComplete }: TestGameProps) {
         }}
         rows={6}
         placeholder="Start typing here..."
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
         style={{ fontFamily: 'var(--font-mono)' }}
       />
 
       <small style={{ color: 'var(--text-muted)' }}>
-        Timer starts on first keystroke. Finish the full paragraph to submit score.
+        Timer starts on first keystroke. Finish the full paragraph to submit score. Pasting is disabled.
       </small>
     </div>
   );

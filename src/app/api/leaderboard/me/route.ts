@@ -1,6 +1,10 @@
 import { getSessionUserId } from '@/lib/server/session';
 import { getTestBySlug } from '@/lib/tests/registry';
-import { getEntriesAroundUser, getUserRankForTest } from '@/lib/server/leaderboardData';
+import {
+  getEntriesAroundUser,
+  getUserRankForTest,
+  LEADERBOARD_UNAVAILABLE_ERROR,
+} from '@/lib/server/leaderboardData';
 import { jsonError, jsonOk } from '@/lib/server/responses';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +33,9 @@ export async function GET(request: Request) {
     const around = await getEntriesAroundUser(testSlug, userId, 2);
     return jsonOk({ testSlug, rank, entries: around.entries });
   } catch (error) {
+    if (error instanceof Error && error.message === LEADERBOARD_UNAVAILABLE_ERROR) {
+      return jsonError(503, 'LEADERBOARD_UNAVAILABLE', 'Leaderboard service is currently unavailable');
+    }
     const message = error instanceof Error ? error.message : 'Failed to load current user leaderboard data';
     return jsonError(500, 'LEADERBOARD_ME_FAILED', message);
   }

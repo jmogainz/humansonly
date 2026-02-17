@@ -5,8 +5,15 @@ import type { TestGameProps } from '../_shared/types';
 
 const GRID = 3;
 
-function nextIndex() {
-  return Math.floor(Math.random() * GRID * GRID);
+function nextIndex(previous: number | null = null) {
+  const total = GRID * GRID;
+  let next = Math.floor(Math.random() * total);
+  if (previous !== null && total > 1) {
+    while (next === previous) {
+      next = Math.floor(Math.random() * total);
+    }
+  }
+  return next;
 }
 
 export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
@@ -14,6 +21,7 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
   const [inputIndex, setInputIndex] = useState(0);
   const [phase, setPhase] = useState<'show' | 'input'>('show');
   const [activeCell, setActiveCell] = useState<number | null>(null);
+  const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     setPhase('show');
@@ -48,9 +56,10 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
   }, [sequence]);
 
   const handleClick = (index: number) => {
-    if (phase !== 'input') return;
+    if (phase !== 'input' || finished) return;
 
     if (sequence[inputIndex] !== index) {
+      setFinished(true);
       onComplete({
         score: sequence.length,
         unit: 'level',
@@ -61,7 +70,7 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
     }
 
     if (inputIndex === sequence.length - 1) {
-      setSequence((prev) => [...prev, nextIndex()]);
+      setSequence((prev) => [...prev, nextIndex(prev[prev.length - 1] ?? null)]);
       return;
     }
 

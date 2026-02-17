@@ -4,17 +4,24 @@ import { useEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light';
 
+function readDomTheme(): Theme {
+  if (typeof document === 'undefined') return 'light';
+  return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+}
+
 function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   window.localStorage.setItem('humansonly_theme', theme);
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>(() => readDomTheme());
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const stored = window.localStorage.getItem('humansonly_theme');
-    const nextTheme: Theme = stored === 'light' ? 'light' : 'dark';
+    const nextTheme: Theme = stored === 'light' || stored === 'dark' ? stored : readDomTheme();
     setTheme(nextTheme);
     applyTheme(nextTheme);
   }, []);
@@ -30,7 +37,7 @@ export default function ThemeToggle() {
       }}
       aria-label="Toggle theme"
     >
-      {theme === 'dark' ? 'Light' : 'Dark'}
+      {mounted ? (theme === 'dark' ? 'Light' : 'Dark') : 'Theme'}
     </button>
   );
 }

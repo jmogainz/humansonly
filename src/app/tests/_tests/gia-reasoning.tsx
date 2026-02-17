@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt } from '@/lib/utils';
+import { generateRecentUnique, randomInt, shuffle } from '@/lib/utils';
 import Timer from '@/components/Timer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import { useTimer } from '@/hooks/useTimer';
@@ -14,104 +14,157 @@ const NAMES = [
   'Yara', 'Hugo', 'Layla', 'Isaac', 'Tara', 'Zoya', 'Rohan', 'Liam', 'Cleo', 'Eli',
 ];
 
-const PAIRS = [
-  ['stronger', 'weaker'],
-  ['faster', 'slower'],
-  ['taller', 'shorter'],
-  ['braver', 'more fearful'],
-  ['calmer', 'more anxious'],
-  ['friendlier', 'more hostile'],
-  ['smarter', 'less smart'],
-  ['more organized', 'more chaotic'],
-  ['more patient', 'more impulsive'],
-  ['kinder', 'crueler'],
-  ['more creative', 'less creative'],
-  ['more focused', 'more distracted'],
+type Trait = {
+  base: string;
+  higher: string;
+  lower: string;
+};
+
+const TRAITS: Trait[] = [
+  { base: 'strong', higher: 'stronger', lower: 'weaker' },
+  { base: 'fast', higher: 'faster', lower: 'slower' },
+  { base: 'tall', higher: 'taller', lower: 'shorter' },
+  { base: 'calm', higher: 'calmer', lower: 'more anxious' },
+  { base: 'focused', higher: 'more focused', lower: 'more distracted' },
+  { base: 'patient', higher: 'more patient', lower: 'more impatient' },
+  { base: 'organized', higher: 'more organized', lower: 'less organized' },
+  { base: 'creative', higher: 'more creative', lower: 'less creative' },
+  { base: 'careful', higher: 'more careful', lower: 'less careful' },
+  { base: 'friendly', higher: 'friendlier', lower: 'less friendly' },
+  { base: 'confident', higher: 'more confident', lower: 'less confident' },
+  { base: 'logical', higher: 'more logical', lower: 'less logical' },
 ];
 
 type Round = {
-  name1: string;
-  name2: string;
-  statementPositive: boolean;
-  questionPositive: boolean;
-  positiveWord: string;
-  negativeWord: string;
+  statements: [string, string];
+  question: string;
   answer: string;
   options: [string, string];
 };
 
-function makeRound(): Round {
-  const name1 = NAMES[randomInt(0, NAMES.length - 1)];
-  let name2 = NAMES[randomInt(0, NAMES.length - 1)];
-  while (name2 === name1) {
-    name2 = NAMES[randomInt(0, NAMES.length - 1)];
+const RECENT_KEY = 'gia-reasoning';
+const RECENT_WINDOW = 4000;
+
+function uniqueNames(count: number): string[] {
+  return shuffle([...NAMES]).slice(0, count);
+}
+
+function relationStatement(
+  higher: string,
+  lower: string,
+  trait: Trait
+): string {
+  switch (randomInt(0, 2)) {
+    case 0:
+      return `${higher} is ${trait.higher} than ${lower}.`;
+    case 1:
+      return `${lower} is ${trait.lower} than ${higher}.`;
+    default:
+      return `${lower} is not as ${trait.base} as ${higher}.`;
   }
+}
 
-  const [positiveWord, negativeWord] = PAIRS[randomInt(0, PAIRS.length - 1)];
-  const statementPositive = Math.random() > 0.5;
-  const questionPositive = Math.random() > 0.5;
+function makeRound(): Round {
+  const [highest, middle, lowest] = uniqueNames(3);
+  const rank = new Map<string, number>([
+    [highest, 0],
+    [middle, 1],
+    [lowest, 2],
+  ]);
 
-  const answer = statementPositive === questionPositive ? name1 : name2;
-  const options = Math.random() > 0.5 ? [name1, name2] : [name2, name1];
+  const trait = TRAITS[randomInt(0, TRAITS.length - 1)];
+  const statements: [string, string] = [
+    relationStatement(highest, middle, trait),
+    relationStatement(middle, lowest, trait),
+  ];
+
+  const pair = Math.random() < 0.65
+    ? [highest, lowest]
+    : (Math.random() < 0.5 ? [highest, middle] : [middle, lowest]);
+
+  const askHigher = Math.random() < 0.5;
+  const [left, right] = pair;
+  const leftRank = rank.get(left) ?? 0;
+  const rightRank = rank.get(right) ?? 0;
+  const answer = askHigher
+    ? (leftRank < rightRank ? left : right)
+    : (leftRank > rightRank ? left : right);
+
+  const question = askHigher
+    ? `Who is ${trait.higher}, ${left} or ${right}?`
+    : `Who is ${trait.lower}, ${left} or ${right}?`;
+
+  const options = (Math.random() > 0.5 ? [left, right] : [right, left]) as [string, string];
 
   return {
-    name1,
-    name2,
-    statementPositive,
-    questionPositive,
-    positiveWord,
-    negativeWord,
+    statements,
+    question,
     answer,
-    options: [options[0], options[1]],
+    options,
   };
 }
 
+function roundSignature(round: Round): string {
+  return [
+    round.statements[0],
+    round.statements[1],
+    round.question,
+    round.options[0],
+    round.options[1],
+    round.answer,
+  ].join('|');
+}
+
+function makeUniqueRound(): Round {
+  return generateRecentUnique(RECENT_KEY, RECENT_WINDOW, makeRound, roundSignature);
+}
+
 export default function GiaReasoningTest({ onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeRound());
-  const [phase, setPhase] = useState<'statement' | 'question'>('statement');
+  const [round, setRound] = useState<Round>(() => makeUniqueRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [finished, setFinished] = useState(false);
+  const submittedRef = useRef(false);
+  const statsRef = useRef({ correct: 0, incorrect: 0 });
 
   const score = useMemo(() => correct - incorrect, [correct, incorrect]);
+
+  const complete = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    setFinished(true);
+    const finalCorrect = statsRef.current.correct;
+    const finalIncorrect = statsRef.current.incorrect;
+    const finalScore = finalCorrect - finalIncorrect;
+    onComplete({
+      score: finalScore,
+      unit: 'net',
+      metadata: {
+        correct: finalCorrect,
+        incorrect: finalIncorrect,
+        penalty: 1,
+      },
+      label: `Net ${finalScore}`,
+    });
+  }, [onComplete]);
 
   const timer = useTimer({
     mode: 'down',
     durationMs: 120_000,
     autoStart: true,
-    onExpire: () => {
-      if (finished) return;
-      setFinished(true);
-      onComplete({
-        score,
-        unit: 'net',
-        metadata: {
-          correct,
-          incorrect,
-          penalty: 1,
-        },
-        label: `Net ${score}`,
-      });
-    },
+    onExpire: complete,
   });
 
-  const statement = round.statementPositive
-    ? `${round.name1} is ${round.positiveWord} than ${round.name2}.`
-    : `${round.name1} is not as ${round.positiveWord} as ${round.name2}.`;
-
-  const question = round.questionPositive
-    ? `Who is ${round.positiveWord}?`
-    : `Who is ${round.negativeWord}?`;
-
   const answer = (picked: string) => {
-    if (finished) return;
+    if (finished || submittedRef.current) return;
     if (picked === round.answer) {
-      setCorrect((prev) => prev + 1);
+      statsRef.current.correct += 1;
     } else {
-      setIncorrect((prev) => prev + 1);
+      statsRef.current.incorrect += 1;
     }
-    setRound(makeRound());
-    setPhase('statement');
+    setCorrect(statsRef.current.correct);
+    setIncorrect(statsRef.current.incorrect);
+    setRound(makeUniqueRound());
   };
 
   return (
@@ -133,27 +186,18 @@ export default function GiaReasoningTest({ onComplete }: TestGameProps) {
           gap: '0.8rem',
         }}
       >
-        {phase === 'statement' ? (
-          <>
-            <small style={{ color: 'var(--text-muted)' }}>Statement</small>
-            <h2 style={{ margin: 0 }}>{statement}</h2>
-            <button type="button" className="button" onClick={() => setPhase('question')}>
-              Show Question
+        <small style={{ color: 'var(--text-muted)' }}>Statements</small>
+        <p style={{ margin: 0, color: 'var(--text-primary)' }}>{round.statements[0]}</p>
+        <p style={{ margin: 0, color: 'var(--text-primary)' }}>{round.statements[1]}</p>
+        <small style={{ color: 'var(--text-muted)' }}>Question</small>
+        <h2 style={{ margin: 0 }}>{round.question}</h2>
+        <div style={{ display: 'grid', gap: '0.6rem' }}>
+          {round.options.map((name) => (
+            <button key={name} type="button" className="button" onClick={() => answer(name)}>
+              {name}
             </button>
-          </>
-        ) : (
-          <>
-            <small style={{ color: 'var(--text-muted)' }}>Question</small>
-            <h2 style={{ margin: 0 }}>{question}</h2>
-            <div style={{ display: 'grid', gap: '0.6rem' }}>
-              {round.options.map((name) => (
-                <button key={name} type="button" className="button" onClick={() => answer(name)}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+          ))}
+        </div>
       </div>
     </div>
   );

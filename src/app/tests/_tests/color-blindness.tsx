@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import ScoreDisplay from '@/components/ScoreDisplay';
 
@@ -9,7 +9,7 @@ const ANSWERS = [12, 8, 6, 29, 45, 5, 73, 15, 26, 74, 16, 42, 3, 9, 57];
 
 type Plate = {
   answer: number;
-  src: string;
+  src: string | null;
 };
 
 function generatePlate(answer: number): string {
@@ -82,19 +82,42 @@ function classify(correct: number): string {
 }
 
 export default function ColorBlindnessTest({ onComplete }: TestGameProps) {
-  const [plates, setPlates] = useState<Plate[]>(() => ANSWERS.map((answer) => ({ answer, src: '' })));
+  const [plates, setPlates] = useState<Plate[]>(() => ANSWERS.map((answer) => ({ answer, src: null })));
   const [index, setIndex] = useState(0);
   const [guess, setGuess] = useState('');
   const [correct, setCorrect] = useState(0);
 
-  useEffect(() => {
-    setPlates(ANSWERS.map((answer) => ({ answer, src: generatePlate(answer) })));
+  const ensurePlate = useCallback((targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= ANSWERS.length) return;
+    if (typeof document === 'undefined') return;
+
+    window.setTimeout(() => {
+      setPlates((prev) => {
+        if (!prev[targetIndex] || prev[targetIndex].src) return prev;
+        const next = [...prev];
+        next[targetIndex] = {
+          ...next[targetIndex],
+          src: generatePlate(next[targetIndex].answer),
+        };
+        return next;
+      });
+    }, 0);
   }, []);
+
+  useEffect(() => {
+    ensurePlate(0);
+  }, [ensurePlate]);
+
+  useEffect(() => {
+    ensurePlate(index);
+    ensurePlate(index + 1);
+  }, [index, ensurePlate]);
 
   const plate = plates[index];
 
   const submit = () => {
     if (!plate) return;
+    if (!guess.trim()) return;
 
     const value = Number(guess.trim());
     const nextCorrect = value === plate.answer ? correct + 1 : correct;
@@ -162,8 +185,12 @@ export default function ColorBlindnessTest({ onComplete }: TestGameProps) {
           placeholder="Enter the number you see"
           style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.1rem' }}
         />
-        <button type="submit" className="button" disabled={!plate?.src}>Next Plate</button>
+        <button type="submit" className="button" disabled={!plate?.src || !guess.trim()}>Next Plate</button>
       </form>
+
+      <small style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
+        Screening only. This is not a medical diagnosis.
+      </small>
     </div>
   );
 }

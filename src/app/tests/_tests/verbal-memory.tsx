@@ -2,34 +2,42 @@
 
 import { useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
 import ScoreDisplay from '@/components/ScoreDisplay';
 
-const WORDS = shuffle([
+const WORDS = Array.from(new Set([
   'planet', 'forest', 'camera', 'pencil', 'signal', 'window', 'garden', 'music', 'orange', 'memory',
-  'silent', 'engine', 'button', 'future', 'energy', 'sudden', 'bridge', 'sprint', 'cookie', 'rabbit',
-  'summer', 'winter', 'planetary', 'market', 'shelter', 'vacuum', 'anchor', 'tablet', 'wisdom', 'horizon',
-  'bubble', 'rocket', 'puzzle', 'ladder', 'tunnel', 'mirror', 'guitar', 'sample', 'cotton', 'marble',
-  'ticket', 'jungle', 'thunder', 'ocean', 'candle', 'school', 'wallet', 'fabric', 'parade', 'moment',
-  'dragon', 'breeze', 'castle', 'rescue', 'galaxy', 'absorb', 'kernel', 'pepper', 'vector', 'pirate',
-  'helmet', 'orchid', 'flight', 'random', 'thread', 'pillow', 'bronze', 'silver', 'golden', 'radius',
-  'violin', 'search', 'global', 'native', 'vacant', 'finish', 'submit', 'canvas', 'spatial', 'neural',
-  'vision', 'binary', 'rhythm', 'syntax', 'player', 'format', 'safety', 'travel', 'bright', 'wallets',
-  'future', 'script', 'potion', 'castle', 'racing', 'atomic', 'haptic', 'motion', 'belief', 'friend',
-]);
+  'silent', 'engine', 'button', 'future', 'energy', 'bridge', 'sprint', 'cookie', 'rabbit', 'summer',
+  'winter', 'market', 'shelter', 'vacuum', 'anchor', 'tablet', 'wisdom', 'horizon', 'bubble', 'rocket',
+  'puzzle', 'ladder', 'tunnel', 'mirror', 'guitar', 'sample', 'cotton', 'marble', 'ticket', 'jungle',
+  'thunder', 'ocean', 'candle', 'school', 'wallet', 'fabric', 'parade', 'moment', 'dragon', 'breeze',
+  'castle', 'rescue', 'galaxy', 'kernel', 'pepper', 'vector', 'pirate', 'helmet', 'orchid', 'flight',
+  'thread', 'pillow', 'bronze', 'silver', 'radius', 'violin', 'search', 'global', 'native', 'vacant',
+  'finish', 'submit', 'canvas', 'spatial', 'neural', 'vision', 'binary', 'rhythm', 'syntax', 'player',
+  'format', 'safety', 'travel', 'bright', 'script', 'potion', 'racing', 'atomic', 'motion', 'belief',
+  'friend', 'copper', 'timber', 'ledger', 'harbor', 'desert', 'meadow', 'crystal', 'helmet', 'harvest',
+  'island', 'canyon', 'quartz', 'ember', 'ripple', 'comet', 'compass', 'bottle', 'lantern', 'parcel',
+]));
 
-function pickNextWord(seen: Set<string>, usedWords: Set<string>, round: number): string {
+function pickNextWord(seen: Set<string>, usedWords: Set<string>, round: number, previousWord: string): string {
   const repeatChance = Math.min(0.75, 0.25 + round * 0.015);
   const pickSeen = seen.size > 0 && Math.random() < repeatChance;
 
   if (pickSeen) {
-    const seenArray = [...seen];
-    return seenArray[Math.floor(Math.random() * seenArray.length)];
+    const seenArray = [...seen].filter((value) => value !== previousWord);
+    if (seenArray.length > 0) {
+      return seenArray[Math.floor(Math.random() * seenArray.length)];
+    }
   }
 
-  for (const word of WORDS) {
-    if (!usedWords.has(word)) return word;
+  const unseenWords = WORDS.filter((candidate) => !usedWords.has(candidate) && candidate !== previousWord);
+  if (unseenWords.length > 0) {
+    return unseenWords[Math.floor(Math.random() * unseenWords.length)];
+  }
+
+  if (pickSeen) {
+    const seenArray = [...seen];
+    return seenArray[Math.floor(Math.random() * seenArray.length)];
   }
 
   return WORDS[Math.floor(Math.random() * WORDS.length)];
@@ -41,7 +49,7 @@ export default function VerbalMemoryTest({ onComplete }: TestGameProps) {
   const [round, setRound] = useState(1);
   const [seenWords, setSeenWords] = useState<Set<string>>(new Set());
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
-  const [word, setWord] = useState(() => WORDS[0]);
+  const [word, setWord] = useState(() => WORDS[Math.floor(Math.random() * WORDS.length)]);
 
   const status = useMemo(() => `Round ${round}`, [round]);
 
@@ -77,7 +85,7 @@ export default function VerbalMemoryTest({ onComplete }: TestGameProps) {
 
     const nextRound = round + 1;
     setRound(nextRound);
-    setWord(pickNextWord(nextSeen, nextUsed, nextRound));
+    setWord(pickNextWord(nextSeen, nextUsed, nextRound, word));
   };
 
   return (

@@ -4,6 +4,8 @@ import { mapDisplayNames } from './users';
 import { denormalizeScore, leaderboardKey } from './leaderboard';
 import { getLeaderboardRedis } from './redis';
 
+export const LEADERBOARD_UNAVAILABLE_ERROR = 'LEADERBOARD_UNAVAILABLE';
+
 function parseMember(member: string): { type: 'user' | 'guest'; id: string } | null {
   const [type, id] = member.split(':');
   if (!id) return null;
@@ -11,12 +13,19 @@ function parseMember(member: string): { type: 'user' | 'guest'; id: string } | n
   return { type, id };
 }
 
+function requireLeaderboardRedis() {
+  const redis = getLeaderboardRedis();
+  if (!redis) {
+    throw new Error(LEADERBOARD_UNAVAILABLE_ERROR);
+  }
+  return redis;
+}
+
 export async function getTopLeaderboardEntries(testSlug: string, limit = 100, offset = 0): Promise<LeaderboardEntry[]> {
   const test = getTestBySlug(testSlug);
   if (!test?.leaderboardEnabled) return [];
 
-  const redis = getLeaderboardRedis();
-  if (!redis) return [];
+  const redis = requireLeaderboardRedis();
 
   const raw = await redis.zrange<(string | number)[]>(leaderboardKey(testSlug), offset, offset + limit - 1, {
     rev: true,
@@ -69,8 +78,7 @@ export async function getTopLeaderboardEntries(testSlug: string, limit = 100, of
 export async function getUserRankForTest(testSlug: string, userId: string): Promise<number | null> {
   const test = getTestBySlug(testSlug);
   if (!test?.leaderboardEnabled) return null;
-  const redis = getLeaderboardRedis();
-  if (!redis) return null;
+  const redis = requireLeaderboardRedis();
 
   const rank = await redis.zrevrank(leaderboardKey(testSlug), `user:${userId}`);
   if (rank === null || rank === undefined) return null;

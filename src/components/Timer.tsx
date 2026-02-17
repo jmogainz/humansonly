@@ -8,6 +8,12 @@ type TimerProps = {
 
 function formatTime(milliseconds: number): string {
   const total = Math.max(0, milliseconds);
+  if (total >= 60_000) {
+    const minutes = Math.floor(total / 60_000);
+    const seconds = Math.floor((total % 60_000) / 1000);
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  }
+
   const seconds = Math.floor(total / 1000);
   const centiseconds = Math.floor((total % 1000) / 10);
   return `${seconds}.${String(centiseconds).padStart(2, '0')}`;

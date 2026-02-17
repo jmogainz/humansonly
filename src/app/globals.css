@@ -1,29 +1,36 @@
 :root {
-  --font-body: Inter, system-ui, sans-serif;
-  --font-heading: 'Space Grotesk', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-body: var(--font-body), system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-body), system-ui, sans-serif; /* Use same font for minimal look */
+  --font-mono: var(--font-mono), monospace;
 
-  --bg: #323437;
-  --surface: #2c2e31;
-  --surface-raised: #3a3c40;
-  --text-primary: #d1d0c5;
-  --text-muted: #8f8f84;
-  --border: #494b4f;
-  --accent: #e2b714;
-  --danger: #e45d5d;
-  --success: #6bc47a;
+  /* Minimal Theme - Light Mode Default */
+  --bg: #ffffff;
+  --surface: #f9fafb; /* Zinc 50 */
+  --surface-raised: #f3f4f6; /* Zinc 100 */
+  --text-primary: #18181b; /* Zinc 900 */
+  --text-muted: #71717a; /* Zinc 500 */
+  --border: #e4e4e7; /* Zinc 200 */
+  --accent: #18181b; /* Zinc 900 (Black accent) */
+  --accent-hover: #3f3f46; /* Zinc 700 */
+  --accent-foreground: #ffffff;
+  --danger: #dc2626;
+  --success: #16a34a;
+  
+  --card-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --radius: 0.5rem;
 }
 
-:root[data-theme='light'] {
-  --bg: #f5f5f5;
-  --surface: #ffffff;
-  --surface-raised: #f0f0f0;
-  --text-primary: #1a1a1a;
-  --text-muted: #5e5e5e;
-  --border: #dddddd;
-  --accent: #cf9e00;
-  --danger: #c83535;
-  --success: #1f8f45;
+:root[data-theme='dark'] {
+  --bg: #09090b; /* Zinc 950 */
+  --surface: #18181b; /* Zinc 900 */
+  --surface-raised: #27272a; /* Zinc 800 */
+  --text-primary: #fafafa; /* Zinc 50 */
+  --text-muted: #a1a1aa; /* Zinc 400 */
+  --border: #27272a; /* Zinc 800 */
+  --accent: #fafafa; /* Zinc 50 (White accent) */
+  --accent-hover: #d4d4d8; /* Zinc 300 */
+  --accent-foreground: #09090b; /* Zinc 950 */
+  --card-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.3);
 }
 
 * {
@@ -35,101 +42,216 @@ body {
   padding: 0;
   margin: 0;
   min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: radial-gradient(circle at top, color-mix(in srgb, var(--accent) 14%, transparent), transparent 44%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-body);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.backgroundGlow {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(40rem 20rem at 10% -10%, color-mix(in srgb, var(--accent) 18%, transparent), transparent),
-    radial-gradient(40rem 20rem at 90% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent);
-  opacity: 0.8;
-  z-index: -1;
-}
-
+/* Minimal Layout */
 main {
   width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5 {
+h1, h2, h3, h4, h5 {
   font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 1rem 0;
+  color: var(--text-primary);
 }
 
+h1 { font-size: 2rem; line-height: 1.2; }
+h2 { font-size: 1.5rem; line-height: 1.3; }
+h3 { font-size: 1.25rem; line-height: 1.4; }
+
+p {
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: opacity 0.2s;
+}
+
+a:hover {
+  opacity: 0.7;
+}
+
+/* Button Component - Minimal */
 .button {
-  appearance: none;
-  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
   background: var(--accent);
-  color: #161616;
-  border-radius: 10px;
-  padding: 0.5rem 0.9rem;
+  color: var(--accent-foreground);
+  border-radius: var(--radius);
+  padding: 0.625rem 1.25rem;
+  font-weight: 500;
+  font-size: 0.875rem;
   text-decoration: none;
-  font-family: var(--font-heading);
-  font-size: 0.88rem;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--card-shadow);
 }
 
 .button:hover {
-  filter: brightness(1.05);
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
 }
 
 .button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 
 .buttonGhost {
   background: transparent;
   color: var(--text-primary);
-  border-color: var(--border);
+  border: 1px solid var(--border);
+  box-shadow: none;
 }
 
+.buttonGhost:hover {
+  background: var(--surface);
+  border-color: var(--text-primary);
+}
+
+/* Auth Section */
 .authActions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
+}
+
+/* Minimal Tables */
+.table-container {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg); /* Transparent/bg instead of surface */
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
-
-.table th,
-.table td {
+  border-collapse: collapse; /* Collapse for cleaner lines */
   text-align: left;
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--border);
 }
 
 .table th {
+  background: var(--surface);
   color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-family: var(--font-mono); /* Keep mono for headers? Or body? Let's keep mono for technical feel but minimal */
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
 }
 
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background: var(--surface-raised);
+}
+
+/* Forms - Minimal */
 input,
 textarea,
 select {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--surface) 92%, black 8%);
+  border-radius: var(--radius);
+  background: var(--bg);
   color: var(--text-primary);
-  padding: 0.55rem 0.7rem;
-  font: inherit;
+  padding: 0.625rem 1rem;
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+  box-shadow: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--text-primary);
+  box-shadow: none; /* Remove glow */
+}
+
+input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Utility Classes */
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-accent { color: var(--text-primary); font-weight: 600; } /* Use primary for accent in minimal */
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 0.875rem; }
+.text-xs { font-size: 0.75rem; }
+.font-mono { font-family: var(--font-mono); }
+.mb-4 { margin-bottom: 1rem; }
+.mt-4 { margin-top: 1rem; }
+.w-full { width: 100%; }
+
+/* Custom Scrollbar - Minimal */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

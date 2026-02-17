@@ -31,11 +31,12 @@ export default function VisualMemoryTest({ onComplete }: TestGameProps) {
   useEffect(() => {
     if (lives > 0 || submitted) return;
     setSubmitted(true);
+    const completedLevel = Math.max(0, level - 1);
     onComplete({
-      score: level,
+      score: completedLevel,
       unit: 'level',
-      metadata: { level },
-      label: `Level ${level}`,
+      metadata: { completedLevel, attemptedLevel: level },
+      label: `Level ${completedLevel}`,
     });
   }, [lives, submitted, level, onComplete]);
 

@@ -1,13 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, shuffle } from '@/lib/utils';
+import { generateRecentUnique, randomInt, shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Timer from '@/components/Timer';
 import { useTimer } from '@/hooks/useTimer';
 
 const LETTERS = ['F', 'G', 'J', 'L', 'N', 'P', 'Q', 'R', 'S', 'Z'];
+const COLUMN_COUNT = 3;
 
 type LetterInstance = {
   char: string;
@@ -26,6 +27,9 @@ type Round = {
   answer: number;
 };
 
+const RECENT_KEY = 'gia-spatial';
+const RECENT_WINDOW = 5000;
+
 function letterInstance(char: string, mirrored?: boolean): LetterInstance {
   return {
     char,
@@ -35,10 +39,10 @@ function letterInstance(char: string, mirrored?: boolean): LetterInstance {
 }
 
 function makeRound(): Round {
-  const sameCount = randomInt(0, 2);
+  const sameCount = randomInt(0, COLUMN_COUNT);
   const columns: Column[] = [];
 
-  for (let i = 0; i < 2; i += 1) {
+  for (let i = 0; i < COLUMN_COUNT; i += 1) {
     const char = LETTERS[randomInt(0, LETTERS.length - 1)];
     const shouldMatch = i < sameCount;
 
@@ -51,9 +55,16 @@ function makeRound(): Round {
       });
     } else {
       const mirror = Math.random() > 0.5;
+      const useDifferentChar = Math.random() > 0.5;
+      let nextChar = char;
+      if (useDifferentChar) {
+        while (nextChar === char) {
+          nextChar = LETTERS[randomInt(0, LETTERS.length - 1)];
+        }
+      }
       columns.push({
         top: letterInstance(char, mirror),
-        bottom: letterInstance(char, !mirror),
+        bottom: letterInstance(nextChar, useDifferentChar ? mirror : !mirror),
         same: false,
       });
     }
@@ -63,6 +74,16 @@ function makeRound(): Round {
     columns: shuffle(columns),
     answer: sameCount,
   };
+}
+
+function roundSignature(round: Round): string {
+  return `${round.answer}|${round.columns.map((column) => (
+    `${column.top.char}${column.top.rotation}${column.top.mirrored ? 1 : 0}:${column.bottom.char}${column.bottom.rotation}${column.bottom.mirrored ? 1 : 0}`
+  )).join(',')}`;
+}
+
+function makeUniqueRound(): Round {
+  return generateRecentUnique(RECENT_KEY, RECENT_WINDOW, makeRound, roundSignature);
 }
 
 function LetterView({ value }: { value: LetterInstance }) {
@@ -81,41 +102,51 @@ function LetterView({ value }: { value: LetterInstance }) {
 }
 
 export default function GiaSpatialTest({ onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeRound());
+  const [round, setRound] = useState<Round>(() => makeUniqueRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [finished, setFinished] = useState(false);
+  const submittedRef = useRef(false);
+  const statsRef = useRef({ correct: 0, incorrect: 0 });
 
   const score = useMemo(() => correct - incorrect * 0.5, [correct, incorrect]);
+
+  const complete = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    setFinished(true);
+    const finalCorrect = statsRef.current.correct;
+    const finalIncorrect = statsRef.current.incorrect;
+    const finalScore = finalCorrect - finalIncorrect * 0.5;
+    onComplete({
+      score: finalScore,
+      unit: 'net',
+      metadata: {
+        correct: finalCorrect,
+        incorrect: finalIncorrect,
+        penalty: 0.5,
+      },
+      label: `Net ${finalScore.toFixed(2)}`,
+    });
+  }, [onComplete]);
 
   const timer = useTimer({
     mode: 'down',
     durationMs: 120_000,
     autoStart: true,
-    onExpire: () => {
-      if (finished) return;
-      setFinished(true);
-      onComplete({
-        score,
-        unit: 'net',
-        metadata: {
-          correct,
-          incorrect,
-          penalty: 0.5,
-        },
-        label: `Net ${score.toFixed(2)}`,
-      });
-    },
+    onExpire: complete,
   });
 
   const answer = (value: number) => {
-    if (finished) return;
+    if (finished || submittedRef.current) return;
     if (value === round.answer) {
-      setCorrect((prev) => prev + 1);
+      statsRef.current.correct += 1;
     } else {
-      setIncorrect((prev) => prev + 1);
+      statsRef.current.incorrect += 1;
     }
-    setRound(makeRound());
+    setCorrect(statsRef.current.correct);
+    setIncorrect(statsRef.current.incorrect);
+    setRound(makeUniqueRound());
   };
 
   return (
@@ -133,7 +164,7 @@ export default function GiaSpatialTest({ onComplete }: TestGameProps) {
         Rotations count as same. Mirrored letters do not.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.8rem' }}>
         {round.columns.map((column, index) => (
           <div
             key={index}
@@ -154,8 +185,8 @@ export default function GiaSpatialTest({ onComplete }: TestGameProps) {
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
-        {[0, 1, 2].map((value) => (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.6rem' }}>
+        {[0, 1, 2, 3].map((value) => (
           <button key={value} type="button" className="button" onClick={() => answer(value)}>
             {value}
           </button>

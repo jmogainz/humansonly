@@ -29,7 +29,7 @@ export default function ResultScreen({
   onPlayAgain,
 }: ResultScreenProps) {
   const [display, setDisplay] = useState(0);
-  const target = useMemo(() => Math.max(0, scoreValue), [scoreValue]);
+  const target = useMemo(() => (Number.isFinite(scoreValue) ? scoreValue : 0), [scoreValue]);
 
   useEffect(() => {
     let raf = 0;

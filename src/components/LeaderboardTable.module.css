@@ -1,0 +1,116 @@
+.container {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.table th {
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover {
+  background: var(--surface-raised);
+}
+
+.rowHighlight {
+  background: var(--surface-raised) !important; /* Minimal highlight */
+  font-weight: 600;
+}
+
+.rankCol {
+  width: 60px;
+  text-align: center;
+}
+
+.rankBadge {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.rank1 { color: #d97706; background: rgba(217, 119, 6, 0.1); } /* Subtle gold */
+.rank2 { color: #52525b; background: rgba(82, 82, 91, 0.1); } /* Subtle silver */
+.rank3 { color: #92400e; background: rgba(146, 64, 14, 0.1); } /* Subtle bronze */
+
+.playerInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px; /* Slightly rounded square */
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.meName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.scoreCol {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.score {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.unit {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.25rem;
+}
+
+.empty {
+  padding: 3rem;
+  text-align: center;
+  color: var(--text-muted);
+}

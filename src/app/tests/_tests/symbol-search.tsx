@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { randomInt, shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
@@ -17,7 +17,7 @@ type Round = {
 
 function makeRound(): Round {
   const target = SYMBOLS[randomInt(0, SYMBOLS.length - 1)];
-  const include = Math.random() > 0.45;
+  const include = Math.random() >= 0.5;
   const row = shuffle(Array.from({ length: 8 }, () => SYMBOLS[randomInt(0, SYMBOLS.length - 1)]));
   if (include) {
     row[randomInt(0, row.length - 1)] = target;
@@ -36,31 +36,38 @@ export default function SymbolSearchTest({ onComplete }: TestGameProps) {
   const [attempts, setAttempts] = useState(0);
   const [round, setRound] = useState<Round>(() => makeRound());
   const [finished, setFinished] = useState(false);
+  const submittedRef = useRef(false);
+  const statsRef = useRef({ score: 0, attempts: 0 });
+
+  const complete = useCallback(() => {
+    if (submittedRef.current) return;
+    submittedRef.current = true;
+    setFinished(true);
+    const finalScore = statsRef.current.score;
+    const finalAttempts = statsRef.current.attempts;
+    onComplete({
+      score: finalScore,
+      unit: 'correct/90s',
+      metadata: {
+        attempts: finalAttempts,
+        accuracy: finalAttempts ? finalScore / finalAttempts : 0,
+      },
+      label: `${finalScore} correct`,
+    });
+  }, [onComplete]);
 
   const timer = useTimer({
     mode: 'down',
     durationMs: 90_000,
     autoStart: true,
-    onExpire: () => {
-      if (finished) return;
-      setFinished(true);
-      onComplete({
-        score,
-        unit: 'correct/90s',
-        metadata: {
-          attempts,
-          accuracy: attempts ? score / attempts : 0,
-        },
-        label: `${score} correct`,
-      });
-    },
+    onExpire: complete,
   });
 
   useEffect(() => {
     if (!timer.running && !finished && timer.remainingMs === 0) {
-      setFinished(true);
+      complete();
     }
-  }, [timer.running, timer.remainingMs, finished]);
+  }, [timer.running, timer.remainingMs, finished, complete]);
 
   const accuracy = useMemo(() => {
     if (!attempts) return 100;
@@ -68,11 +75,16 @@ export default function SymbolSearchTest({ onComplete }: TestGameProps) {
   }, [score, attempts]);
 
   const answer = (value: boolean) => {
-    if (finished) return;
-    setAttempts((prev) => prev + 1);
+    if (finished || submittedRef.current) return;
+    const nextAttempts = statsRef.current.attempts + 1;
+    let nextScore = statsRef.current.score;
+    statsRef.current.attempts = nextAttempts;
     if (value === round.answer) {
-      setScore((prev) => prev + 1);
+      nextScore += 1;
+      statsRef.current.score = nextScore;
     }
+    setAttempts(nextAttempts);
+    setScore(nextScore);
     setRound(makeRound());
   };
 

@@ -1,5 +1,5 @@
 import { getTestBySlug } from '@/lib/tests/registry';
-import { getTopLeaderboardEntries } from '@/lib/server/leaderboardData';
+import { getTopLeaderboardEntries, LEADERBOARD_UNAVAILABLE_ERROR } from '@/lib/server/leaderboardData';
 import { jsonError, jsonOk } from '@/lib/server/responses';
 
 export const dynamic = 'force-dynamic';
@@ -28,6 +28,9 @@ export async function GET(request: Request) {
     const entries = await getTopLeaderboardEntries(testSlug, limit, offset);
     return jsonOk({ testSlug, entries });
   } catch (error) {
+    if (error instanceof Error && error.message === LEADERBOARD_UNAVAILABLE_ERROR) {
+      return jsonError(503, 'LEADERBOARD_UNAVAILABLE', 'Leaderboard service is currently unavailable');
+    }
     const message = error instanceof Error ? error.message : 'Failed to load leaderboard';
     return jsonError(500, 'LEADERBOARD_TOP_FAILED', message);
   }

@@ -223,3 +223,33 @@ export async function getBestScoresForUser(userId: string): Promise<Array<{ test
     scoreUnit: row.score_unit,
   }));
 }
+
+export async function getAllScoresForCategory(userId: string, category: string): Promise<StoredScore[]> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+
+  const result = await pool.query<{
+    id: string;
+    test_slug: string;
+    score_value: number;
+    score_unit: string;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(
+    `select s.id, s.test_slug, s.score_value::float8 as score_value, s.score_unit, s.metadata, s.created_at
+     from scores s
+     join test_definitions t on t.slug = s.test_slug
+     where s.user_id=$1 and t.category=$2
+     order by s.created_at asc`,
+    [userId, category]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    testSlug: row.test_slug,
+    scoreValue: row.score_value,
+    scoreUnit: row.score_unit,
+    metadata: row.metadata,
+    createdAt: row.created_at.toISOString(),
+  }));
+}

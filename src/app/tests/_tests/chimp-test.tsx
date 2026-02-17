@@ -11,10 +11,12 @@ type Cell = {
 };
 
 const GRID_SIZE = 5;
+const MAX_LEVEL = GRID_SIZE * GRID_SIZE;
 
 function makeLevel(level: number): Cell[] {
   const total = GRID_SIZE * GRID_SIZE;
-  const numbers = shuffle(Array.from({ length: total }, (_, index) => index)).slice(0, level);
+  const count = Math.min(level, total);
+  const numbers = shuffle(Array.from({ length: total }, (_, index) => index)).slice(0, count);
   const map = new Map<number, number>();
   numbers.forEach((cellIndex, index) => map.set(cellIndex, index + 1));
 
@@ -44,20 +46,21 @@ export default function ChimpTest({ onComplete }: TestGameProps) {
   useEffect(() => {
     if (lives > 0 || submitted) return;
     setSubmitted(true);
+    const finalLevel = Math.min(level - 1, MAX_LEVEL);
     onComplete({
-      score: level - 1,
+      score: finalLevel,
       unit: 'level',
       metadata: {
-        finalLevel: level - 1,
+        finalLevel,
         strikes,
       },
-      label: `Level ${level - 1}`,
+      label: `Level ${finalLevel}`,
     });
   }, [lives, level, strikes, onComplete, submitted]);
 
   const label = useMemo(() => {
     if (phase === 'show') return 'Memorize the numbers';
-    return `Click numbers in order: ${nextExpected} → ${level}`;
+    return `Click numbers in order: ${nextExpected} → ${Math.min(level, MAX_LEVEL)}`;
   }, [phase, nextExpected, level]);
 
   const handleCellClick = (cell: Cell) => {
@@ -65,7 +68,25 @@ export default function ChimpTest({ onComplete }: TestGameProps) {
     if (!cell.number) return;
 
     if (cell.number === nextExpected) {
-      if (nextExpected === level) {
+      const targetForRound = Math.min(level, MAX_LEVEL);
+      if (nextExpected === targetForRound) {
+        if (level >= MAX_LEVEL) {
+          if (!submitted) {
+            setSubmitted(true);
+            onComplete({
+              score: MAX_LEVEL,
+              unit: 'level',
+              metadata: {
+                finalLevel: MAX_LEVEL,
+                strikes,
+                perfectRun: true,
+              },
+              label: `Level ${MAX_LEVEL}`,
+            });
+          }
+          return;
+        }
+
         const nextLevel = level + 1;
         setLevel(nextLevel);
         setCells(makeLevel(nextLevel));
@@ -87,7 +108,7 @@ export default function ChimpTest({ onComplete }: TestGameProps) {
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
+        <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {Math.min(level, MAX_LEVEL)}</strong>
         <LivesDisplay lives={lives} maxLives={maxLives} />
       </div>
 

@@ -1,13 +1,13 @@
 {
-  "name": "Mazle",
-  "short_name": "Mazle",
-  "description": "A free daily sliding puzzle game",
+  "name": "HumansOnly",
+  "short_name": "HumansOnly",
+  "description": "Minimalist cognitive performance benchmark.",
   "id": "/",
   "scope": "/",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#0f0f1a",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "icons": [
     {
@@ -28,4 +28,3 @@
     }
   ]
 }
-

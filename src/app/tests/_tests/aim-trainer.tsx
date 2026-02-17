@@ -1,25 +1,57 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import { clamp } from '@/lib/utils';
 
 const TARGET_COUNT = 30;
 const TARGET_SIZE = 44;
 
-function randomTarget() {
+function randomTarget(width: number, height: number) {
+  const padding = TARGET_SIZE / 2 + 4;
+  const safeWidth = Math.max(padding * 2, width);
+  const safeHeight = Math.max(padding * 2, height);
+
   return {
-    x: 5 + Math.random() * 90,
-    y: 5 + Math.random() * 90,
+    x: padding + Math.random() * (safeWidth - padding * 2),
+    y: padding + Math.random() * (safeHeight - padding * 2),
   };
 }
 
 export default function AimTrainerTest({ onComplete }: TestGameProps) {
+  const arenaRef = useRef<HTMLDivElement | null>(null);
   const [started, setStarted] = useState(false);
+  const [finished, setFinished] = useState(false);
   const [hits, setHits] = useState(0);
-  const [target, setTarget] = useState(randomTarget);
+  const [arenaSize, setArenaSize] = useState({ width: 800, height: 420 });
+  const [target, setTarget] = useState(() => randomTarget(800, 420));
   const [spawnedAt, setSpawnedAt] = useState<number | null>(null);
   const [times, setTimes] = useState<number[]>([]);
+
+  useEffect(() => {
+    const updateSize = () => {
+      const arena = arenaRef.current;
+      if (!arena) return;
+      const rect = arena.getBoundingClientRect();
+      setArenaSize({
+        width: Math.max(rect.width, TARGET_SIZE + 12),
+        height: Math.max(rect.height, TARGET_SIZE + 12),
+      });
+    };
+
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
+  useEffect(() => {
+    const padding = TARGET_SIZE / 2 + 4;
+    setTarget((prev) => ({
+      x: clamp(prev.x, padding, arenaSize.width - padding),
+      y: clamp(prev.y, padding, arenaSize.height - padding),
+    }));
+  }, [arenaSize.width, arenaSize.height]);
 
   const average = useMemo(() => {
     if (!times.length) return 0;
@@ -28,20 +60,25 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
 
   const handleStart = () => {
     setStarted(true);
+    setFinished(false);
     setHits(0);
     setTimes([]);
-    setTarget(randomTarget());
+    setTarget(randomTarget(arenaSize.width, arenaSize.height));
     setSpawnedAt(performance.now());
   };
 
   const handleHit = () => {
-    if (!started) return;
+    if (!started || finished) return;
     const now = performance.now();
     const elapsed = spawnedAt ? now - spawnedAt : 0;
     const nextTimes = [...times, elapsed];
     const nextHits = hits + 1;
 
     if (nextHits >= TARGET_COUNT) {
+      setTimes(nextTimes);
+      setHits(nextHits);
+      setFinished(true);
+      setSpawnedAt(null);
       const finalAverage = nextTimes.reduce((sum, value) => sum + value, 0) / nextTimes.length;
       onComplete({
         score: finalAverage,
@@ -54,7 +91,7 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
 
     setTimes(nextTimes);
     setHits(nextHits);
-    setTarget(randomTarget());
+    setTarget(randomTarget(arenaSize.width, arenaSize.height));
     setSpawnedAt(now);
   };
 
@@ -72,9 +109,10 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
       ) : null}
 
       <div
+        ref={arenaRef}
         style={{
           width: '100%',
-          minHeight: '420px',
+          minHeight: 'clamp(280px, 55vw, 420px)',
           borderRadius: '14px',
           border: '1px solid var(--border)',
           background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 70%, transparent), var(--surface))',
@@ -82,15 +120,15 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
           overflow: 'hidden',
         }}
       >
-        {started ? (
+        {started && !finished ? (
           <button
             type="button"
             onClick={handleHit}
             aria-label="Target"
             style={{
               position: 'absolute',
-              left: `calc(${target.x}% - ${TARGET_SIZE / 2}px)`,
-              top: `calc(${target.y}% - ${TARGET_SIZE / 2}px)`,
+              left: `${target.x - TARGET_SIZE / 2}px`,
+              top: `${target.y - TARGET_SIZE / 2}px`,
               width: `${TARGET_SIZE}px`,
               height: `${TARGET_SIZE}px`,
               borderRadius: '999px',
@@ -100,7 +138,9 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
             }}
           />
         ) : (
-          <p style={{ margin: '1rem', color: 'var(--text-muted)' }}>Click start to begin 30 target challenge.</p>
+          <p style={{ margin: '1rem', color: 'var(--text-muted)' }}>
+            {finished ? 'Run complete. Saving result...' : 'Click start to begin 30 target challenge.'}
+          </p>
         )}
       </div>
     </div>

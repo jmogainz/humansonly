@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 
 type Phase = 'idle' | 'wait' | 'go' | 'too-soon';
@@ -10,28 +10,25 @@ const TOTAL_ATTEMPTS = 5;
 export default function ReactionTimeTest({ onComplete }: TestGameProps) {
   const [phase, setPhase] = useState<Phase>('idle');
   const [attempts, setAttempts] = useState<number[]>([]);
-  const [round, setRound] = useState(1);
   const startRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const submittedRef = useRef(false);
 
-  const avg = useMemo(() => {
-    if (attempts.length === 0) return 0;
-    return attempts.reduce((sum, value) => sum + value, 0) / attempts.length;
-  }, [attempts]);
-
   useEffect(() => {
-    if (attempts.length !== TOTAL_ATTEMPTS || submittedRef.current) return;
+    if (attempts.length < TOTAL_ATTEMPTS || submittedRef.current) return;
     submittedRef.current = true;
+    const finalAttempts = attempts.slice(0, TOTAL_ATTEMPTS);
+    const finalAverage =
+      finalAttempts.reduce((sum, value) => sum + value, 0) / Math.max(1, finalAttempts.length);
     onComplete({
-      score: avg,
+      score: finalAverage,
       unit: 'ms',
       metadata: {
-        attempts,
+        attempts: finalAttempts,
       },
-      label: `Average ${Math.round(avg)} ms`,
+      label: `Average ${Math.round(finalAverage)} ms`,
     });
-  }, [attempts, avg, onComplete]);
+  }, [attempts, onComplete]);
 
   useEffect(() => {
     return () => {
@@ -42,6 +39,7 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
   }, []);
 
   const startRound = () => {
+    if (submittedRef.current || attempts.length >= TOTAL_ATTEMPTS) return;
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
     setPhase('wait');
     startRef.current = null;
@@ -57,6 +55,8 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
   };
 
   const handleClick = () => {
+    if (submittedRef.current || attempts.length >= TOTAL_ATTEMPTS) return;
+
     if (phase === 'idle' || phase === 'too-soon') {
       startRound();
       return;
@@ -73,12 +73,9 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
 
     if (phase === 'go' && startRef.current) {
       const delta = performance.now() - startRef.current;
-      setAttempts((prev) => [...prev, delta]);
-      const nextRound = round + 1;
-      setRound(nextRound);
-      if (nextRound <= TOTAL_ATTEMPTS) {
-        setPhase('idle');
-      }
+      setAttempts((prev) => (prev.length >= TOTAL_ATTEMPTS ? prev : [...prev, delta]));
+      startRef.current = null;
+      setPhase('idle');
     }
   };
 
