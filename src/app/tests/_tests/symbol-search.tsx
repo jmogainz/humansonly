@@ -98,15 +98,6 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
     setRound(makeRound());
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
@@ -117,55 +108,64 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
         <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} status={accuracy > 80 ? 'success' : accuracy > 50 ? 'neutral' : 'danger'} />
       </div>
 
-      <div
-        className="game-grid-container"
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: 'clamp(0.5rem, 3vw, 1rem)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: 'clamp(0.5rem, 4vh, 1rem)',
-          background: 'var(--surface-raised)',
-        }}
-      >
-        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>Does the target appear in the row?</p>
-        <h2 style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: 'clamp(2rem, 10vw, 3rem)', textAlign: 'center' }}>{round.target}</h2>
-        <div 
-          style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 'clamp(0.3rem, 1.5vw, 0.55rem)', 
-            justifyContent: 'center',
-            width: '100%',
-            maxWidth: '320px',
-            marginInline: 'auto'
-          }}
-        >
-          {round.row.map((symbol, index) => (
-            <span
-              key={`${symbol}-${index}`}
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                aspectRatio: '1 / 1',
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: 'clamp(1rem, 5vw, 1.3rem)',
-                background: 'var(--surface)',
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <>
+          <div
+            className="game-grid-container"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              padding: 'clamp(0.5rem, 3vw, 1rem)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 'clamp(0.5rem, 4vh, 1rem)',
+              background: 'var(--surface-raised)',
+            }}
+          >
+            <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>Does the target appear in the row?</p>
+            <h2 style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: 'clamp(2rem, 10vw, 3rem)', textAlign: 'center' }}>{round.target}</h2>
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 'clamp(0.3rem, 1.5vw, 0.55rem)', 
+                justifyContent: 'center',
+                width: '100%',
+                maxWidth: '320px',
+                marginInline: 'auto'
               }}
             >
-              {symbol}
-            </span>
-          ))}
-        </div>
-      </div>
+              {round.row.map((symbol, index) => (
+                <span
+                  key={`${symbol}-${index}`}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    aspectRatio: '1 / 1',
+                    display: 'grid',
+                    placeItems: 'center',
+                    fontSize: 'clamp(1rem, 5vw, 1.3rem)',
+                    background: 'var(--surface)',
+                  }}
+                >
+                  {symbol}
+                </span>
+              ))}
+            </div>
+          </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.7rem', flexShrink: 0 }}>
-        <button className="button" type="button" onClick={() => answer(true)}>YES</button>
-        <button className="button buttonGhost" type="button" onClick={() => answer(false)}>NO</button>
-      </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.7rem', flexShrink: 0 }}>
+            <button className="button" type="button" onClick={() => answer(true)}>YES</button>
+            <button className="button buttonGhost" type="button" onClick={() => answer(false)}>NO</button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

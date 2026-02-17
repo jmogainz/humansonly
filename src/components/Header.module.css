@@ -36,6 +36,10 @@
   gap: 1rem;
 }
 
+.mobileActions {
+  display: none;
+}
+
 .navLink {
   text-decoration: none;
   color: var(--text-muted);
@@ -48,13 +52,18 @@
   color: var(--accent);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .header {
     padding: 0 0.75rem;
   }
 
   .nav {
-    gap: 0.5rem;
+    display: none;
+  }
+
+  .mobileActions {
+    display: flex;
+    align-items: center;
   }
 
   .navLink {

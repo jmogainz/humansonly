@@ -173,7 +173,7 @@ export default function TestStatsShareCard({
         await navigator.share({
           files: [file],
           title: `HumansOnly - ${test.name}`,
-          text: `Check out my ${test.name} stats on https://tryhumansonly.com`,
+          text: `Check out my ${test.name} stats on tryhumansonly.com`,
         });
       } else {
         const url = URL.createObjectURL(blob);

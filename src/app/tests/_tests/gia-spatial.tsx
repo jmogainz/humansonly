@@ -148,15 +148,6 @@ export default function GiaSpatialTest({ definition, onComplete }: TestGameProps
     setRound(makeRound());
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description="Determine how many boxes contain the same letter (rotated is OK, mirrored is not). You have 2 minutes."
-        onStart={handleStart}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
@@ -167,51 +158,60 @@ export default function GiaSpatialTest({ definition, onComplete }: TestGameProps
         <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
       </div>
 
-      <div style={{ flexShrink: 0 }}>
-        <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)' }}>How many boxes have the same letter?</h2>
-        <p style={{ margin: '0.2rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-          Rotated letters are considered the same, while mirrored letters are not.
-        </p>
-      </div>
+      {!started ? (
+        <TestStartScreen
+          description="Determine how many boxes contain the same letter (rotated is OK, mirrored is not). You have 2 minutes."
+          onStart={handleStart}
+        />
+      ) : (
+        <>
+          <div style={{ flexShrink: 0 }}>
+            <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)' }}>How many boxes have the same letter?</h2>
+            <p style={{ margin: '0.2rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              Rotated letters are considered the same, while mirrored letters are not.
+            </p>
+          </div>
 
-      <div className="game-grid-container">
-        <div 
-          className="game-grid"
-          style={{ 
-            gridTemplateColumns: `repeat(${COLUMN_COUNT}, minmax(0, 1fr))`, 
-            gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
-            aspectRatio: 'auto',
-            height: '100%',
-            maxWidth: '600px'
-          }}
-        >
-          {round.columns.map((column, index) => (
-            <div
-              key={index}
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                display: 'grid',
-                placeItems: 'center',
-                gap: 'clamp(0.5rem, 5cqh, 1.3rem)',
-                padding: 'clamp(0.5rem, 4cqh, 1rem) 0.4rem',
-                background: 'var(--surface-raised)',
+          <div className="game-grid-container">
+            <div 
+              className="game-grid"
+              style={{ 
+                gridTemplateColumns: `repeat(${COLUMN_COUNT}, minmax(0, 1fr))`, 
+                gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
+                aspectRatio: 'auto',
+                height: '100%',
+                maxWidth: '600px'
               }}
             >
-              <LetterView value={column.top} />
-              <LetterView value={column.bottom} />
+              {round.columns.map((column, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    display: 'grid',
+                    placeItems: 'center',
+                    gap: 'clamp(0.5rem, 5cqh, 1.3rem)',
+                    padding: 'clamp(0.5rem, 4cqh, 1rem) 0.4rem',
+                    background: 'var(--surface-raised)',
+                  }}
+                >
+                  <LetterView value={column.top} />
+                  <LetterView value={column.bottom} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLUMN_COUNT + 1}, minmax(0, 1fr))`, gap: '0.6rem', flexShrink: 0, maxWidth: '400px', marginInline: 'auto', width: '100%' }}>
-        {Array.from({ length: COLUMN_COUNT + 1 }, (_, value) => (
-          <button key={value} type="button" className="button" onClick={() => answer(value)}>
-            {value}
-          </button>
-        ))}
-      </div>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLUMN_COUNT + 1}, minmax(0, 1fr))`, gap: '0.6rem', flexShrink: 0, maxWidth: '400px', marginInline: 'auto', width: '100%' }}>
+            {Array.from({ length: COLUMN_COUNT + 1 }, (_, value) => (
+              <button key={value} type="button" className="button" onClick={() => answer(value)}>
+                {value}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

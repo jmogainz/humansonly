@@ -59,15 +59,6 @@ export default function TypingTest({ definition, onComplete }: TestGameProps) {
     return (correct / 5) / minutes;
   }, [correct, elapsedMs]);
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1rem)', flexWrap: 'wrap', flexShrink: 0 }}>
@@ -75,85 +66,94 @@ export default function TypingTest({ definition, onComplete }: TestGameProps) {
         <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} />
       </div>
 
-      <div
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: 'clamp(0.75rem, 3vw, 1.25rem)',
-          lineHeight: 1.5,
-          fontFamily: 'var(--font-mono)',
-          fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
-          background: 'var(--surface-raised)',
-          flexShrink: 0,
-          maxHeight: '40%',
-          overflowY: 'auto'
-        }}
-      >
-        {passage.split('').map((char, index) => {
-          const typedChar = typed[index];
-          const isCurrent = index === typed.length;
-          const isCorrect = typedChar === char;
-          const isWrong = typedChar !== undefined && typedChar !== char;
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <>
+          <div
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
+              padding: 'clamp(0.75rem, 3vw, 1.25rem)',
+              lineHeight: 1.5,
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
+              background: 'var(--surface-raised)',
+              flexShrink: 0,
+              maxHeight: '40%',
+              overflowY: 'auto'
+            }}
+          >
+            {passage.split('').map((char, index) => {
+              const typedChar = typed[index];
+              const isCurrent = index === typed.length;
+              const isCorrect = typedChar === char;
+              const isWrong = typedChar !== undefined && typedChar !== char;
 
-          return (
-            <span
-              key={index}
-              style={{
-                color: isCorrect ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--text-muted)',
-                background: isCurrent ? 'color-mix(in srgb, var(--accent) 24%, transparent)' : 'transparent',
-                borderRadius: '3px',
-              }}
-            >
-              {char}
-            </span>
-          );
-        })}
-      </div>
+              return (
+                <span
+                  key={index}
+                  style={{
+                    color: isCorrect ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--text-muted)',
+                    background: isCurrent ? 'color-mix(in srgb, var(--accent) 24%, transparent)' : 'transparent',
+                    borderRadius: '3px',
+                  }}
+                >
+                  {char}
+                </span>
+              );
+            })}
+          </div>
 
-      <textarea
-        value={typed}
-        onPaste={(event) => {
-          event.preventDefault();
-        }}
-        onChange={(event) => {
-          const next = event.target.value;
-          if (!startRef.current && next.length > 0) {
-            startRef.current = performance.now();
-          }
-          if (done) return;
-          setTyped(next);
+          <textarea
+            value={typed}
+            onPaste={(event) => {
+              event.preventDefault();
+            }}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (!startRef.current && next.length > 0) {
+                startRef.current = performance.now();
+              }
+              if (done) return;
+              setTyped(next);
 
-          if (next.length >= passage.length && !done) {
-            setDone(true);
-            const completedElapsed = performance.now() - (startRef.current ?? performance.now());
-            const minutes = completedElapsed / 60_000;
-            const completedCorrect = countCorrect(passage, next.slice(0, passage.length));
-            const finalWpm = minutes > 0 ? (completedCorrect / 5) / minutes : 0;
-            const finalAccuracy = next.length ? (completedCorrect / next.length) * 100 : 0;
-            onComplete({
-              score: finalWpm,
-              unit: 'wpm',
-              metadata: {
-                accuracy: finalAccuracy,
-                elapsedMs: completedElapsed,
-                correctChars: completedCorrect,
-              },
-              label: `${finalWpm.toFixed(1)} WPM`,
-            });
-          }
-        }}
-        rows={4}
-        placeholder="Start typing here..."
-        autoCapitalize="off"
-        autoCorrect="off"
-        spellCheck={false}
-        style={{ fontFamily: 'var(--font-mono)', flex: '1', minHeight: '120px' }}
-        autoFocus
-      />
+              if (next.length >= passage.length && !done) {
+                setDone(true);
+                const completedElapsed = performance.now() - (startRef.current ?? performance.now());
+                const minutes = completedElapsed / 60_000;
+                const completedCorrect = countCorrect(passage, next.slice(0, passage.length));
+                const finalWpm = minutes > 0 ? (completedCorrect / 5) / minutes : 0;
+                const finalAccuracy = next.length ? (completedCorrect / next.length) * 100 : 0;
+                onComplete({
+                  score: finalWpm,
+                  unit: 'wpm',
+                  metadata: {
+                    accuracy: finalAccuracy,
+                    elapsedMs: completedElapsed,
+                    correctChars: completedCorrect,
+                  },
+                  label: `${finalWpm.toFixed(1)} WPM`,
+                });
+              }
+            }}
+            rows={4}
+            placeholder="Start typing here..."
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            style={{ fontFamily: 'var(--font-mono)', flex: '1', minHeight: '120px' }}
+            autoFocus
+          />
 
-      <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: '1.4', flexShrink: 0 }}>
-        Timer starts on first keystroke. Finish the full paragraph to submit score. Pasting is disabled.
-      </small>
+          <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: '1.4', flexShrink: 0 }}>
+            Timer starts on first keystroke. Finish the full paragraph to submit score. Pasting is disabled.
+          </small>
+        </>
+      )}
     </div>
   );
 }

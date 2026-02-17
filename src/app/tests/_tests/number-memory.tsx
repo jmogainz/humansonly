@@ -38,69 +38,69 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
     setPhase('show');
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container" style={{ alignItems: 'center', textAlign: 'center' }}>
-      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{prompt}</p>
-
-      <div
-        className="game-grid-container"
-        style={{
-          fontSize: 'clamp(2rem, 10vw, 4.5rem)',
-          fontFamily: 'var(--font-mono)',
-          minHeight: '4rem',
-        }}
-      >
-        {phase === 'show' ? (
-          <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
-        ) : (
-          <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{'•'.repeat(Math.min(12, digits))}</div>
-        )}
-      </div>
-
-      {phase === 'input' ? (
-        <form
-          style={{ display: 'grid', gap: '0.6rem', width: 'min(420px, 100%)', flexShrink: 0 }}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (guess.trim() === target) {
-              nextLevel(digits + 1);
-              return;
-            }
-            const bestDigits = Math.max(0, digits - 1);
-            onComplete({
-              score: bestDigits,
-              unit: 'digits',
-              metadata: {
-                target,
-                guess,
-                attemptedDigits: digits,
-                bestDigits,
-              },
-              label: `${bestDigits} digits`,
-            });
-          }}
-        >
-          <input
-            autoFocus
-            inputMode="numeric"
-            value={guess}
-            onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
-            placeholder="Type number"
-            style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '1.3rem' }}
-          />
-          <button className="button" type="submit">Submit</button>
-        </form>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
       ) : (
-        <div style={{ height: '80px', flexShrink: 0 }} />
+        <>
+          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{prompt}</p>
+
+          <div
+            className="game-grid-container"
+            style={{
+              fontSize: 'clamp(2rem, 10vw, 4.5rem)',
+              fontFamily: 'var(--font-mono)',
+              minHeight: '4rem',
+            }}
+          >
+            {phase === 'show' ? (
+              <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
+            ) : (
+              <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{'•'.repeat(Math.min(12, digits))}</div>
+            )}
+          </div>
+
+          {phase === 'input' ? (
+            <form
+              style={{ display: 'grid', gap: '0.6rem', width: 'min(420px, 100%)', flexShrink: 0 }}
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (guess.trim() === target) {
+                  nextLevel(digits + 1);
+                  return;
+                }
+                const bestDigits = Math.max(0, digits - 1);
+                onComplete({
+                  score: bestDigits,
+                  unit: 'digits',
+                  metadata: {
+                    target,
+                    guess,
+                    attemptedDigits: digits,
+                    bestDigits,
+                  },
+                  label: `${bestDigits} digits`,
+                });
+              }}
+            >
+              <input
+                autoFocus
+                inputMode="numeric"
+                value={guess}
+                onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
+                placeholder="Type number"
+                style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '1.3rem' }}
+              />
+              <button className="button" type="submit">Submit</button>
+            </form>
+          ) : (
+            <div style={{ height: '80px', flexShrink: 0 }} />
+          )}
+        </>
       )}
     </div>
   );

@@ -81,15 +81,6 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
     }
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   const remaining = TOTAL_ATTEMPTS - attempts.length;
 
   const message =
@@ -108,36 +99,43 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleClick}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            handleClick();
-          }
-        }}
-        style={{
-          width: '100%',
-          flex: '1',
-          borderRadius: '14px',
-          background: color,
-          display: 'grid',
-          placeItems: 'center',
-          textAlign: 'center',
-          cursor: 'pointer',
-          transition: 'background 0ms ease',
-          minHeight: 0
-        }}
-      >
-        <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
-          <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 2.5rem)' }}>{message}</h2>
-          <p style={{ margin: 0, color: 'var(--phase-text)', opacity: 0.95, fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
-            {attempts.length}/{TOTAL_ATTEMPTS} rounds complete
-          </p>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              handleClick();
+            }
+          }}
+          style={{
+            width: '100%',
+            flex: '1',
+            borderRadius: '14px',
+            background: color,
+            display: 'grid',
+            placeItems: 'center',
+            textAlign: 'center',
+            cursor: 'pointer',
+            transition: 'background 0ms ease',
+            minHeight: 0
+          }}
+        >
+          <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
+            <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 2.5rem)' }}>{message}</h2>
+            <p style={{ margin: 0, color: 'var(--phase-text)', opacity: 0.95, fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
+              {attempts.length}/{TOTAL_ATTEMPTS} rounds complete
+            </p>
+          </div>
         </div>
-      </div>
+      )}
 
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flexShrink: 0 }}>
         {attempts.map((attempt, index) => (

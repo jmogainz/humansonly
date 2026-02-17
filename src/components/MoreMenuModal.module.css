@@ -1,0 +1,94 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1240;
+  background: transparent;
+}
+
+.dropdown {
+  position: fixed;
+  z-index: 1250;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  animation: dropdownIn 0.15s ease-out;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  box-shadow: var(--card-shadow-hover);
+  min-width: 180px;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+}
+
+.menuItem:hover {
+  background: var(--surface-raised);
+  color: var(--accent);
+}
+
+.menuItem:active {
+  transform: scale(0.98);
+}
+
+.menuItem svg {
+  color: var(--text-muted);
+  transition: color 0.1s;
+}
+
+.menuItem:hover svg {
+  color: var(--accent);
+}
+
+.primary {
+  color: var(--accent);
+}
+
+.primary svg {
+  color: var(--accent);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .dropdown {
+    min-width: 200px;
+  }
+}

@@ -76,6 +76,7 @@
 .activityChart {
   margin-top: 0.8rem;
   height: 220px;
+  touch-action: none;
 }
 
 .matrixSection {
@@ -149,7 +150,7 @@
   box-shadow: var(--card-shadow-hover);
 }
 
-.card:active {
+.card:active:not(:has(.miniChartFrame:active, .detailedChartFrame:active)) {
   transform: translateY(0) scale(0.985);
   transition-duration: 0.1s;
 }
@@ -158,7 +159,7 @@
   transform: translateY(-2px) !important;
 }
 
-.cardExpanded:active {
+.cardExpanded:active:not(:has(.miniChartFrame:active, .detailedChartFrame:active)) {
   transform: translateY(0) scale(0.995) !important;
 }
 
@@ -221,6 +222,8 @@
   border-radius: calc(var(--radius-sm) + 2px);
   background: var(--surface);
   padding: 0.25rem;
+  touch-action: none;
+  pointer-events: auto;
 }
 
 .detailedChartFrame {
@@ -231,6 +234,8 @@
   border-radius: var(--radius);
   background: var(--surface);
   padding: 1rem 0.5rem;
+  touch-action: none;
+  pointer-events: auto;
 }
 
 .granularLegend {

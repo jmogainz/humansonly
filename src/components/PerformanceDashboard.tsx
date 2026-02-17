@@ -333,7 +333,13 @@ export default function PerformanceDashboard({
                     </div>
                   </div>
 
-                  <div className={isExpanded ? styles.detailedChartFrame : styles.miniChartFrame}>
+                  <div 
+                    className={isExpanded ? styles.detailedChartFrame : styles.miniChartFrame}
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
+                  >
                     {points.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={points} margin={{ top: isExpanded ? 20 : 8, right: isExpanded ? 20 : 0, left: isExpanded ? 0 : 0, bottom: isExpanded ? 10 : 0 }}>

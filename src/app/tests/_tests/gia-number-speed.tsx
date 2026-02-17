@@ -109,15 +109,6 @@ export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameP
     setRound(makeRound());
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description="Pick the median or the number furthest from it as requested. You have 2 minutes."
-        onStart={handleStart}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
@@ -128,36 +119,45 @@ export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameP
         <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
       </div>
 
-      <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>{round.question}</h2>
+      {!started ? (
+        <TestStartScreen
+          description="Pick the median or the number furthest from it as requested. You have 2 minutes."
+          onStart={handleStart}
+        />
+      ) : (
+        <>
+          <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>{round.question}</h2>
 
-      <div 
-        className="game-grid-container"
-        style={{ alignItems: 'flex-start' }}
-      >
-        <div 
-          className="game-grid"
-          style={{ 
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
-            gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
-            aspectRatio: 'auto',
-            height: 'auto',
-            width: '100%',
-            maxWidth: '480px'
-          }}
-        >
-          {round.options.map((value) => (
-            <button
-              key={value}
-              type="button"
-              className="game-tile"
-              style={{ fontSize: 'clamp(1.2rem, 6cqw, 1.8rem)', padding: '1rem 0' }}
-              onClick={() => answer(value)}
+          <div 
+            className="game-grid-container"
+            style={{ alignItems: 'flex-start' }}
+          >
+            <div 
+              className="game-grid"
+              style={{ 
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
+                gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
+                aspectRatio: 'auto',
+                height: 'auto',
+                width: '100%',
+                maxWidth: '480px'
+              }}
             >
-              {value}
-            </button>
-          ))}
-        </div>
-      </div>
+              {round.options.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="game-tile"
+                  style={{ fontSize: 'clamp(1.2rem, 6cqw, 1.8rem)', padding: '1rem 0' }}
+                  onClick={() => answer(value)}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

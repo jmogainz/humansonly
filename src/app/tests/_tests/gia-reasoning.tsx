@@ -100,28 +100,37 @@ function makeRoundRaw(): Round {
   const n = isName1Positive ? name2 : name1;
 
   const statementTemplates = [
+    // Direct
     () => `${p} is ${pair.posComp} than ${n}.`,
     () => `${n} is ${pair.negComp} than ${p}.`,
+    () => `${p} is clearly ${pair.posComp} than ${n}.`,
+    () => `${n} is clearly ${pair.negComp} than ${p}.`,
+    // Negation
     () => `${n} is not as ${pair.pos} as ${p}.`,
     () => `${p} is not as ${pair.neg} as ${n}.`,
-    () => `If ${n} is ${pair.pos}, then ${p} is even ${pair.posComp}.`,
-    () => `If ${p} is ${pair.neg}, then ${n} is even ${pair.negComp}.`,
-    () => `Compared to ${n}, ${p} is ${pair.posComp}.`,
-    () => `Compared to ${p}, ${n} is ${pair.negComp}.`,
-    () => `Between ${p} and ${n}, ${p} is the ${pair.posComp} one.`,
-    () => `Between ${p} and ${n}, ${n} is the ${pair.negComp} one.`,
+    () => `${n} is certainly not as ${pair.pos} as ${p}.`,
+    () => `${p} is certainly not as ${pair.neg} as ${n}.`,
+    // Synonym
+    () => `${p} is less ${pair.neg} than ${n}.`,
+    () => `${n} is less ${pair.pos} than ${p}.`,
+    () => `${p} is truly less ${pair.neg} than ${n}.`,
+    () => `${n} is truly less ${pair.pos} than ${p}.`,
   ];
 
   const statementIndex = randomInt(0, statementTemplates.length - 1);
   const statement = statementTemplates[statementIndex]();
 
   const questionTemplates = [
+    // Direct
     { text: `Who is ${pair.posComp}?`, answer: p },
     { text: `Who is ${pair.negComp}?`, answer: n },
     { text: `Which one is ${pair.posComp}?`, answer: p },
     { text: `Which one is ${pair.negComp}?`, answer: n },
+    // Synonym
     { text: `Who is less ${pair.pos}?`, answer: n },
     { text: `Who is less ${pair.neg}?`, answer: p },
+    { text: `Which one is less ${pair.pos}?`, answer: n },
+    { text: `Which one is less ${pair.neg}?`, answer: p },
   ];
 
   const questionObj = questionTemplates[randomInt(0, questionTemplates.length - 1)];
@@ -191,15 +200,6 @@ export default function GiaReasoningTest({ definition, onComplete }: TestGamePro
     timer.start();
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description="Read each statement, then answer the question. You have 2 minutes."
-        onStart={handleStart}
-      />
-    );
-  }
-
   const answer = (picked: string) => {
     if (finished || submittedRef.current) return;
     if (picked === round.answer) {
@@ -225,52 +225,59 @@ export default function GiaReasoningTest({ definition, onComplete }: TestGamePro
         <ScoreDisplay label="Net" value={score} status={netStatus} />
       </div>
 
-      <div
-        className="game-grid-container"
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: 'clamp(1rem, 5vw, 1.5rem)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: 'clamp(1rem, 4vh, 2rem)',
-          background: 'var(--surface-raised)',
-        }}
-      >
-        {phase === 'statement' ? (
-          <div style={{ textAlign: 'center', display: 'grid', gap: '1rem', width: '100%' }}>
-            <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Statement</small>
-            <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 2.2rem)' }}>{round.statement}</h2>
-            <button 
-              type="button" 
-              className="button" 
-              onClick={() => setPhase('question')}
-              style={{ padding: '0.8rem 2rem', fontSize: '1rem', marginInline: 'auto' }}
-            >
-              Show Question
-            </button>
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', display: 'grid', gap: '1rem', width: '100%' }}>
-            <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Question</small>
-            <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 2.2rem)' }}>{round.question}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'clamp(0.5rem, 2vw, 1rem)', maxWidth: '500px', marginInline: 'auto', width: '100%' }}>
-              {round.options.map((name) => (
-                <button 
-                  key={name} 
-                  type="button" 
-                  className="button" 
-                  onClick={() => answer(name)}
-                  style={{ padding: '0.8rem 1rem', fontSize: '1rem' }}
-                >
-                  {name}
-                </button>
-              ))}
+      {!started ? (
+        <TestStartScreen
+          description="Read each statement, then answer the question. You have 2 minutes."
+          onStart={handleStart}
+        />
+      ) : (
+        <div
+          className="game-grid-container"
+          style={{
+            border: '1px solid var(--border)',
+            borderRadius: '12px',
+            padding: 'clamp(1rem, 5vw, 1.5rem)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 'clamp(1rem, 4vh, 2rem)',
+            background: 'var(--surface-raised)',
+          }}
+        >
+          {phase === 'statement' ? (
+            <div style={{ textAlign: 'center', display: 'grid', gap: '1rem', width: '100%' }}>
+              <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Statement</small>
+              <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 2.2rem)' }}>{round.statement}</h2>
+              <button 
+                type="button" 
+                className="button" 
+                onClick={() => setPhase('question')}
+                style={{ padding: '0.8rem 2rem', fontSize: '1rem', marginInline: 'auto' }}
+              >
+                Show Question
+              </button>
             </div>
-          </div>
-        )}
-      </div>
+          ) : (
+            <div style={{ textAlign: 'center', display: 'grid', gap: '1rem', width: '100%' }}>
+              <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Question</small>
+              <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 2.2rem)' }}>{round.question}</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 'clamp(0.5rem, 2vw, 1rem)', maxWidth: '500px', marginInline: 'auto', width: '100%' }}>
+                {round.options.map((name) => (
+                  <button 
+                    key={name} 
+                    type="button" 
+                    className="button" 
+                    onClick={() => answer(name)}
+                    style={{ padding: '0.8rem 1rem', fontSize: '1rem' }}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

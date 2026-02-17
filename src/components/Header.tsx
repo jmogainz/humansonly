@@ -1,13 +1,21 @@
+'use client';
+
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import AuthButton from './AuthButton';
 import ThemeToggle from './ThemeToggle';
 import Logo from './Logo';
+import MenuButton from './MenuButton';
+import MoreMenuModal from './MoreMenuModal';
 import styles from './Header.module.css';
 
 export default function Header() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
   return (
     <header className={styles.header}>
-      <Link href="/" className={styles.brand}>
+      <Link href="/" className={styles.brand} onClick={() => setIsMenuOpen(false)}>
         <Logo className={styles.logo} />
       </Link>
 
@@ -16,6 +24,20 @@ export default function Header() {
         <ThemeToggle />
         <AuthButton />
       </nav>
+
+      <div className={styles.mobileActions}>
+        <MenuButton
+          ref={menuButtonRef}
+          isOpen={isMenuOpen}
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+        />
+      </div>
+
+      <MoreMenuModal
+        open={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        triggerButtonRef={menuButtonRef}
+      />
     </header>
   );
 }

@@ -90,15 +90,6 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
     setWord(pickNextWord(nextSeen, nextUsed, nextRound, word));
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
@@ -109,21 +100,30 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
         <LivesDisplay lives={lives} />
       </div>
 
-      <div
-        className="game-grid-container"
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: '14px',
-          background: 'var(--surface-raised)',
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: 'clamp(1.8rem, 8vw, 3.5rem)', fontFamily: 'var(--font-mono)', textAlign: 'center' }}>{word}</h2>
-      </div>
+      {started ? (
+        <>
+          <div
+            className="game-grid-container"
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: '14px',
+              background: 'var(--surface-raised)',
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: 'clamp(1.8rem, 8vw, 3.5rem)', fontFamily: 'var(--font-mono)', textAlign: 'center' }}>{word}</h2>
+          </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem', flexShrink: 0 }}>
-        <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
-        <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
-      </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem', flexShrink: 0 }}>
+            <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
+            <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
+          </div>
+        </>
+      ) : (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      )}
     </div>
   );
 }

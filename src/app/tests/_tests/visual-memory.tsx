@@ -83,15 +83,6 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
     evaluateSelection(nextSelected);
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   const total = gridSize * gridSize;
 
   return (
@@ -100,42 +91,52 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
         <LivesDisplay lives={lives} />
       </div>
-      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>
-        {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
-      </p>
 
-      <div className="game-grid-container">
-        <div
-          className="game-grid"
-          style={{
-            gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
-            gap: 'clamp(0.15rem, 1.2cqw, 0.45rem)',
-          }}
-        >
-          {Array.from({ length: total }, (_, index) => {
-            const isPattern = patternSet.has(index);
-            const wasSelected = selected.has(index);
-            return (
-              <button
-                key={index}
-                type="button"
-                className="game-tile"
-                onClick={() => handleClick(index)}
-                style={{
-                  background:
-                    phase === 'show' && isPattern
-                      ? 'var(--accent)'
-                      : wasSelected
-                        ? 'color-mix(in srgb, var(--accent) 45%, var(--surface-raised))'
-                        : 'var(--surface-raised)',
-                  cursor: phase === 'input' ? 'pointer' : 'default',
-                  borderRadius: 'clamp(4px, 1.5cqw, 10px)',
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <>
+          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>
+            {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
+          </p>
+
+          <div className="game-grid-container">
+            <div
+              className="game-grid"
+              style={{
+                gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+                gap: 'clamp(0.15rem, 1.2cqw, 0.45rem)',
+              }}
+            >
+              {Array.from({ length: total }, (_, index) => {
+                const isPattern = patternSet.has(index);
+                const wasSelected = selected.has(index);
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className="game-tile"
+                    onClick={() => handleClick(index)}
+                    style={{
+                      background:
+                        phase === 'show' && isPattern
+                          ? 'var(--accent)'
+                          : wasSelected
+                            ? 'color-mix(in srgb, var(--accent) 45%, var(--surface-raised))'
+                            : 'var(--surface-raised)',
+                      cursor: phase === 'input' ? 'pointer' : 'default',
+                      borderRadius: 'clamp(4px, 1.5cqw, 10px)',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

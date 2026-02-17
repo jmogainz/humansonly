@@ -181,7 +181,7 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
         await navigator.share({
           files: [file],
           title: 'HumansOnly GIA Profile',
-          text: 'Check out my GIA cognitive profile on https://tryhumansonly.com',
+          text: 'Check out my GIA cognitive profile on tryhumansonly.com',
         });
       } else {
         const url = URL.createObjectURL(blob);

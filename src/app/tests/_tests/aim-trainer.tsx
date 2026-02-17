@@ -96,15 +96,6 @@ export default function AimTrainerTest({ definition, onComplete }: TestGameProps
     setSpawnedAt(now);
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={handleStart}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
@@ -112,41 +103,48 @@ export default function AimTrainerTest({ definition, onComplete }: TestGameProps
         <ScoreDisplay label="Average" value={`${Math.round(average)} ms`} />
       </div>
 
-      <div
-        className="game-grid-container"
-        ref={arenaRef}
-        style={{
-          borderRadius: '14px',
-          border: '1px solid var(--border)',
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 70%, transparent), var(--surface))',
-          position: 'relative',
-          overflow: 'hidden',
-          display: 'block'
-        }}
-      >
-        {!finished ? (
-          <button
-            type="button"
-            onClick={handleHit}
-            aria-label="Target"
-            style={{
-              position: 'absolute',
-              left: `${target.x - TARGET_SIZE / 2}px`,
-              top: `${target.y - TARGET_SIZE / 2}px`,
-              width: `${TARGET_SIZE}px`,
-              height: `${TARGET_SIZE}px`,
-              borderRadius: '999px',
-              border: 'none',
-              cursor: 'crosshair',
-              background: 'radial-gradient(circle, #ffffff 0 24%, #e35a5a 25% 58%, #ffffff 59% 100%)',
-            }}
-          />
-        ) : (
-          <p style={{ margin: '1rem', color: 'var(--text-muted)' }}>
-            Run complete. Saving result...
-          </p>
-        )}
-      </div>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={handleStart}
+        />
+      ) : (
+        <div
+          className="game-grid-container"
+          ref={arenaRef}
+          style={{
+            borderRadius: '14px',
+            border: '1px solid var(--border)',
+            background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 70%, transparent), var(--surface))',
+            position: 'relative',
+            overflow: 'hidden',
+            display: 'block'
+          }}
+        >
+          {!finished ? (
+            <button
+              type="button"
+              onClick={handleHit}
+              aria-label="Target"
+              style={{
+                position: 'absolute',
+                left: `${target.x - TARGET_SIZE / 2}px`,
+                top: `${target.y - TARGET_SIZE / 2}px`,
+                width: `${TARGET_SIZE}px`,
+                height: `${TARGET_SIZE}px`,
+                borderRadius: '999px',
+                border: 'none',
+                cursor: 'crosshair',
+                background: 'radial-gradient(circle, #ffffff 0 24%, #e35a5a 25% 58%, #ffffff 59% 100%)',
+              }}
+            />
+          ) : (
+            <p style={{ margin: '1rem', color: 'var(--text-muted)' }}>
+              Run complete. Saving result...
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

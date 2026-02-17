@@ -83,7 +83,22 @@ export default function BestScoresList({ scores }: BestScoresListProps) {
               </div>
 
               <div className={styles.meta}>
-                <span className={styles.viewLink}>Global Rank &rarr;</span>
+                <span className={styles.viewLink}>
+                  <span className={styles.viewText}>Global Rank</span>
+                  <svg 
+                    className={styles.chevron} 
+                    width="14" 
+                    height="14" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2.5" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </span>
               </div>
             </Link>
           );

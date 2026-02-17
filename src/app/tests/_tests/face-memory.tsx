@@ -147,66 +147,66 @@ export default function FaceMemoryTest({ definition, onComplete }: TestGameProps
     [currentFace]
   );
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
         <ScoreDisplay label="Level" value={level} status="neutral" />
         <ScoreDisplay label="Correct" value={`${correct}/${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
-        {phase === 'study' ? <ScoreDisplay label="Study Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} /> : null}
+        {phase === 'study' && started ? <ScoreDisplay label="Study Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} /> : null}
       </div>
 
-      {phase === 'study' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', flex: 1, minHeight: 0 }}>
-          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Study these faces, then identify them in the next phase.</p>
-          <div 
-            style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(80px, 20vw, 140px), 1fr))', 
-              gap: 'clamp(0.4rem, 2vw, 0.7rem)', 
-              overflowY: 'auto',
-              flex: 1,
-              paddingRight: '4px'
-            }}
-          >
-            {studyFaceUris.map(({ faceId, src }) => (
-              <img
-                key={faceId}
-                src={src}
-                alt="Study face"
-                style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--border)' }}
-              />
-            ))}
-          </div>
-        </div>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
       ) : (
-        <div 
-          className="game-grid-container"
-          style={{ flexDirection: 'column', gap: 'clamp(0.5rem, 4vh, 1rem)' }}
-        >
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Face {testIndex + 1}/{levelState.testIds.length}
-          </p>
-          {currentFaceUri ? (
-            <img
-              src={currentFaceUri}
-              alt="Face memory test"
-              style={{ width: 'min(240px, 70cqh, 70cqw)', height: 'auto', aspectRatio: '220/260', borderRadius: '14px', border: '1px solid var(--border)' }}
-            />
-          ) : null}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(400px, 100%)', gap: '0.7rem' }}>
-            <button className="button" type="button" onClick={() => handleAnswer(true)}>SEEN</button>
-            <button className="button buttonGhost" type="button" onClick={() => handleAnswer(false)}>NEW</button>
-          </div>
-        </div>
+        <>
+          {phase === 'study' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', flex: 1, minHeight: 0 }}>
+              <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Study these faces, then identify them in the next phase.</p>
+              <div 
+                style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(80px, 20vw, 140px), 1fr))', 
+                  gap: 'clamp(0.4rem, 2vw, 0.7rem)', 
+                  overflowY: 'auto',
+                  flex: 1,
+                  paddingRight: '4px'
+                }}
+              >
+                {studyFaceUris.map(({ faceId, src }) => (
+                  <img
+                    key={faceId}
+                    src={src}
+                    alt="Study face"
+                    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--border)' }}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="game-grid-container"
+              style={{ flexDirection: 'column', gap: 'clamp(0.5rem, 4vh, 1rem)' }}
+            >
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                Face {testIndex + 1}/{levelState.testIds.length}
+              </p>
+              {currentFaceUri ? (
+                <img
+                  src={currentFaceUri}
+                  alt="Face memory test"
+                  style={{ width: 'min(240px, 70cqh, 70cqw)', height: 'auto', aspectRatio: '220/260', borderRadius: '14px', border: '1px solid var(--border)' }}
+                />
+              ) : null}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(400px, 100%)', gap: '0.7rem' }}>
+                <button className="button" type="button" onClick={() => handleAnswer(true)}>SEEN</button>
+                <button className="button buttonGhost" type="button" onClick={() => handleAnswer(false)}>NEW</button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

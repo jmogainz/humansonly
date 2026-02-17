@@ -56,46 +56,47 @@ export default function HueTest({ definition, onComplete }: TestGameProps) {
     });
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <strong style={{ fontFamily: 'var(--font-mono)', flexShrink: 0 }}>Level {level}</strong>
-      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Click the tile with a slightly different hue.</p>
 
-      <div className="game-grid-container">
-        <div
-          className="game-grid"
-          style={{
-            gridTemplateColumns: `repeat(${round.grid}, minmax(0, 1fr))`,
-            gap: 'clamp(0.2rem, 1.5cqw, 0.5rem)',
-          }}
-        >
-          {tiles.map((index) => {
-            const hue = index === round.oddIndex ? round.oddHue : round.hue;
-            return (
-              <button
-                key={index}
-                type="button"
-                className="game-tile"
-                onClick={() => pick(index)}
-                style={{
-                  border: '1px solid color-mix(in srgb, hsl(0 0% 0%) 16%, transparent)',
-                  background: `hsl(${hue} 72% 52%)`,
-                  borderRadius: 'clamp(4px, 1.5cqw, 10px)',
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <>
+          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Click the tile with a slightly different hue.</p>
+
+          <div className="game-grid-container">
+            <div
+              className="game-grid"
+              style={{
+                gridTemplateColumns: `repeat(${round.grid}, minmax(0, 1fr))`,
+                gap: 'clamp(0.2rem, 1.5cqw, 0.5rem)',
+              }}
+            >
+              {tiles.map((index) => {
+                const hue = index === round.oddIndex ? round.oddHue : round.hue;
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className="game-tile"
+                    onClick={() => pick(index)}
+                    style={{
+                      border: '1px solid color-mix(in srgb, hsl(0 0% 0%) 16%, transparent)',
+                      background: `hsl(${hue} 72% 52%)`,
+                      borderRadius: 'clamp(4px, 1.5cqw, 10px)',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

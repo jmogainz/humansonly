@@ -80,53 +80,54 @@ export default function SequenceMemoryTest({ definition, onComplete }: TestGameP
     setInputIndex((prev) => prev + 1);
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {sequence.length}</strong>
-        <small style={{ color: 'var(--text-muted)' }}>
-          {phase === 'show' ? 'Watch the sequence' : `Repeat from ${inputIndex + 1}/${sequence.length}`}
-        </small>
       </div>
 
-      <div className="game-grid-container">
-        <div
-          className="game-grid"
-          style={{
-            gridTemplateColumns: `repeat(${GRID}, minmax(0, 1fr))`,
-            gap: 'clamp(0.25rem, 2cqw, 0.6rem)',
-          }}
-        >
-          {Array.from({ length: GRID * GRID }, (_, index) => {
-            const active = activeCell === index;
-            return (
-              <button
-                key={index}
-                type="button"
-                className="game-tile"
-                onClick={() => handleClick(index)}
-                style={{
-                  background: active
-                    ? 'color-mix(in srgb, var(--accent) 50%, var(--bg))'
-                    : 'var(--surface-raised)',
-                  boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
-                  cursor: phase === 'input' ? 'pointer' : 'default',
-                  borderRadius: 'clamp(6px, 2cqw, 12px)',
-                }}
-              />
-            );
-          })}
-        </div>
-      </div>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <>
+          <small style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+            {phase === 'show' ? 'Watch the sequence' : `Repeat from ${inputIndex + 1}/${sequence.length}`}
+          </small>
+
+          <div className="game-grid-container">
+            <div
+              className="game-grid"
+              style={{
+                gridTemplateColumns: `repeat(${GRID}, minmax(0, 1fr))`,
+                gap: 'clamp(0.25rem, 2cqw, 0.6rem)',
+              }}
+            >
+              {Array.from({ length: GRID * GRID }, (_, index) => {
+                const active = activeCell === index;
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className="game-tile"
+                    onClick={() => handleClick(index)}
+                    style={{
+                      background: active
+                        ? 'color-mix(in srgb, var(--accent) 50%, var(--bg))'
+                        : 'var(--surface-raised)',
+                      boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
+                      cursor: phase === 'input' ? 'pointer' : 'default',
+                      borderRadius: 'clamp(6px, 2cqw, 12px)',
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

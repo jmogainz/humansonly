@@ -292,74 +292,75 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
     setSelected(next);
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', flexShrink: 0 }}>
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
-        <small style={{ color: 'var(--text-muted)' }}>
-          {phase === 'highlight'
-            ? `Memorize ${targetCount} targets`
-            : phase === 'moving'
-              ? 'Track while circles move'
-              : `Select ${targetCount} targets, then submit`}
-        </small>
       </div>
 
-      <div className="game-grid-container">
-        <canvas
-          ref={canvasRef}
-          width={arena.width}
-          height={arena.height}
-          onPointerDown={handleCanvasPointerDown}
-          style={{
-            width: '100%',
-            height: '100%',
-            maxWidth: `${MAX_WIDTH}px`,
-            maxHeight: `${MAX_HEIGHT}px`,
-            margin: '0 auto',
-            borderRadius: '12px',
-            border: '1px solid var(--border)',
-            cursor: phase === 'select' ? 'pointer' : 'default',
-            background: 'var(--surface-raised)',
-            touchAction: 'manipulation',
-          }}
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
         />
-      </div>
-      {phase === 'select' ? (
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
-          <small style={{ color: 'var(--text-muted)' }}>
-            Selected {selected.size}/{targetCount}
+      ) : (
+        <>
+          <small style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
+            {phase === 'highlight'
+              ? `Memorize ${targetCount} targets`
+              : phase === 'moving'
+                ? 'Track while circles move'
+                : `Select ${targetCount} targets, then submit`}
           </small>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              type="button"
-              className="button buttonGhost"
-              onClick={() => setSelected(new Set())}
-              style={{ padding: '0.5rem 1rem' }}
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              className="button"
-              disabled={selected.size !== targetCount}
-              onClick={() => evaluateSelection(selected)}
-              style={{ padding: '0.5rem 1.5rem' }}
-            >
-              Submit
-            </button>
+
+          <div className="game-grid-container">
+            <canvas
+              ref={canvasRef}
+              width={arena.width}
+              height={arena.height}
+              onPointerDown={handleCanvasPointerDown}
+              style={{
+                width: '100%',
+                height: '100%',
+                maxWidth: `${MAX_WIDTH}px`,
+                maxHeight: `${MAX_HEIGHT}px`,
+                margin: '0 auto',
+                borderRadius: '12px',
+                border: '1px solid var(--border)',
+                cursor: phase === 'select' ? 'pointer' : 'default',
+                background: 'var(--surface-raised)',
+                touchAction: 'manipulation',
+              }}
+            />
           </div>
-        </div>
-      ) : null}
+          {phase === 'select' ? (
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
+              <small style={{ color: 'var(--text-muted)' }}>
+                Selected {selected.size}/{targetCount}
+              </small>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="button buttonGhost"
+                  onClick={() => setSelected(new Set())}
+                  style={{ padding: '0.5rem 1rem' }}
+                >
+                  Clear
+                </button>
+                <button
+                  type="button"
+                  className="button"
+                  disabled={selected.size !== targetCount}
+                  onClick={() => evaluateSelection(selected)}
+                  style={{ padding: '0.5rem 1.5rem' }}
+                >
+                  Submit
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

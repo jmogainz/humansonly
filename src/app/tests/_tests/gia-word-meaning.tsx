@@ -144,15 +144,6 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
     setRound(makeRound());
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description="Find the word that doesn&apos;t belong with the others. You have 2 minutes."
-        onStart={handleStart}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
@@ -163,40 +154,49 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
         <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
       </div>
 
-      <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>Which word doesn&apos;t belong?</h2>
+      {!started ? (
+        <TestStartScreen
+          description="Find the word that doesn&apos;t belong with the others. You have 2 minutes."
+          onStart={handleStart}
+        />
+      ) : (
+        <>
+          <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>Which word doesn&apos;t belong?</h2>
 
-      <div 
-        className="game-grid-container"
-        style={{ alignItems: 'flex-start' }}
-      >
-        <div 
-          className="game-grid"
-          style={{ 
-            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', 
-            gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
-            aspectRatio: 'auto',
-            height: 'auto',
-            width: '100%',
-            maxWidth: '380px'
-          }}
-        >
-          {round.options.map((word) => (
-            <button
-              key={word}
-              type="button"
-              className="game-tile"
-              onClick={() => answer(word)}
+          <div 
+            className="game-grid-container"
+            style={{ alignItems: 'flex-start' }}
+          >
+            <div 
+              className="game-grid"
               style={{ 
-                textTransform: 'capitalize', 
-                padding: '1rem',
-                fontSize: 'clamp(1rem, 5cqw, 1.3rem)'
+                gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', 
+                gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
+                aspectRatio: 'auto',
+                height: 'auto',
+                width: '100%',
+                maxWidth: '380px'
               }}
             >
-              {word}
-            </button>
-          ))}
-        </div>
-      </div>
+              {round.options.map((word) => (
+                <button
+                  key={word}
+                  type="button"
+                  className="game-tile"
+                  onClick={() => answer(word)}
+                  style={{ 
+                    textTransform: 'capitalize', 
+                    padding: '1rem',
+                    fontSize: 'clamp(1rem, 5cqw, 1.3rem)'
+                  }}
+                >
+                  {word}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

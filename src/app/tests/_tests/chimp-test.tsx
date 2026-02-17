@@ -108,15 +108,6 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
     }
   };
 
-  if (!started) {
-    return (
-      <TestStartScreen
-        description={definition.description}
-        onStart={() => setStarted(true)}
-      />
-    );
-  }
-
   return (
     <div className="game-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
@@ -124,37 +115,46 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
         <LivesDisplay lives={lives} maxLives={maxLives} />
       </div>
 
-      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{label}</p>
+      {!started ? (
+        <TestStartScreen
+          description={definition.description}
+          onStart={() => setStarted(true)}
+        />
+      ) : (
+        <>
+          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{label}</p>
 
-      <div className="game-grid-container">
-        <div
-          className="game-grid"
-          style={{
-            gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-            gap: 'clamp(0.2rem, 1.5cqw, 0.55rem)',
-          }}
-        >
-          {cells.map((cell) => {
-            const showNumber = phase === 'show' || nextExpected > (cell.number ?? 999);
-            return (
-              <button
-                key={cell.id}
-                type="button"
-                className="game-tile"
-                onClick={() => handleCellClick(cell)}
-                style={{
-                  background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
-                  color: showNumber ? 'var(--tile-text)' : 'transparent',
-                  cursor: phase === 'hide' ? 'pointer' : 'default',
-                  fontSize: 'clamp(0.8rem, 4cqw, 1.2rem)',
-                }}
-              >
-                {cell.number ?? ''}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+          <div className="game-grid-container">
+            <div
+              className="game-grid"
+              style={{
+                gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                gap: 'clamp(0.2rem, 1.5cqw, 0.55rem)',
+              }}
+            >
+              {cells.map((cell) => {
+                const showNumber = phase === 'show' || nextExpected > (cell.number ?? 999);
+                return (
+                  <button
+                    key={cell.id}
+                    type="button"
+                    className="game-tile"
+                    onClick={() => handleCellClick(cell)}
+                    style={{
+                      background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
+                      color: showNumber ? 'var(--tile-text)' : 'transparent',
+                      cursor: phase === 'hide' ? 'pointer' : 'default',
+                      fontSize: 'clamp(0.8rem, 4cqw, 1.2rem)',
+                    }}
+                  >
+                    {cell.number ?? ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
