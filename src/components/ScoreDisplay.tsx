@@ -16,13 +16,14 @@ export default function ScoreDisplay({ label = 'Score', value, status = 'neutral
 
   useEffect(() => {
     if (value !== prevValueRef.current) {
-      setIsPulsing(true);
       if (status !== 'neutral') {
+        setIsPulsing(true);
         triggerFeedback(status);
+        const timer = setTimeout(() => setIsPulsing(false), 400);
+        prevValueRef.current = value;
+        return () => clearTimeout(timer);
       }
-      const timer = setTimeout(() => setIsPulsing(false), 400);
       prevValueRef.current = value;
-      return () => clearTimeout(timer);
     }
   }, [value, status, triggerFeedback]);
 
@@ -39,7 +40,6 @@ export default function ScoreDisplay({ label = 'Score', value, status = 'neutral
     }}>
       <span style={{ 
         color: 'var(--text-muted)', 
-        fontFamily: 'var(--font-mono)',
         fontSize: '0.65rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
@@ -48,12 +48,16 @@ export default function ScoreDisplay({ label = 'Score', value, status = 'neutral
         {label}
       </span>
       <span style={{ 
-        fontFamily: 'var(--font-mono)', 
+        display: 'block',
+        minWidth: '4.5rem',
+        textAlign: 'center',
         fontSize: '1.25rem',
         fontWeight: 600,
         color: isPulsing ? color : 'var(--text-primary)',
         transition: 'color 0.2s ease',
-        lineHeight: 1
+        lineHeight: 1,
+        fontVariantNumeric: 'tabular-nums',
+        fontFeatureSettings: '"tnum"',
       }}>
         {value}
       </span>
