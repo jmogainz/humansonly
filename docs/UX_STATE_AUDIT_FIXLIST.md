@@ -135,7 +135,7 @@ Method:
    - Notes: Added recent-round uniqueness.
 16. `gia-number-speed`
    - Status: **Passing**
-   - Notes: Redesigned to alternate between Median and Furthest-from-Median to eliminate elimination heuristics.
+   - Notes: Fixed to only ask for the value Furthest-from-Median.
 17. `gia-word-meaning`
    - Status: **Passing**
    - Notes: Doubled dataset and added recent-round uniqueness.

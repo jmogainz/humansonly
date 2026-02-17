@@ -14,6 +14,21 @@ export default function HeroCTA() {
     router.push('/tests/gia-reasoning?flow=gia&start=1');
   };
 
+  const handleBrowse = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const element = document.getElementById('gia');
+    if (element) {
+      const headerOffset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
       <button 
@@ -25,9 +40,9 @@ export default function HeroCTA() {
         {isStarting ? <Spinner size={18} /> : null}
         {isStarting ? 'Loading...' : 'Start Assessment'}
       </button>
-      <a href="#all-tests" className="button buttonGhost">
+      <button onClick={handleBrowse} className="button buttonGhost">
         Browse Tests
-      </a>
+      </button>
     </div>
   );
 }

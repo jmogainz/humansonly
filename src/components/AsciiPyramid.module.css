@@ -1,0 +1,47 @@
+.container {
+  position: absolute;
+  top: 50%;
+  left: 62%; /* Shifted to the right */
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  width: 1400px;
+  height: 1000px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.38;
+  pointer-events: none;
+  user-select: none;
+  overflow: visible;
+  will-change: transform;
+}
+
+.canvas {
+  font-family: var(--font-mono), monospace;
+  font-size: 11px;
+  line-height: 8.5px;
+  color: var(--accent, #06b6d4);
+  white-space: pre;
+  margin: 0;
+  font-weight: bold;
+}
+
+@media (max-width: 1400px) {
+    .container {
+        left: 70%;
+        width: 1200px;
+        opacity: 0.3;
+    }
+}
+
+@media (max-width: 1024px) {
+    .container {
+        left: 50%; /* Re-center on smaller screens where space is tight */
+        width: 100%;
+        opacity: 0.2;
+    }
+    .canvas {
+        font-size: 8px;
+        line-height: 6px;
+    }
+}

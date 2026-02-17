@@ -5,6 +5,7 @@ import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
+import { useFeedback } from '@/components/FeedbackContext';
 
 function roundConfig(level: number) {
   const size = Math.min(7, 3 + Math.floor((level - 1) / 3));
@@ -23,6 +24,7 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
   const [pattern, setPattern] = useState<number[]>(() => roundConfig(1).pattern);
   const [gridSize, setGridSize] = useState(roundConfig(1).size);
   const [submitted, setSubmitted] = useState(false);
+  const { triggerFeedback } = useFeedback();
 
   useEffect(() => {
     if (!started) return;
@@ -60,6 +62,7 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
       [...nextSelected].every((index) => patternSet.has(index));
 
     if (correct) {
+      triggerFeedback('success');
       const nextLevel = level + 1;
       setLevel(nextLevel);
       nextRound(nextLevel);

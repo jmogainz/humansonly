@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import TestStartScreen from '@/components/TestStartScreen';
+import { useFeedback } from '@/components/FeedbackContext';
 
 type Phase = 'idle' | 'wait' | 'go' | 'too-soon';
 
@@ -15,6 +16,7 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
   const startRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const submittedRef = useRef(false);
+  const { triggerFeedback } = useFeedback();
 
   useEffect(() => {
     if (attempts.length < TOTAL_ATTEMPTS || submittedRef.current) return;
@@ -67,6 +69,7 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
     if (phase === 'wait') {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
       setPhase('too-soon');
+      triggerFeedback('danger');
       timeoutRef.current = window.setTimeout(() => {
         resetRound();
       }, 900);
@@ -76,6 +79,7 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
     if (phase === 'go' && startRef.current) {
       const delta = performance.now() - startRef.current;
       setAttempts((prev) => (prev.length >= TOTAL_ATTEMPTS ? prev : [...prev, delta]));
+      triggerFeedback('success');
       startRef.current = null;
       setPhase('idle');
     }

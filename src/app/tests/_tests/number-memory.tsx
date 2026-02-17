@@ -46,15 +46,18 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
           onStart={() => setStarted(true)}
         />
       ) : (
-        <>
-          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{prompt}</p>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', gap: '1.5rem' }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 'clamp(0.9rem, 3.5vw, 1.25rem)', flexShrink: 0 }}>{prompt}</p>
 
           <div
-            className="game-grid-container"
             style={{
               fontSize: 'clamp(2rem, 10vw, 4.5rem)',
               fontFamily: 'var(--font-mono)',
               minHeight: '4rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%'
             }}
           >
             {phase === 'show' ? (
@@ -100,7 +103,7 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
           ) : (
             <div style={{ height: '80px', flexShrink: 0 }} />
           )}
-        </>
+        </div>
       )}
     </div>
   );

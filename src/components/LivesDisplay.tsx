@@ -1,5 +1,7 @@
 'use client';
+import { useEffect, useRef } from 'react';
 import styles from './LivesDisplay.module.css';
+import { useFeedback } from './FeedbackContext';
 
 type LivesDisplayProps = {
   lives: number;
@@ -8,6 +10,15 @@ type LivesDisplayProps = {
 
 export default function LivesDisplay({ lives, maxLives = 3 }: LivesDisplayProps) {
   const slots = Array.from({ length: maxLives });
+  const { triggerFeedback } = useFeedback();
+  const prevLivesRef = useRef(lives);
+
+  useEffect(() => {
+    if (lives < prevLivesRef.current) {
+      triggerFeedback('danger');
+    }
+    prevLivesRef.current = lives;
+  }, [lives, triggerFeedback]);
 
   return (
     <div className={styles.root}>

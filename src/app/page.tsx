@@ -3,6 +3,8 @@ import HeroCTA from '@/components/HeroCTA';
 import { listPlayableTestsByCategory } from '@/lib/tests/registry';
 import styles from './page.module.css';
 
+import AsciiPyramid from '@/components/AsciiPyramid';
+
 const giaTests = listPlayableTestsByCategory('gia');
 const otherTests = listPlayableTestsByCategory('human-benchmark');
 
@@ -18,6 +20,7 @@ export default function HomePage() {
         <div className={styles.cta}>
           <HeroCTA />
         </div>
+        <AsciiPyramid />
       </header>
 
       <section className={styles.section} id="gia">

@@ -1,9 +1,9 @@
 .overlay {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: -100vw;
+  right: -100vw;
+  bottom: -100vh;
   z-index: 1240;
   background: transparent;
 }
@@ -17,7 +17,7 @@
   animation: dropdownIn 0.15s ease-out;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.5rem;
@@ -79,6 +79,27 @@
 
 .primary svg {
   color: var(--accent);
+}
+
+.authSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.authLabel {
+  font-size: 0.7rem;
+  text-transform: none;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0.4rem 0.75rem 0.2rem;
+  font-weight: 700;
+}
+
+.authError {
+  color: var(--danger);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
 }
 
 .divider {

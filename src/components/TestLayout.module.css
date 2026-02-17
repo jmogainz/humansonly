@@ -54,6 +54,45 @@
   display: flex;
   flex-direction: column;
   min-height: 0; 
+  transition: border-color 0.2s ease;
+}
+
+.flashSuccess {
+  animation: flash-success 0.8s cubic-bezier(0.15, 0, 0.15, 1);
+}
+
+.flashDanger {
+  animation: flash-danger 0.8s cubic-bezier(0.15, 0, 0.15, 1);
+}
+
+@keyframes flash-success {
+  0% { 
+    border-color: var(--success); 
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--success) 40%, transparent);
+  }
+  20% {
+    border-color: var(--success); 
+    box-shadow: 0 0 16px 3px color-mix(in srgb, var(--success) 50%, transparent);
+  }
+  100% { 
+    border-color: var(--border); 
+    box-shadow: 0 0 0 0 transparent; 
+  }
+}
+
+@keyframes flash-danger {
+  0% { 
+    border-color: var(--danger); 
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--danger) 40%, transparent);
+  }
+  20% {
+    border-color: var(--danger); 
+    box-shadow: 0 0 16px 3px color-mix(in srgb, var(--danger) 50%, transparent);
+  }
+  100% { 
+    border-color: var(--border); 
+    box-shadow: 0 0 0 0 transparent; 
+  }
 }
 
 @keyframes fadeIn {

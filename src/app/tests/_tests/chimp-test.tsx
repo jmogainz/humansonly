@@ -5,6 +5,7 @@ import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
+import { useFeedback } from '@/components/FeedbackContext';
 
 type Cell = {
   id: number;
@@ -35,6 +36,7 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
   const [phase, setPhase] = useState<'show' | 'hide'>('show');
   const [nextExpected, setNextExpected] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const { triggerFeedback } = useFeedback();
 
   const maxLives = 3;
   const lives = maxLives - strikes;
@@ -71,6 +73,7 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
     if (!cell.number) return;
 
     if (cell.number === nextExpected) {
+      triggerFeedback('success');
       const targetForRound = Math.min(level, MAX_LEVEL);
       if (nextExpected === targetForRound) {
         if (level >= MAX_LEVEL) {

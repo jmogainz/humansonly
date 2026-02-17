@@ -14,30 +14,32 @@ export default function Header() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <header className={styles.header}>
-      <Link href="/" className={styles.brand} onClick={() => setIsMenuOpen(false)}>
-        <Logo className={styles.logo} />
-      </Link>
+    <>
+      <header className={styles.header}>
+        <Link href="/" className={styles.brand} onClick={() => setIsMenuOpen(false)}>
+          <Logo className={styles.logo} />
+        </Link>
 
-      <nav className={styles.nav}>
-        <Link href="/leaderboard" className={styles.navLink}>Leaderboards</Link>
-        <ThemeToggle />
-        <AuthButton />
-      </nav>
+        <nav className={styles.nav}>
+          <Link href="/leaderboard" className={styles.navLink}>Leaderboards</Link>
+          <ThemeToggle />
+          <AuthButton />
+        </nav>
 
-      <div className={styles.mobileActions}>
-        <MenuButton
-          ref={menuButtonRef}
-          isOpen={isMenuOpen}
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-        />
-      </div>
+        <div className={styles.mobileActions}>
+          <MenuButton
+            ref={menuButtonRef}
+            isOpen={isMenuOpen}
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          />
+        </div>
+      </header>
 
       <MoreMenuModal
         open={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         triggerButtonRef={menuButtonRef}
       />
-    </header>
+    </>
   );
 }

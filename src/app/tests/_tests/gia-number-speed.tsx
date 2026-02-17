@@ -26,14 +26,10 @@ function makeRoundRaw(): Round {
 
   const options = [lower, middle, higher];
   
-  // Randomly ask for the median or the furthest from median
-  const isAskingMedian = Math.random() > 0.5;
-  const question = isAskingMedian 
-    ? "Which number is the median?" 
-    : "Which number is furthest from the median?";
-  const answer = isAskingMedian ? middle : (isHigherFurther ? higher : lower);
+  const question = "Which number is furthest from the median?";
+  const answer = isHigherFurther ? higher : lower;
   
-  const signature = `${isAskingMedian ? 'm' : 'f'}:${options.sort((a, b) => a - b).join('|')}`;
+  const signature = `f:${options.sort((a, b) => a - b).join('|')}`;
 
   return {
     options: shuffle(options),
@@ -121,42 +117,35 @@ export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameP
 
       {!started ? (
         <TestStartScreen
-          description="Pick the median or the number furthest from it as requested. You have 2 minutes."
+          description="Pick the number furthest from the median. You have 2 minutes."
           onStart={handleStart}
         />
       ) : (
-        <>
-          <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>{round.question}</h2>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2rem', minHeight: 0 }}>
+          <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>{round.question}</h2>
 
           <div 
-            className="game-grid-container"
-            style={{ alignItems: 'flex-start' }}
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
+              gap: 'clamp(0.5rem, 2vw, 1rem)',
+              width: '100%',
+              maxWidth: '520px'
+            }}
           >
-            <div 
-              className="game-grid"
-              style={{ 
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
-                gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
-                aspectRatio: 'auto',
-                height: 'auto',
-                width: '100%',
-                maxWidth: '480px'
-              }}
-            >
-              {round.options.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className="game-tile"
-                  style={{ fontSize: 'clamp(1.2rem, 6cqw, 1.8rem)', padding: '1rem 0' }}
-                  onClick={() => answer(value)}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
+            {round.options.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className="game-tile"
+                style={{ fontSize: 'clamp(1.3rem, 6vw, 2rem)', padding: '1.2rem 0' }}
+                onClick={() => answer(value)}
+              >
+                {value}
+              </button>
+            ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

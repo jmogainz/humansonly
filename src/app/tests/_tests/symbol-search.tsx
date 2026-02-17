@@ -98,13 +98,15 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
     setRound(makeRound());
   };
 
+  const incorrect = attempts - score;
+
   return (
     <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
 
       <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
         <ScoreDisplay label="Correct" value={score} status="success" />
-        <ScoreDisplay label="Attempts" value={attempts} status="neutral" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
         <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} status={accuracy > 80 ? 'success' : accuracy > 50 ? 'neutral' : 'danger'} />
       </div>
 

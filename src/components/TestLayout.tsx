@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import styles from './TestLayout.module.css';
+import { FeedbackProvider, useFeedback } from './FeedbackContext';
 
 type TestLayoutProps = {
   title: string;
@@ -9,7 +10,14 @@ type TestLayoutProps = {
   children: ReactNode;
 };
 
-export default function TestLayout({ title, subtitle, sidebar, children }: TestLayoutProps) {
+function TestLayoutInner({ title, subtitle, sidebar, children }: TestLayoutProps) {
+  const { feedback } = useFeedback();
+
+  const contentClassName = `${styles.content} ${
+    feedback === 'success' ? styles.flashSuccess : 
+    feedback === 'danger' ? styles.flashDanger : ''
+  }`;
+
   return (
     <section className={styles.wrapper}>
       <div className={styles.header}>
@@ -25,7 +33,15 @@ export default function TestLayout({ title, subtitle, sidebar, children }: TestL
         </div>
         {sidebar ? <aside>{sidebar}</aside> : null}
       </div>
-      <div className={styles.content}>{children}</div>
+      <div className={contentClassName}>{children}</div>
     </section>
+  );
+}
+
+export default function TestLayout(props: TestLayoutProps) {
+  return (
+    <FeedbackProvider>
+      <TestLayoutInner {...props} />
+    </FeedbackProvider>
   );
 }

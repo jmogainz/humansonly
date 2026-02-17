@@ -157,7 +157,7 @@ export const TEST_REGISTRY: TestDefinition[] = [
   {
     slug: 'gia-number-speed',
     name: 'GIA Number Speed',
-    description: 'Pick the value furthest from the middle number.',
+    description: 'Pick the value furthest from the median.',
     category: 'gia',
     icon: 'gia-number-speed',
     scoreUnit: 'net',

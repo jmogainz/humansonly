@@ -142,62 +142,47 @@ export default function GiaPerceptualSpeedTest({ definition, onComplete }: TestG
           onStart={handleStart}
         />
       ) : (
-        <>
-          <div
-            className="game-grid-container"
-            style={{
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              padding: 'clamp(0.5rem, 3vw, 1rem)',
-              display: 'grid',
-              gap: '0.8rem',
-              flexDirection: 'column',
-              alignItems: 'stretch',
-              justifyContent: 'stretch'
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '1.5rem', width: '100%' }}>
+          <h2 style={{ margin: 0, fontSize: 'clamp(1.1rem, 5vw, 1.6rem)', textAlign: 'center' }}>How many columns have the same letter?</h2>
+          
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', 
+              gap: 'clamp(0.4rem, 2vw, 0.8rem)',
+              width: '100%',
+              maxWidth: '600px'
             }}
           >
-            <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', textAlign: 'center' }}>How many columns have the same letter?</h2>
-            <div 
-              className="game-grid"
-              style={{ 
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', 
-                gap: 'clamp(0.3rem, 2cqw, 0.6rem)',
-                aspectRatio: 'auto',
-                height: 'auto',
-                width: '100%',
-                maxWidth: '100%'
-              }}
-            >
-              {round.columns.map((column, index) => (
-                <div
-                  key={index}
-                  style={{
-                    border: '1px solid var(--border)',
-                    borderRadius: '10px',
-                    padding: 'clamp(0.4rem, 4cqh, 0.9rem)',
-                    textAlign: 'center',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: 'clamp(1rem, 10cqh, 1.6rem)',
-                    display: 'grid',
-                    gap: '0.35rem',
-                    background: 'var(--surface-raised)',
-                  }}
-                >
-                  <span>{column.top}</span>
-                  <span>{column.bottom}</span>
-                </div>
-              ))}
-            </div>
+            {round.columns.map((column, index) => (
+              <div
+                key={index}
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: 'clamp(0.6rem, 3vw, 1.2rem)',
+                  textAlign: 'center',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: 'clamp(1.2rem, 6vw, 2rem)',
+                  display: 'grid',
+                  gap: '0.4rem',
+                  background: 'var(--surface-raised)',
+                }}
+              >
+                <span>{column.top}</span>
+                <span>{column.bottom}</span>
+              </div>
+            ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 'clamp(0.3rem, 1.5vw, 0.55rem)', flexShrink: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 'clamp(0.4rem, 1.5vw, 0.6rem)', width: '100%', maxWidth: '440px', marginTop: '0.5rem' }}>
             {Array.from({ length: COLUMN_COUNT + 1 }, (_, count) => (
               <button key={count} type="button" className="button" onClick={() => answer(count)}>
                 {count}
               </button>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   );

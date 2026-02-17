@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { useFeedback } from './FeedbackContext';
 
 type ScoreDisplayProps = {
   label?: string;
@@ -11,15 +12,19 @@ type ScoreDisplayProps = {
 export default function ScoreDisplay({ label = 'Score', value, status = 'neutral' }: ScoreDisplayProps) {
   const [isPulsing, setIsPulsing] = useState(false);
   const prevValueRef = useRef(value);
+  const { triggerFeedback } = useFeedback();
 
   useEffect(() => {
     if (value !== prevValueRef.current) {
       setIsPulsing(true);
+      if (status !== 'neutral') {
+        triggerFeedback(status);
+      }
       const timer = setTimeout(() => setIsPulsing(false), 400);
       prevValueRef.current = value;
       return () => clearTimeout(timer);
     }
-  }, [value]);
+  }, [value, status, triggerFeedback]);
 
   const color = status === 'success' ? 'var(--success)' : status === 'danger' ? 'var(--danger)' : 'var(--text-primary)';
 

@@ -91,7 +91,6 @@
   font-family: var(--font-mono);
   font-size: 0.6rem;
   color: var(--text-muted);
-  text-transform: uppercase;
   letter-spacing: 0.15em;
   background: transparent;
   padding: 0.3rem 0.6rem;

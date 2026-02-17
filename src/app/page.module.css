@@ -2,44 +2,52 @@
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 3rem 1.5rem 4rem;
+  padding: 0 1.5rem 4rem;
   display: flex;
   flex-direction: column;
   gap: 3.5rem;
 }
 
 .hero {
-  text-align: left;
-  padding: 2rem 0 0;
+  text-align: center;
+  padding: 2rem 0;
   position: relative;
   animation: fadeInUp 0.15s ease both;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--app-vh, 100vh) - 100px); /* Fill space below header minus some padding */
 }
 
 .hero h1 {
-  font-size: clamp(2.2rem, 5vw, 3.2rem);
-  font-weight: 700;
-  margin-bottom: 1rem;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-weight: 800;
+  margin-bottom: 2rem;
   color: var(--text-primary);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
-}
-
-.hero h1 span {
-  color: var(--accent);
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+  position: relative;
+  z-index: 1;
 }
 
 .hero p {
-  font-size: 1.05rem;
+  font-size: 1.35rem;
   color: var(--text-muted);
-  max-width: 520px;
-  margin: 0 0 2rem 0;
-  line-height: 1.65;
+  max-width: 700px;
+  margin: 0 0 4rem 0;
+  line-height: 1.5;
+  position: relative;
+  z-index: 1;
+  font-weight: 400;
 }
 
 .cta {
   display: inline-flex;
-  gap: 0.75rem;
+  gap: 1rem;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .section {
@@ -50,13 +58,12 @@
 }
 
 .sectionHeader h2 {
-  font-size: 0.7rem;
+  font-size: 1.25rem;
   margin: 0;
-  color: var(--text-muted);
+  color: var(--text-primary);
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  font-family: var(--font-body);
 }
 
 

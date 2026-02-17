@@ -86,13 +86,14 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   transition: background-color 0.1s ease, color 0.1s ease;
+  overflow-x: hidden;
 }
 
 /* Layout */
 main {
   width: 100%;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: 0 1.5rem;
 }
 
 @media (max-width: 640px) {
@@ -217,7 +218,7 @@ a:hover {
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 0.7rem;
-  text-transform: uppercase;
+  text-transform: none;
   letter-spacing: 0.08em;
   padding: 0.7rem 1rem;
   font-weight: 500;
