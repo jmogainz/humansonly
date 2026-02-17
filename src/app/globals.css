@@ -70,6 +70,8 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 html,
@@ -157,13 +159,18 @@ a:hover {
   transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   box-shadow: var(--card-shadow);
   letter-spacing: 0.01em;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.button:hover {
-  background: var(--accent-hover);
-  color: var(--accent-foreground);
-  box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
-  transform: translateY(-2px) scale(1.02);
+@media (hover: hover) {
+  .button:hover {
+    background: var(--accent-hover);
+    color: var(--accent-foreground);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -2px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px) scale(1.02);
+  }
 }
 
 .button:active {
@@ -185,11 +192,13 @@ a:hover {
   box-shadow: none;
 }
 
-.buttonGhost:hover {
-  background: var(--surface);
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+@media (hover: hover) {
+  .buttonGhost:hover {
+    background: var(--surface);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  }
 }
 
 /* Auth Section */
@@ -417,8 +426,10 @@ input::placeholder {
   color: var(--text-primary);
 }
 
-.game-tile:hover {
-  filter: brightness(1.05);
+@media (hover: hover) {
+  .game-tile:hover {
+    filter: brightness(1.05);
+  }
 }
 
 .game-tile:active {

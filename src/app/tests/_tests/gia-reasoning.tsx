@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { randomInt, generateRecentUnique, shuffle } from '@/lib/utils';
 import Timer, { formatTime } from '@/components/Timer';
@@ -117,7 +117,7 @@ const ADJECTIVE_PAIRS: [string, string, string][] = [
   ['exciting', 'more exciting', 'more boring'],
   ['firm', 'firmer', 'looser'],
   ['funny', 'funnier', 'more serious'],
-  ['guilty', 'more guilty', 'more innocent'],
+  ['guilty', 'guiltier', 'more innocent'],
   ['helpful', 'more helpful', 'more helpless'],
   ['important', 'more important', 'more trivial'],
   ['logical', 'more logical', 'more illogical'],
@@ -190,7 +190,7 @@ const ADJECTIVE_PAIRS: [string, string, string][] = [
   ['thrifty', 'thriftier', 'more extravagant'],
   ['thrilling', 'more thrilling', 'more boring'],
   ['tidy', 'tidier', 'messier'],
-  ['timely', 'more timely', 'later'],
+  ['timely', 'timelier', 'later'],
   ['tolerant', 'more tolerant', 'more narrow-minded'],
   ['traditional', 'more traditional', 'more modern'],
   ['transparent', 'more transparent', 'more opaque'],
@@ -230,11 +230,11 @@ const ADJECTIVE_PAIRS: [string, string, string][] = [
   ['volatile', 'more volatile', 'more stable'],
   ['vulgar', 'more vulgar', 'more refined'],
   ['vulnerable', 'more vulnerable', 'more secure'],
-  ['wary', 'more wary', 'more trusting'],
+  ['wary', 'warier', 'more trusting'],
   ['wasteful', 'more wasteful', 'thriftier'],
   ['wealthy', 'wealthier', 'poorer'],
   ['weary', 'wearier', 'fresher'],
-  ['weighty', 'more weighty', 'more trivial'],
+  ['weighty', 'weightier', 'more trivial'],
   ['weird', 'weirder', 'more normal'],
   ['wicked', 'more wicked', 'holier'],
   ['wild', 'wilder', 'tamer'],
@@ -243,7 +243,7 @@ const ADJECTIVE_PAIRS: [string, string, string][] = [
   ['witty', 'wittier', 'duller'],
   ['wonderful', 'more wonderful', 'more awful'],
   ['wordy', 'wordier', 'terser'],
-  ['worldly', 'more worldly', 'more spiritual'],
+  ['worldly', 'worldlier', 'more spiritual'],
   ['worried', 'more worried', 'calmer'],
   ['youthful', 'more youthful', 'more wizened'],
 ];
@@ -343,36 +343,79 @@ const IRREGULAR_COMPARATIVES: Record<string, string> = {
 };
 
 const SYNONYM_COMPARATIVE_OVERRIDES: Record<string, string> = {
+  brave: 'braver',
   bright: 'brighter',
+  brief: 'briefer',
   broad: 'broader',
   calm: 'calmer',
   clean: 'cleaner',
+  clever: 'more clever',
   clear: 'clearer',
   close: 'closer',
   cool: 'cooler',
+  costly: 'costlier',
+  crisp: 'crisper',
+  crude: 'cruder',
+  cruel: 'crueler',
+  dense: 'denser',
   dirty: 'dirtier',
   fast: 'faster',
+  fierce: 'fiercer',
   frail: 'frailer',
   friendly: 'friendlier',
+  gentle: 'gentler',
+  glossy: 'glossier',
+  harsh: 'harsher',
   hefty: 'heftier',
   keen: 'keener',
   kind: 'kinder',
+  lengthy: 'lengthier',
+  lively: 'livelier',
+  lofty: 'loftier',
   loud: 'louder',
   long: 'longer',
+  nasty: 'nastier',
   neat: 'neater',
+  nimble: 'nimbler',
+  noisy: 'noisier',
   old: 'older',
   plain: 'plainer',
+  proud: 'prouder',
   quiet: 'quieter',
   rough: 'rougher',
   short: 'shorter',
+  sleek: 'sleeker',
   simple: 'simpler',
+  smooth: 'smoother',
+  sore: 'sorer',
+  steady: 'steadier',
   strong: 'stronger',
+  strange: 'stranger',
   strict: 'stricter',
   thin: 'thinner',
+  tough: 'tougher',
   warm: 'warmer',
   weak: 'weaker',
+  wealthy: 'wealthier',
   young: 'younger',
 };
+
+function shouldUseYComparativeFallback(word: string): boolean {
+  if (word.length > 6 || !word.endsWith('y')) return false;
+  const previous = word[word.length - 2];
+  return !'aeiou'.includes(previous);
+}
+
+function inflectErComparative(word: string): string {
+  if (word.endsWith('y') && word.length > 2 && !'aeiou'.includes(word[word.length - 2])) {
+    return `${word.slice(0, -1)}ier`;
+  }
+  if (word.endsWith('e')) return `${word}r`;
+  if (/[^aeiou][aeiou][^aeiouywx]$/.test(word) && word.length <= 5) {
+    return `${word}${word[word.length - 1]}er`;
+  }
+  return `${word}er`;
+}
 
 function comparativeForAdjective(word: string): string {
   const normalized = normalizeTerm(word);
@@ -380,6 +423,7 @@ function comparativeForAdjective(word: string): string {
   if (irregular) return irregular;
   const override = SYNONYM_COMPARATIVE_OVERRIDES[normalized];
   if (override) return override;
+  if (shouldUseYComparativeFallback(normalized)) return inflectErComparative(normalized);
   return `more ${normalized}`;
 }
 
@@ -622,6 +666,63 @@ function makeRound(): Round {
   );
 }
 
+// Worst-case reference strings — font size is always derived from these,
+// never from the current question text, so sizing stays constant across rounds.
+const LONGEST_STATEMENT = "Beatrice is not as self-satisfied as Lachlan.";
+
+function FitText({ text, sizeText }: { text: string; sizeText: string }) {
+  const ref = useRef<HTMLHeadingElement>(null);
+  const rulerRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const ruler = rulerRef.current;
+    const parent = el?.parentElement;
+    if (!el || !ruler || !parent) return;
+
+    const fit = () => {
+      ruler.style.fontSize = '36px';
+      const available = parent.clientWidth;
+      if (available <= 0) return;
+      const textWidth = ruler.scrollWidth;
+      el.style.fontSize = textWidth > available
+        ? `${(36 * available / textWidth).toFixed(1)}px`
+        : '36px';
+    };
+
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <>
+      <span
+        ref={rulerRef}
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          visibility: 'hidden',
+          whiteSpace: 'nowrap',
+          fontWeight: 600,
+          pointerEvents: 'none',
+          top: '-9999px',
+          left: '-9999px',
+        }}
+      >
+        {sizeText}
+      </span>
+      <h2
+        ref={ref}
+        style={{ margin: 0, fontWeight: 600, lineHeight: 1.3, whiteSpace: 'nowrap' }}
+      >
+        {text}
+      </h2>
+    </>
+  );
+}
+
 export default function GiaReasoningTest({ definition, onComplete }: TestGameProps) {
   const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
@@ -707,50 +808,48 @@ export default function GiaReasoningTest({ definition, onComplete }: TestGamePro
               border: '1px solid var(--border)',
               borderRadius: '16px',
               padding: 'clamp(1.5rem, 6vw, 3rem)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
+              display: 'grid',
               gap: 'clamp(1.5rem, 5vh, 2.5rem)',
               background: 'var(--surface-raised)',
               width: '100%',
               maxWidth: '640px',
-              marginInline: 'auto'
+              marginInline: 'auto',
+              textAlign: 'center',
             }}
           >
-            {phase === 'statement' ? (
-              <div style={{ textAlign: 'center', display: 'grid', gap: '1.5rem', width: '100%' }}>
-                <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>Statement</small>
-                <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem, 6vw, 2.25rem)', fontWeight: 600, lineHeight: 1.3 }}>{round.statement}</h2>
-                <button 
-                  type="button" 
-                  className="button" 
+            <div style={{ display: 'grid', gap: '0.4rem', width: '100%', overflow: 'hidden' }}>
+              <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                {phase === 'statement' ? 'Statement' : 'Question'}
+              </small>
+              <FitText
+                text={phase === 'statement' ? round.statement : round.question}
+                sizeText={LONGEST_STATEMENT}
+              />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', maxWidth: '440px', marginInline: 'auto', width: '100%' }}>
+              {phase === 'statement' ? (
+                <button
+                  type="button"
+                  className="button"
                   onClick={() => setPhase('question')}
-                  style={{ padding: '0.8rem 2.5rem', fontSize: '1rem', marginInline: 'auto', minWidth: '200px' }}
+                  style={{ gridColumn: '1 / -1', padding: '0.8rem 1rem', fontSize: '1rem' }}
                 >
                   Show Question
                 </button>
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', display: 'grid', gap: '1.5rem', width: '100%' }}>
-                <div style={{ display: 'grid', gap: '0.4rem' }}>
-                  <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>Question</small>
-                  <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem, 6vw, 2.25rem)', fontWeight: 600, lineHeight: 1.3 }}>{round.question}</h2>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem', maxWidth: '440px', marginInline: 'auto', width: '100%' }}>
-                  {round.options.map((name) => (
-                    <button 
-                      key={name} 
-                      type="button" 
-                      className="button" 
-                      onClick={() => answer(name)}
-                      style={{ padding: '0.8rem 1rem', fontSize: '1.15rem' }}
-                    >
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+              ) : (
+                round.options.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className="button"
+                    onClick={() => answer(name)}
+                    style={{ padding: '0.8rem 1rem', fontSize: '1rem' }}
+                  >
+                    {name}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>
