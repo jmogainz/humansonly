@@ -8,28 +8,497 @@ import ScoreDisplay from '@/components/ScoreDisplay';
 import Scoreboard from '@/components/Scoreboard';
 import { useTimer } from '@/hooks/useTimer';
 import TestStartScreen from '@/components/TestStartScreen';
+import { BASE_SYNONYM_BY_BASE } from './reasoningSynonyms';
 
 const NAMES = [
   'Alex', 'Noah', 'Maya', 'Leah', 'Jamal', 'Priya', 'Owen', 'Ava', 'Dylan', 'Sofia',
   'Ethan', 'Lena', 'Mateo', 'Iris', 'Jonah', 'Nina', 'Leo', 'Nora', 'Milo', 'Ruby',
   'Zane', 'Aria', 'Kian', 'Sara', 'Ravi', 'Elena', 'Kai', 'Jade', 'Aiden', 'Mina',
   'Yara', 'Hugo', 'Layla', 'Isaac', 'Tara', 'Zoya', 'Rohan', 'Liam', 'Cleo', 'Eli',
-  'Oscar', 'Bella', 'Caleb', 'Veda', 'Enzo', 'Zuri', 'Theo', 'Ayla', 'Arlo', 'Esme',
-  'Silas', 'Nola', 'Hugo', 'Zara', 'Felix', 'Thea', 'Jude', 'Alma', 'Otis', 'Lyra',
-  'Miro', 'Clara', 'Soren', 'Sia', 'Otto', 'Zelda', 'Remy', 'Opal', 'Finn', 'Flora',
-  'Bram', 'Gaia', 'Cass', 'Luna', 'Vesper', 'Aura', 'Pax', 'Dune', 'Nova', 'Echo',
-  'Reed', 'Sage', 'Wren', 'Lark', 'Fawn', 'Cliff', 'Lake', 'Vale', 'Glen', 'Brook',
-  'Slate', 'Flint', 'Ash', 'Clay', 'Onyx', 'Azure', 'Jade', 'Rose', 'Iris', 'Fern',
+  'Amara', 'Caleb', 'Elias', 'Hana', 'Jude', 'Kira', 'Luka', 'Mira', 'Nico', 'Sasha',
+  'Arjun', 'Beatrice', 'Chen', 'Dante', 'Esme', 'Finn', 'Gia', 'Hiro', 'Ines', 'Jasper',
+  'Kenza', 'Lior', 'Malik', 'Noa', 'Oscar', 'Paloma', 'Quinn', 'Remy', 'Soren', 'Talia',
+  'Uma', 'Vigo', 'Wren', 'Xander', 'Yuna', 'Zayd', 'Alba', 'Bodhi', 'Cora', 'Dax',
+  'Elodie', 'Felix', 'Gwen', 'Ida', 'Jace', 'Kaia', 'Lenz', 'Maia', 'Noel', 'Opal',
+  'Pax', 'Rumi', 'Silas', 'Thea', 'Uri', 'Veda', 'Wolf', 'Xena', 'Zion', 'Amos',
+  'Anya', 'Bohan', 'Celia', 'Dion', 'Elowen', 'Farrah', 'Gideon', 'Hester', 'Ilya', 'Juno',
+  'Kael', 'Lyra', 'Mael', 'Naya', 'Orion', 'Petra', 'Quell', 'Rhys', 'Sia', 'Titus',
+  'Uriah', 'Vey', 'Wyatt', 'Xyla', 'Yara', 'Zeno', 'Ansel', 'Bria', 'Cian', 'Della',
+  'Enzo', 'Flora', 'Gavin', 'Halle', 'Isla', 'Jett', 'Kaya', 'Lachlan', 'Maive', 'Nash',
+  'Oona', 'Pierce', 'Quinn', 'Reed', 'Selene', 'Teagan', 'Ulysses', 'Vania', 'Wells', 'Xion',
+  'Yvaine', 'Zora', 'Archer', 'Blaire', 'Callum', 'Daphne', 'Ewan', 'Faye', 'Grant', 'Hazel',
+  'Ivan', 'Jade', 'Knox', 'Lumi', 'Miro', 'Nell', 'Otto', 'Pippa', 'Quincy', 'Ria',
+  'Stellan', 'Tessa', 'Usher', 'Vesper', 'Willa', 'Xavi', 'Yosef', 'Zosia', 'Abner', 'Blythe',
+  'Cassian', 'Dora', 'Emrys', 'Fleur', 'Gaius', 'Hope', 'Ivor', 'Joy', 'Kit', 'Lark',
+  'Magnus', 'Nellis', 'Odin', 'Pearl', 'Quill', 'Reeve', 'Saffron', 'Thane', 'Ursa', 'Valen',
+];
+const NAME_POOL = Array.from(new Set(NAMES));
+
+// Each pair: [base adjective, comparative, opposite comparative]
+const ADJECTIVE_PAIRS: [string, string, string][] = [
+  ['strong', 'stronger', 'weaker'],
+  ['fast', 'faster', 'slower'],
+  ['tall', 'taller', 'shorter'],
+  ['brave', 'braver', 'more fearful'],
+  ['calm', 'calmer', 'more anxious'],
+  ['friendly', 'friendlier', 'more hostile'],
+  ['smart', 'smarter', 'dimmer'],
+  ['organized', 'more organized', 'more chaotic'],
+  ['patient', 'more patient', 'more impulsive'],
+  ['kind', 'kinder', 'crueler'],
+  ['creative', 'more creative', 'duller'],
+  ['focused', 'more focused', 'more distracted'],
+  ['heavy', 'heavier', 'lighter'],
+  ['rich', 'richer', 'poorer'],
+  ['happy', 'happier', 'sadder'],
+  ['loud', 'louder', 'quieter'],
+  ['bright', 'brighter', 'dimmer'],
+  ['old', 'older', 'younger'],
+  ['large', 'larger', 'smaller'],
+  ['hard', 'harder', 'softer'],
+  ['good', 'better', 'worse'],
+  ['wide', 'wider', 'narrower'],
+  ['deep', 'deeper', 'shallower'],
+  ['sharp', 'sharper', 'blunter'],
+  ['smooth', 'smoother', 'rougher'],
+  ['thick', 'thicker', 'thinner'],
+  ['clean', 'cleaner', 'dirtier'],
+  ['hot', 'hotter', 'colder'],
+  ['dry', 'drier', 'wetter'],
+  ['tough', 'tougher', 'more fragile'],
+  ['bold', 'bolder', 'more timid'],
+  ['wealthy', 'wealthier', 'needier'],
+  ['energetic', 'more energetic', 'more lethargic'],
+  ['generous', 'more generous', 'stingier'],
+  ['honest', 'more honest', 'more deceitful'],
+  ['loyal', 'more loyal', 'more fickle'],
+  ['modest', 'more modest', 'vainer'],
+  ['polite', 'more polite', 'ruder'],
+  ['reliable', 'more reliable', 'more erratic'],
+  ['wise', 'wiser', 'more foolish'],
+  ['agile', 'more agile', 'clumsier'],
+  ['vibrant', 'more vibrant', 'duller'],
+  ['steady', 'steadier', 'shakier'],
+  ['mature', 'more mature', 'less mature'],
+  ['graceful', 'more graceful', 'more awkward'],
+  ['ambitious', 'more ambitious', 'lazier'],
+  ['talkative', 'more talkative', 'quieter'],
+  ['optimistic', 'more optimistic', 'more pessimistic'],
+  ['curious', 'more curious', 'more indifferent'],
+  ['flexible', 'more flexible', 'more rigid'],
+  ['humble', 'more humble', 'more arrogant'],
+  ['cautious', 'more cautious', 'more reckless'],
+  ['efficient', 'more efficient', 'more wasteful'],
+  ['stable', 'more stable', 'shakier'],
+  ['clear', 'clearer', 'vaguer'],
+  ['simple', 'simpler', 'more complex'],
+  ['modern', 'more modern', 'more ancient'],
+  ['expensive', 'more expensive', 'cheaper'],
+  ['valuable', 'more valuable', 'less valuable'],
+  ['rare', 'rarer', 'more common'],
+  ['famous', 'more famous', 'more obscure'],
+  ['popular', 'more popular', 'more disliked'],
+  ['safe', 'safer', 'more dangerous'],
+  ['beautiful', 'more beautiful', 'uglier'],
+  ['pleasant', 'more pleasant', 'nastier'],
+  ['sweet', 'sweeter', 'sourer'],
+  ['fresh', 'fresher', 'staler'],
+  ['shiny', 'shinier', 'duller'],
+  ['near', 'nearer', 'farther'],
+  ['early', 'earlier', 'later'],
+  ['active', 'more active', 'more passive'],
+  ['alert', 'more alert', 'sleepier'],
+  ['careful', 'more careful', 'more careless'],
+  ['cheerful', 'more cheerful', 'gloomier'],
+  ['clever', 'cleverer', 'stupider'],
+  ['confident', 'more confident', 'more insecure'],
+  ['diligent', 'more diligent', 'lazier'],
+  ['distant', 'more distant', 'closer'],
+  ['exciting', 'more exciting', 'more boring'],
+  ['firm', 'firmer', 'looser'],
+  ['funny', 'funnier', 'more serious'],
+  ['guilty', 'more guilty', 'more innocent'],
+  ['helpful', 'more helpful', 'more helpless'],
+  ['important', 'more important', 'more trivial'],
+  ['logical', 'more logical', 'more illogical'],
+  ['long', 'longer', 'shorter'],
+  ['lucky', 'luckier', 'less lucky'],
+  ['messy', 'messier', 'neater'],
+  ['mighty', 'mightier', 'weaker'],
+  ['mild', 'milder', 'harsher'],
+  ['moral', 'more moral', 'more immoral'],
+  ['mysterious', 'more mysterious', 'more obvious'],
+  ['natural', 'more natural', 'more artificial'],
+  ['necessary', 'more necessary', 'more optional'],
+  ['noble', 'nobler', 'meaner'],
+  ['noisy', 'noisier', 'quieter'],
+  ['normal', 'more normal', 'more abnormal'],
+  ['objective', 'more objective', 'more subjective'],
+  ['ordinary', 'more ordinary', 'more special'],
+  ['outgoing', 'more outgoing', 'shyer'],
+  ['painful', 'more painful', 'less painful'],
+  ['pale', 'paler', 'darker'],
+  ['perfect', 'more perfect', 'more imperfect'],
+  ['permanent', 'more permanent', 'more temporary'],
+  ['plain', 'plainer', 'fancier'],
+  ['plentiful', 'more plentiful', 'scarcer'],
+  ['powerful', 'more powerful', 'weaker'],
+  ['precise', 'more precise', 'vaguer'],
+  ['pretty', 'prettier', 'uglier'],
+  ['primitive', 'more primitive', 'more advanced'],
+  ['proud', 'prouder', 'more humble'],
+  ['pure', 'purer', 'dirtier'],
+  ['quick', 'quicker', 'slower'],
+  ['real', 'more real', 'faker'],
+  ['relaxed', 'more relaxed', 'more tense'],
+  ['resilient', 'more resilient', 'more brittle'],
+  ['responsible', 'more responsible', 'more careless'],
+  ['risky', 'riskier', 'safer'],
+  ['robust', 'more robust', 'weaker'],
+  ['sane', 'saner', 'more insane'],
+  ['secret', 'more secret', 'more open'],
+  ['severe', 'more severe', 'milder'],
+  ['silent', 'more silent', 'louder'],
+  ['sincere', 'more sincere', 'more insincere'],
+  ['skillful', 'more skillful', 'clumsier'],
+  ['skinny', 'skinnier', 'fatter'],
+  ['sleek', 'sleeker', 'rougher'],
+  ['slight', 'slighter', 'more massive'],
+  ['slim', 'slimmer', 'fatter'],
+  ['sloppy', 'sloppier', 'neater'],
+  ['smug', 'smugger', 'more modest'],
+  ['sociable', 'more sociable', 'less sociable'],
+  ['speedy', 'speedier', 'slower'],
+  ['stern', 'sterner', 'kinder'],
+  ['stubborn', 'more stubborn', 'more flexible'],
+  ['sturdy', 'sturdier', 'weaker'],
+  ['submissive', 'more submissive', 'more dominant'],
+  ['succinct', 'more succinct', 'wordier'],
+  ['sure', 'surer', 'more doubtful'],
+  ['suspicious', 'more suspicious', 'more trusting'],
+  ['swift', 'swifter', 'slower'],
+  ['symmetrical', 'more symmetrical', 'more asymmetrical'],
+  ['tame', 'tamer', 'wilder'],
+  ['tangible', 'more tangible', 'more abstract'],
+  ['tedious', 'more tedious', 'more exciting'],
+  ['temporary', 'more temporary', 'more permanent'],
+  ['tense', 'more tense', 'more relaxed'],
+  ['tentative', 'more tentative', 'more certain'],
+  ['terrible', 'more terrible', 'more wonderful'],
+  ['terse', 'terser', 'wordier'],
+  ['thorough', 'more thorough', 'more careless'],
+  ['thrifty', 'thriftier', 'more extravagant'],
+  ['thrilling', 'more thrilling', 'more boring'],
+  ['tidy', 'tidier', 'messier'],
+  ['timely', 'more timely', 'later'],
+  ['tolerant', 'more tolerant', 'more narrow-minded'],
+  ['traditional', 'more traditional', 'more modern'],
+  ['transparent', 'more transparent', 'more opaque'],
+  ['treacherous', 'more treacherous', 'more faithful'],
+  ['tricky', 'trickier', 'simpler'],
+  ['troubled', 'more troubled', 'calmer'],
+  ['true', 'truer', 'less true'],
+  ['trustworthy', 'more trustworthy', 'more deceitful'],
+  ['truthful', 'more truthful', 'more dishonest'],
+  ['typical', 'more typical', 'more atypical'],
+  ['unique', 'more unique', 'more ordinary'],
+  ['upright', 'more upright', 'more dishonest'],
+  ['urgent', 'more urgent', 'more trivial'],
+  ['useful', 'more useful', 'more useless'],
+  ['usual', 'more usual', 'rarer'],
+  ['vague', 'vaguer', 'clearer'],
+  ['vain', 'vainer', 'more modest'],
+  ['valiant', 'more valiant', 'more cowardly'],
+  ['valid', 'more valid', 'less valid'],
+  ['variable', 'more variable', 'more fixed'],
+  ['vast', 'vaster', 'tinier'],
+  ['vehement', 'more vehement', 'calmer'],
+  ['verbose', 'more verbose', 'terser'],
+  ['vicious', 'more vicious', 'kinder'],
+  ['victorious', 'more victorious', 'more beaten'],
+  ['vigilant', 'more vigilant', 'more careless'],
+  ['vigorous', 'more vigorous', 'weaker'],
+  ['vile', 'more vile', 'nobler'],
+  ['violent', 'more violent', 'more peaceful'],
+  ['virtuous', 'more virtuous', 'more wicked'],
+  ['visible', 'more visible', 'more hidden'],
+  ['visionary', 'more visionary', 'more practical'],
+  ['vital', 'more vital', 'more trivial'],
+  ['vivacious', 'more vivacious', 'duller'],
+  ['vivid', 'more vivid', 'paler'],
+  ['vocal', 'more vocal', 'quieter'],
+  ['volatile', 'more volatile', 'more stable'],
+  ['vulgar', 'more vulgar', 'more refined'],
+  ['vulnerable', 'more vulnerable', 'more secure'],
+  ['wary', 'more wary', 'more trusting'],
+  ['wasteful', 'more wasteful', 'thriftier'],
+  ['wealthy', 'wealthier', 'poorer'],
+  ['weary', 'wearier', 'fresher'],
+  ['weighty', 'more weighty', 'more trivial'],
+  ['weird', 'weirder', 'more normal'],
+  ['wicked', 'more wicked', 'holier'],
+  ['wild', 'wilder', 'tamer'],
+  ['willing', 'more willing', 'more reluctant'],
+  ['wily', 'wilier', 'more candid'],
+  ['witty', 'wittier', 'duller'],
+  ['wonderful', 'more wonderful', 'more awful'],
+  ['wordy', 'wordier', 'terser'],
+  ['worldly', 'more worldly', 'more spiritual'],
+  ['worried', 'more worried', 'calmer'],
+  ['youthful', 'more youthful', 'more wizened'],
 ];
 
-const ADJECTIVES = [
-  'taller', 'shorter', 'faster', 'slower', 'stronger', 'weaker', 'smarter', 'wiser',
-  'older', 'younger', 'richer', 'poorer', 'louder', 'quieter', 'deeper', 'higher',
-  'larger', 'smaller', 'longer', 'wider', 'colder', 'hotter', 'brighter', 'darker',
-  'harder', 'softer', 'braver', 'kinder', 'heavier', 'lighter', 'calmer', 'bolder',
-];
+const BANNED_REASONING_TERMS = new Set([
+  'stupider',
+  'faker',
+  'more perfect',
+  'more unique',
+  'more beaten',
+]);
 
-const CONNECTORS = ['than', 'is compared to'];
+function normalizeTerm(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function hasMalformedComparative(value: string): boolean {
+  const normalized = normalizeTerm(value);
+  if (BANNED_REASONING_TERMS.has(normalized)) return true;
+  if (normalized.startsWith('more ')) return false;
+  if (normalized.startsWith('less ')) return false;
+  if (normalized === 'better' || normalized === 'worse') return false;
+  return !normalized.endsWith('er');
+}
+
+function isHighQualityPair([base, comparative, opposite]: [string, string, string]): boolean {
+  const normalizedBase = normalizeTerm(base);
+  const normalizedComp = normalizeTerm(comparative);
+  const normalizedOpp = normalizeTerm(opposite);
+
+  if (!normalizedBase || !normalizedComp || !normalizedOpp) return false;
+  if (normalizedBase === 'perfect' || normalizedBase === 'unique') return false;
+  if (hasMalformedComparative(normalizedComp)) return false;
+  if (BANNED_REASONING_TERMS.has(normalizedOpp)) return false;
+  if (normalizedComp === normalizedOpp) return false;
+  if (normalizedComp === normalizedBase || normalizedOpp === normalizedBase) return false;
+
+  return true;
+}
+
+const QUALITY_ADJECTIVE_PAIRS: [string, string, string][] = (() => {
+  const seenBases = new Set<string>();
+  const output: [string, string, string][] = [];
+  for (const pair of ADJECTIVE_PAIRS) {
+    const baseKey = normalizeTerm(pair[0]);
+    if (seenBases.has(baseKey)) continue;
+    if (!isHighQualityPair(pair)) continue;
+    seenBases.add(baseKey);
+    output.push(pair);
+  }
+  return output;
+})();
+
+type ReasoningDifficulty = 'easy' | 'medium' | 'hard' | 'tricky';
+
+const REASONING_DIFFICULTIES: ReasoningDifficulty[] = ['easy', 'medium', 'hard', 'tricky'];
+
+const ADVANCED_REASONING_BASES = new Set([
+  'treacherous',
+  'vivacious',
+  'vehement',
+  'mysterious',
+  'transparent',
+  'symmetrical',
+  'tentative',
+  'succinct',
+  'resilient',
+  'volatile',
+  'vulnerable',
+  'objective',
+  'primitive',
+  'visionary',
+  'vigorous',
+  'vigilant',
+  'tolerant',
+  'thrifty',
+  'terse',
+  'typical',
+  'valiant',
+  'variable',
+  'victorious',
+]);
+
+function pickFrom<T>(items: T[]): T {
+  return items[randomInt(0, items.length - 1)];
+}
+
+const IRREGULAR_COMPARATIVES: Record<string, string> = {
+  bad: 'worse',
+  far: 'farther',
+  good: 'better',
+  ill: 'worse',
+  little: 'less',
+  many: 'more',
+  much: 'more',
+  well: 'better',
+};
+
+const SYNONYM_COMPARATIVE_OVERRIDES: Record<string, string> = {
+  bright: 'brighter',
+  broad: 'broader',
+  calm: 'calmer',
+  clean: 'cleaner',
+  clear: 'clearer',
+  close: 'closer',
+  cool: 'cooler',
+  dirty: 'dirtier',
+  fast: 'faster',
+  frail: 'frailer',
+  friendly: 'friendlier',
+  hefty: 'heftier',
+  keen: 'keener',
+  kind: 'kinder',
+  loud: 'louder',
+  long: 'longer',
+  neat: 'neater',
+  old: 'older',
+  plain: 'plainer',
+  quiet: 'quieter',
+  rough: 'rougher',
+  short: 'shorter',
+  simple: 'simpler',
+  strong: 'stronger',
+  strict: 'stricter',
+  thin: 'thinner',
+  warm: 'warmer',
+  weak: 'weaker',
+  young: 'younger',
+};
+
+function comparativeForAdjective(word: string): string {
+  const normalized = normalizeTerm(word);
+  const irregular = IRREGULAR_COMPARATIVES[normalized];
+  if (irregular) return irregular;
+  const override = SYNONYM_COMPARATIVE_OVERRIDES[normalized];
+  if (override) return override;
+  return `more ${normalized}`;
+}
+
+type BaseVariant = {
+  word: string;
+  usedSynonym: boolean;
+  key: string;
+};
+
+function synonymProbabilityForDifficulty(difficulty: ReasoningDifficulty): number {
+  if (difficulty === 'easy') return 0.35;
+  if (difficulty === 'medium') return 0.55;
+  if (difficulty === 'hard') return 0.75;
+  return 0.88;
+}
+
+function getBaseVariants(base: string): string[] {
+  const normalized = normalizeTerm(base);
+  const synonym = BASE_SYNONYM_BY_BASE[normalized];
+  if (!synonym || synonym === normalized) return [normalized];
+  return [normalized, synonym];
+}
+
+function pickBaseVariant(base: string, difficulty: ReasoningDifficulty, preferSynonym = false): BaseVariant {
+  const variants = getBaseVariants(base);
+  const baseWord = normalizeTerm(base);
+  if (variants.length <= 1) {
+    return { word: baseWord, usedSynonym: false, key: baseWord };
+  }
+
+  const synonym = variants.find((v) => v !== baseWord) ?? baseWord;
+  const baseChance = synonymProbabilityForDifficulty(difficulty);
+  const synonymChance = Math.min(0.97, baseChance + (preferSynonym ? 0.18 : 0));
+  const useSynonym = Math.random() < synonymChance;
+  if (useSynonym) {
+    return { word: synonym, usedSynonym: true, key: synonym };
+  }
+  return { word: baseWord, usedSynonym: false, key: baseWord };
+}
+
+function buildPositiveDescriptor(
+  base: string,
+  canonicalComparative: string,
+  difficulty: ReasoningDifficulty,
+  preferSynonym = false
+): { text: string; key: string } {
+  const variant = pickBaseVariant(base, difficulty, preferSynonym);
+  if (!variant.usedSynonym) {
+    return { text: canonicalComparative, key: canonicalComparative };
+  }
+  const text = comparativeForAdjective(variant.word);
+  return { text, key: text };
+}
+
+function buildBaseDescriptor(
+  mode: 'plain' | 'less',
+  base: string,
+  difficulty: ReasoningDifficulty,
+  preferSynonym = false
+): { text: string; key: string } {
+  const variant = pickBaseVariant(base, difficulty, preferSynonym);
+  if (mode === 'plain') {
+    return { text: variant.word, key: variant.key };
+  }
+  return { text: `less ${variant.word}`, key: `less ${variant.key}` };
+}
+
+function pairComplexityScore([base, comparative, opposite]: [string, string, string]): number {
+  let score = 0;
+  if (comparative.startsWith('more ')) score += 1;
+  if (opposite.startsWith('more ') || opposite.startsWith('less ')) score += 1;
+  if (base.length >= 8) score += 1;
+  if (base.includes('-') || opposite.includes('-') || opposite.includes(' ')) score += 1;
+  if (base.startsWith('un') || opposite.startsWith('more un')) score += 1;
+  if (ADVANCED_REASONING_BASES.has(base)) score += 1;
+  return score;
+}
+
+function classifyPairDifficulty(pair: [string, string, string]): ReasoningDifficulty {
+  const score = pairComplexityScore(pair);
+  if (score <= 1) return 'easy';
+  if (score === 2) return 'medium';
+  if (score === 3) return 'hard';
+  return 'tricky';
+}
+
+const PAIRS_BY_DIFFICULTY: Record<ReasoningDifficulty, [string, string, string][]> = {
+  easy: [],
+  medium: [],
+  hard: [],
+  tricky: [],
+};
+
+for (const pair of QUALITY_ADJECTIVE_PAIRS) {
+  PAIRS_BY_DIFFICULTY[classifyPairDifficulty(pair)].push(pair);
+}
+
+function pickReasoningDifficulty(): ReasoningDifficulty {
+  return generateRecentUnique(
+    'gia-reasoning-difficulty',
+    3,
+    () => REASONING_DIFFICULTIES[randomInt(0, REASONING_DIFFICULTIES.length - 1)],
+    (d) => d
+  );
+}
+
+function statementFormsForDifficulty(difficulty: ReasoningDifficulty): number[] {
+  if (difficulty === 'easy') return [0];
+  if (difficulty === 'medium') return [0, 1];
+  if (difficulty === 'hard') return [1, 2];
+  return [1, 2];
+}
+
+function questionFormsForDifficulty(difficulty: ReasoningDifficulty): number[] {
+  if (difficulty === 'easy') return [0, 1];
+  if (difficulty === 'medium') return [0, 1];
+  if (difficulty === 'hard') return [0, 1, 2];
+  return [1, 2];
+}
 
 type Round = {
   statement: string;
@@ -41,61 +510,98 @@ type Round = {
 };
 
 function makeRoundRaw(): Round {
-  const [nameA, nameB] = generateRecentUnique('gia-reasoning-names', 20, () => NAMES[randomInt(0, NAMES.length - 1)], (n) => n, 2);
-  const adj = ADJECTIVES[randomInt(0, ADJECTIVES.length - 1)];
-  const connector = CONNECTORS[randomInt(0, CONNECTORS.length - 1)];
-
-  // Statement: A is taller than B.
-  // Question: Who is shorter?
-  const statement = `${nameA} is ${adj} ${connector} ${nameB}.`;
-
-  const opposites: Record<string, string> = {
-    taller: 'shorter',
-    shorter: 'taller',
-    faster: 'slower',
-    slower: 'faster',
-    stronger: 'weaker',
-    weaker: 'stronger',
-    smarter: 'dumber',
-    wiser: 'less wise',
-    older: 'younger',
-    younger: 'older',
-    richer: 'poorer',
-    poorer: 'richer',
-    louder: 'quieter',
-    quieter: 'louder',
-    deeper: 'shallower',
-    shallower: 'deeper',
-    higher: 'lower',
-    lower: 'higher',
-    larger: 'smaller',
-    smaller: 'larger',
-    longer: 'shorter',
-    wider: 'narrower',
-    colder: 'warmer',
-    hotter: 'cooler',
-    brighter: 'dimmer',
-    darker: 'lighter',
-    harder: 'softer',
-    softer: 'harder',
-    braver: 'less brave',
-    kinder: 'less kind',
-    heavier: 'lighter',
-    lighter: 'heavier',
-    calmer: 'noisier',
-    bolder: 'shier',
-  };
-
-  const isAskingOpposite = Math.random() > 0.5;
-  const questionAdj = isAskingOpposite ? opposites[adj] || adj : adj;
-  const question = `Who is ${questionAdj}?`;
-
-  let answer = '';
-  if (isAskingOpposite) {
-    answer = nameB;
-  } else {
-    answer = nameA;
+  const nameA = generateRecentUnique(
+    'gia-reasoning-names',
+    20,
+    () => NAME_POOL[randomInt(0, NAME_POOL.length - 1)],
+    (n) => n
+  );
+  let nameB = NAME_POOL[randomInt(0, NAME_POOL.length - 1)];
+  while (nameB === nameA) {
+    nameB = NAME_POOL[randomInt(0, NAME_POOL.length - 1)];
   }
+  const difficulty = pickReasoningDifficulty();
+  const difficultyPool = PAIRS_BY_DIFFICULTY[difficulty];
+  const fallbackPool =
+    PAIRS_BY_DIFFICULTY.medium.length > 0 ? PAIRS_BY_DIFFICULTY.medium : QUALITY_ADJECTIVE_PAIRS;
+  const pairPool = difficultyPool.length > 0 ? difficultyPool : fallbackPool;
+  const [base, comparative, oppositeComp] = pickFrom(pairPool);
+
+  // Statement forms:
+  // 1. "A is taller than B"        → A is superior
+  // 2. "A is not as tall as B"     → B is superior
+  // 3. "A is less tall than B"     → B is superior
+  const statementForm = pickFrom(statementFormsForDifficulty(difficulty));
+
+  let superior: string;
+  let inferior: string;
+  let statement: string;
+  let statementKey: string;
+
+  if (statementForm === 0) {
+    // "A is taller than B" / "A is more tranquil than B" → A is superior
+    const descriptor = buildPositiveDescriptor(base, comparative, difficulty, difficulty !== 'easy');
+    statement = `${nameA} is ${descriptor.text} than ${nameB}.`;
+    statementKey = `s0:${descriptor.key}`;
+    superior = nameA;
+    inferior = nameB;
+  } else if (statementForm === 1) {
+    // "A is not as tall/tranquil as B" → B is superior
+    const descriptor = buildBaseDescriptor('plain', base, difficulty, difficulty !== 'easy');
+    statement = `${nameA} is not as ${descriptor.text} as ${nameB}.`;
+    statementKey = `s1:${descriptor.key}`;
+    superior = nameB;
+    inferior = nameA;
+  } else {
+    // "A is less tall/tranquil than B" → B is superior
+    const descriptor = buildBaseDescriptor('less', base, difficulty, true);
+    statement = `${nameA} is ${descriptor.text} than ${nameB}.`;
+    statementKey = `s2:${descriptor.key}`;
+    superior = nameB;
+    inferior = nameA;
+  }
+
+  // Question forms:
+  // 1. "Who is taller?"       → superior
+  // 2. "Who is shorter?"      → inferior
+  // 3. "Who is less tall?"    → inferior
+  const questionForm = pickFrom(questionFormsForDifficulty(difficulty));
+
+  let questionAdj: string;
+  let answer: string;
+  let questionKey: string;
+
+  if (questionForm === 0) {
+    const descriptor = buildPositiveDescriptor(
+      base,
+      comparative,
+      difficulty,
+      difficulty === 'hard' || difficulty === 'tricky'
+    );
+    questionAdj = descriptor.text;
+    questionKey = `q0:${descriptor.key}`;
+    answer = superior;
+  } else if (questionForm === 1) {
+    const useSynonymInversePrompt =
+      difficulty !== 'easy' &&
+      Math.random() < (difficulty === 'medium' ? 0.45 : difficulty === 'hard' ? 0.68 : 0.82);
+    if (useSynonymInversePrompt) {
+      const descriptor = buildBaseDescriptor('less', base, difficulty, true);
+      questionAdj = descriptor.text;
+      questionKey = `q1:${descriptor.key}`;
+    } else {
+      questionAdj = oppositeComp;
+      questionKey = `q1:${oppositeComp}`;
+    }
+    answer = inferior;
+  } else {
+    const descriptor = buildBaseDescriptor('less', base, difficulty, true);
+    questionAdj = descriptor.text;
+    questionKey = `q2:${descriptor.key}`;
+    answer = inferior;
+  }
+
+  const question = `Who is ${questionAdj}?`;
 
   return {
     statement,
@@ -103,7 +609,7 @@ function makeRoundRaw(): Round {
     names: [nameA, nameB],
     options: shuffle([nameA, nameB]),
     answer,
-    signature: `${nameA}|${nameB}|${adj}|${questionAdj}`,
+    signature: `${nameA}|${nameB}|${base}|${statementForm}|${questionForm}|${difficulty}|${statementKey}|${questionKey}`,
   };
 }
 

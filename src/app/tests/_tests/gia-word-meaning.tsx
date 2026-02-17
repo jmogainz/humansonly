@@ -8,6 +8,7 @@ import ScoreDisplay from '@/components/ScoreDisplay';
 import Scoreboard from '@/components/Scoreboard';
 import { useTimer } from '@/hooks/useTimer';
 import TestStartScreen from '@/components/TestStartScreen';
+import { UNCOMMON_WORD_MEANING_WORDS } from './wordMeaningCommonness';
 
 const WORD_GROUPS: string[][] = [
   // --- EXISTING GROUPS (RETAINED) ---
@@ -270,6 +271,222 @@ const WORD_GROUPS: string[][] = [
   ['spin', 'turn', 'rotate', 'revolve', 'whirl'],
 ];
 
+function normalizeWord(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function sanitizeWordGroups(rawGroups: string[][]): string[][] {
+  return rawGroups
+    .map((group) => {
+      const seen = new Set<string>();
+      const cleaned: string[] = [];
+      for (const word of group) {
+        const normalized = normalizeWord(word);
+        if (!normalized) continue;
+        // Keep simple alphabetic tokens (plus spaces/hyphens/apostrophes) for consistency.
+        if (!/^[a-z][a-z' -]*$/.test(normalized)) continue;
+        if (UNCOMMON_WORD_MEANING_WORDS.has(normalized)) continue;
+        if (seen.has(normalized)) continue;
+        seen.add(normalized);
+        cleaned.push(normalized);
+      }
+      return cleaned;
+    })
+    .filter((group) => group.length >= 3);
+}
+
+type WordMeaningDifficulty = 'easy' | 'medium' | 'hard' | 'tricky';
+
+const WORD_MEANING_DIFFICULTIES: WordMeaningDifficulty[] = ['easy', 'medium', 'hard', 'tricky'];
+
+const CLEAN_WORD_GROUPS = sanitizeWordGroups(WORD_GROUPS);
+
+const WORD_FREQUENCY = (() => {
+  const counts = new Map<string, number>();
+  for (const group of CLEAN_WORD_GROUPS) {
+    for (const word of group) {
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+  }
+  return counts;
+})();
+
+type WordGroupMeta = {
+  words: string[];
+  uniqueWords: string[];
+  signature: string;
+};
+
+const QUALITY_WORD_GROUPS: WordGroupMeta[] = CLEAN_WORD_GROUPS
+  .map((words) => {
+    const uniqueWords = words.filter((word) => (WORD_FREQUENCY.get(word) ?? 0) === 1);
+    return {
+      words,
+      uniqueWords,
+      signature: words.join('|'),
+    };
+  })
+  .filter((group) => group.uniqueWords.length >= 3);
+
+function pickWordMeaningDifficulty(): WordMeaningDifficulty {
+  return generateRecentUnique(
+    'gia-word-meaning-difficulty',
+    3,
+    () => WORD_MEANING_DIFFICULTIES[randomInt(0, WORD_MEANING_DIFFICULTIES.length - 1)],
+    (d) => d
+  );
+}
+
+function pickFrom<T>(items: T[]): T {
+  return items[randomInt(0, items.length - 1)];
+}
+
+function wordComplexity(word: string): number {
+  let score = word.length;
+  if (word.includes(' ')) score += 2;
+  if (word.includes('-') || word.includes('\'')) score += 1;
+  if (/[qxzj]/.test(word)) score += 1;
+  return score;
+}
+
+function wordSimilarity(a: string, b: string): number {
+  let score = 0;
+  if (a[0] === b[0]) score += 2;
+  if (a.slice(-1) === b.slice(-1)) score += 1;
+  if (Math.abs(a.length - b.length) <= 1) score += 1;
+  if (a.slice(0, 2) === b.slice(0, 2)) score += 1;
+  if (a.slice(-2) === b.slice(-2)) score += 1;
+  return score;
+}
+
+function pairAverageComplexity(pair: [string, string]): number {
+  return (wordComplexity(pair[0]) + wordComplexity(pair[1])) / 2;
+}
+
+function pairScore(pair: [string, string]): number {
+  return pairAverageComplexity(pair) * 0.35 + wordSimilarity(pair[0], pair[1]) * 2;
+}
+
+function buildPairCandidates(words: string[]): Array<{ pair: [string, string]; score: number }> {
+  const candidates: Array<{ pair: [string, string]; score: number }> = [];
+  for (let i = 0; i < words.length; i += 1) {
+    for (let j = i + 1; j < words.length; j += 1) {
+      const pair: [string, string] = [words[i], words[j]];
+      candidates.push({ pair, score: pairScore(pair) });
+    }
+  }
+  return candidates.sort((a, b) => a.score - b.score);
+}
+
+function pickPairForDifficulty(group: WordGroupMeta, difficulty: WordMeaningDifficulty): [string, string] | null {
+  const candidates = buildPairCandidates(group.uniqueWords);
+  if (candidates.length === 0) return null;
+
+  const n = candidates.length;
+  const easyEnd = Math.max(1, Math.floor(n * 0.4));
+  const hardStart = Math.max(0, Math.floor(n * 0.6));
+  const trickyStart = Math.max(0, Math.floor(n * 0.8));
+
+  let bucket = candidates;
+  if (difficulty === 'easy') {
+    bucket = candidates.slice(0, easyEnd);
+  } else if (difficulty === 'medium') {
+    bucket = candidates.slice(Math.floor(n * 0.3), Math.max(Math.floor(n * 0.7), Math.floor(n * 0.3) + 1));
+  } else if (difficulty === 'hard') {
+    bucket = candidates.slice(hardStart);
+  } else {
+    bucket = candidates.slice(trickyStart);
+  }
+
+  if (bucket.length === 0) return pickFrom(candidates).pair;
+  return pickFrom(bucket).pair;
+}
+
+function maxSimilarityToPair(word: string, pair: [string, string]): number {
+  return Math.max(wordSimilarity(word, pair[0]), wordSimilarity(word, pair[1]));
+}
+
+function acceptsOddCandidate(
+  difficulty: WordMeaningDifficulty,
+  maxSimilarity: number,
+  complexityDiff: number,
+  relaxLevel: number
+): boolean {
+  if (difficulty === 'easy') {
+    if (relaxLevel === 0) return maxSimilarity <= 1 && complexityDiff >= 2;
+    if (relaxLevel === 1) return maxSimilarity <= 2 && complexityDiff >= 1;
+    return maxSimilarity <= 2;
+  }
+
+  if (difficulty === 'medium') {
+    if (relaxLevel === 0) return maxSimilarity <= 2;
+    return maxSimilarity <= 3;
+  }
+
+  if (difficulty === 'hard') {
+    if (relaxLevel === 0) return maxSimilarity >= 2 && maxSimilarity <= 4 && complexityDiff <= 2.5;
+    if (relaxLevel === 1) return maxSimilarity >= 2 && complexityDiff <= 3;
+    return maxSimilarity >= 1;
+  }
+
+  // tricky
+  if (relaxLevel === 0) return maxSimilarity >= 3 && complexityDiff <= 1.5;
+  if (relaxLevel === 1) return maxSimilarity >= 2 && complexityDiff <= 2.5;
+  return maxSimilarity >= 2;
+}
+
+function oddCandidateRank(
+  difficulty: WordMeaningDifficulty,
+  maxSimilarity: number,
+  complexityDiff: number
+): number {
+  const targetSimilarity =
+    difficulty === 'easy' ? 0.5 :
+      difficulty === 'medium' ? 1.5 :
+        difficulty === 'hard' ? 2.8 : 3.8;
+  const targetComplexityDiff =
+    difficulty === 'easy' ? 2.5 :
+      difficulty === 'medium' ? 1.2 :
+        difficulty === 'hard' ? 1.0 : 0.5;
+  return Math.abs(maxSimilarity - targetSimilarity) * 2 + Math.abs(complexityDiff - targetComplexityDiff);
+}
+
+function pickOddForDifficulty(
+  pair: [string, string],
+  pairGroup: WordGroupMeta,
+  difficulty: WordMeaningDifficulty
+): string | null {
+  const blocked = new Set(pairGroup.words.map(normalizeWord));
+  const pairComplexity = pairAverageComplexity(pair);
+
+  for (let relaxLevel = 0; relaxLevel <= 2; relaxLevel += 1) {
+    const candidates: Array<{ word: string; rank: number }> = [];
+    for (const group of shuffle(QUALITY_WORD_GROUPS)) {
+      if (group.signature === pairGroup.signature) continue;
+      if (group.words.some((word) => blocked.has(normalizeWord(word)))) continue;
+
+      for (const odd of group.uniqueWords) {
+        if (blocked.has(odd)) continue;
+        const maxSimilarity = maxSimilarityToPair(odd, pair);
+        const complexityDiff = Math.abs(wordComplexity(odd) - pairComplexity);
+        if (!acceptsOddCandidate(difficulty, maxSimilarity, complexityDiff, relaxLevel)) continue;
+        candidates.push({
+          word: odd,
+          rank: oddCandidateRank(difficulty, maxSimilarity, complexityDiff),
+        });
+      }
+    }
+
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.rank - b.rank);
+      const topCandidates = candidates.slice(0, Math.min(50, candidates.length));
+      return pickFrom(topCandidates).word;
+    }
+  }
+
+  return null;
+}
+
 type Round = {
   options: string[];
   answer: string;
@@ -277,23 +494,40 @@ type Round = {
 };
 
 function makeRoundRaw(): Round {
-  const firstIndex = randomInt(0, WORD_GROUPS.length - 1);
-  let secondIndex = randomInt(0, WORD_GROUPS.length - 1);
-  while (secondIndex === firstIndex) {
-    secondIndex = randomInt(0, WORD_GROUPS.length - 1);
+  const difficulty = pickWordMeaningDifficulty();
+
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const pairGroup = pickFrom(QUALITY_WORD_GROUPS);
+    const pair = pickPairForDifficulty(pairGroup, difficulty);
+    if (!pair) continue;
+
+    const odd = pickOddForDifficulty(pair, pairGroup, difficulty);
+    if (!odd) continue;
+
+    const options = shuffle([pair[0], pair[1], odd]);
+    if (new Set(options.map(normalizeWord)).size !== 3) continue;
+
+    return {
+      options,
+      answer: odd,
+      signature: `${[...pair].sort().join('|')}:${odd}|${difficulty}`,
+    };
   }
 
-  const groupA = shuffle([...WORD_GROUPS[firstIndex]]);
-  const groupB = shuffle([...WORD_GROUPS[secondIndex]]);
-  const pair = groupA.slice(0, 2);
-  const odd = groupB[0];
-  
-  const options = shuffle([...pair, odd]);
-  
+  // Quality-preserving fallback: medium-style round with globally unique vocabulary.
+  const pairGroup = pickFrom(QUALITY_WORD_GROUPS);
+  const pair = pickPairForDifficulty(pairGroup, 'medium') ?? [pairGroup.uniqueWords[0], pairGroup.uniqueWords[1]];
+  const blocked = new Set(pair);
+  const fallbackOddPool =
+    QUALITY_WORD_GROUPS
+      .find((group) => group.signature !== pairGroup.signature)
+      ?.uniqueWords.filter((word) => !blocked.has(word)) ?? [];
+  const odd = pickOddForDifficulty(pair, pairGroup, 'medium') ??
+    (fallbackOddPool.length > 0 ? pickFrom(fallbackOddPool) : pairGroup.uniqueWords.find((word) => !blocked.has(word)) ?? pair[0]);
   return {
-    options,
+    options: shuffle([pair[0], pair[1], odd]),
     answer: odd,
-    signature: `${pair.sort().join('|')}:${odd}`,
+    signature: `${[...pair].sort().join('|')}:${odd}|fallback`,
   };
 }
 
