@@ -103,7 +103,7 @@ export default function TestPageClient({ definition }: TestPageClientProps) {
       subtitle={definition.description}
       sidebar={
         <div style={{ display: 'grid', gap: '0.2rem', textAlign: 'right' }}>
-          <small style={{ color: 'var(--text-muted)' }}>Score Unit</small>
+          <small style={{ color: 'var(--text-muted)' }}>Scored in</small>
           <strong style={{ fontFamily: 'var(--font-mono)' }}>{definition.scoreUnit}</strong>
         </div>
       }

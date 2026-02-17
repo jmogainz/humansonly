@@ -12,6 +12,18 @@ function readDomTheme(): Theme {
 function applyTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
   window.localStorage.setItem('humansonly_theme', theme);
+  
+  // Update favicon based on theme
+  const darkIcon = document.querySelector('link[href="/favicon-dark.svg"]');
+  const lightIcon = document.querySelector('link[href="/favicon-light.svg"]');
+  
+  if (theme === 'dark') {
+    if (darkIcon) darkIcon.removeAttribute('media');
+    if (lightIcon) lightIcon.setAttribute('media', 'none');
+  } else {
+    if (lightIcon) lightIcon.removeAttribute('media');
+    if (darkIcon) darkIcon.setAttribute('media', 'none');
+  }
 }
 
 export default function ThemeToggle() {

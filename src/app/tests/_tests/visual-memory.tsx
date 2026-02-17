@@ -114,7 +114,7 @@ export default function VisualMemoryTest({ onComplete }: TestGameProps) {
                 border: '1px solid var(--border)',
                 background:
                   phase === 'show' && isPattern
-                    ? '#ffffff'
+                    ? 'var(--accent)'
                     : wasSelected
                       ? 'color-mix(in srgb, var(--accent) 45%, var(--surface-raised))'
                       : 'var(--surface-raised)',

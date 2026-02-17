@@ -93,7 +93,7 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
           : 'Too soon!';
 
   const color =
-    phase === 'wait' ? '#b34747' : phase === 'go' ? '#4a9c56' : phase === 'too-soon' ? '#9a6b39' : '#3d5aa3';
+    phase === 'wait' ? 'var(--phase-wait)' : phase === 'go' ? 'var(--phase-go)' : phase === 'too-soon' ? 'var(--phase-warn)' : 'var(--phase-idle)';
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
@@ -116,12 +116,12 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
           placeItems: 'center',
           textAlign: 'center',
           cursor: 'pointer',
-          transition: 'background 160ms ease',
+          transition: 'background 0ms ease',
         }}
       >
         <div style={{ display: 'grid', gap: '0.4rem' }}>
-          <h2 style={{ margin: 0, color: '#fff', fontSize: '2rem' }}>{message}</h2>
-          <p style={{ margin: 0, color: '#fff', opacity: 0.95 }}>
+          <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: '2rem' }}>{message}</h2>
+          <p style={{ margin: 0, color: 'var(--phase-text)', opacity: 0.95 }}>
             {attempts.length}/{TOTAL_ATTEMPTS} rounds complete
           </p>
         </div>

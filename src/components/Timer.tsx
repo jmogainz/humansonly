@@ -20,7 +20,7 @@ function formatTime(milliseconds: number): string {
 }
 
 export default function Timer({ label = 'Time', milliseconds, progress }: TimerProps) {
-  const pct = Math.max(0, Math.min(100, Math.round((progress ?? 0) * 100)));
+  const pct = Math.max(0, Math.min(100, (progress ?? 0) * 100));
 
   return (
     <div className={styles.timer}>

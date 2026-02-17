@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { Analytics } from '@vercel/analytics/react';
-import { Inter, JetBrains_Mono } from 'next/font/google';
+import { Outfit, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 import { Providers } from '@/components/Providers';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-body', display: 'swap' });
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-body', display: 'swap', weight: ['300', '400', '500', '600', '700'] });
 const jetBrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 
 export const metadata: Metadata = {
@@ -48,7 +48,8 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-light.svg', type: 'image/svg+xml', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon-dark.svg', type: 'image/svg+xml', media: '(prefers-color-scheme: dark)' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
       { url: '/favicon.ico', sizes: 'any' },
@@ -107,8 +108,16 @@ const themeBootstrap = `
     
     if (stored === 'dark' || (!stored && prefersDark)) {
       document.documentElement.dataset.theme = 'dark';
+      const darkIcon = document.querySelector('link[href="/favicon-dark.svg"]');
+      if (darkIcon) darkIcon.removeAttribute('media');
+      const lightIcon = document.querySelector('link[href="/favicon-light.svg"]');
+      if (lightIcon) lightIcon.setAttribute('media', '(prefers-color-scheme: none)');
     } else {
       document.documentElement.dataset.theme = 'light';
+      const lightIcon = document.querySelector('link[href="/favicon-light.svg"]');
+      if (lightIcon) lightIcon.removeAttribute('media');
+      const darkIcon = document.querySelector('link[href="/favicon-dark.svg"]');
+      if (darkIcon) darkIcon.setAttribute('media', '(prefers-color-scheme: none)');
     }
   } catch {
     // Default to light for minimal look if JS fails/SSR match
@@ -120,7 +129,7 @@ const themeBootstrap = `
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${jetBrainsMono.variable}`}>
+      <body className={`${outfit.variable} ${jetBrainsMono.variable}`}>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
         <Providers>
           <Header />

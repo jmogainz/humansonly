@@ -136,7 +136,13 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, arena.width, arena.height);
-    ctx.fillStyle = '#232529';
+    const rootStyles = getComputedStyle(document.documentElement);
+    const canvasBg = rootStyles.getPropertyValue('--surface-raised').trim() || '#232529';
+    const circleColor = rootStyles.getPropertyValue('--text-primary').trim() || '#f0f0f0';
+    const highlightColor = rootStyles.getPropertyValue('--warning').trim() || '#f2cf59';
+    const selectedColor = rootStyles.getPropertyValue('--success').trim() || '#5adb7f';
+
+    ctx.fillStyle = canvasBg;
     ctx.fillRect(0, 0, arena.width, arena.height);
 
     for (const circle of circlesRef.current) {
@@ -144,12 +150,12 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
       const isSelected = selected.has(circle.id);
       ctx.beginPath();
       ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
-      ctx.fillStyle = isTargetVisible ? '#f2cf59' : '#f0f0f0';
+      ctx.fillStyle = isTargetVisible ? highlightColor : circleColor;
       ctx.fill();
 
       if (isSelected) {
         ctx.lineWidth = 3;
-        ctx.strokeStyle = '#5adb7f';
+        ctx.strokeStyle = selectedColor;
         ctx.stroke();
       }
     }
@@ -305,7 +311,7 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
           borderRadius: '12px',
           border: '1px solid var(--border)',
           cursor: phase === 'select' ? 'pointer' : 'default',
-          background: '#232529',
+          background: 'var(--surface-raised)',
           touchAction: 'manipulation',
         }}
       />

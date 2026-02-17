@@ -2,13 +2,13 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { generateRecentUnique, randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle } from '@/lib/utils';
 import Timer from '@/components/Timer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import { useTimer } from '@/hooks/useTimer';
 
-const LETTERS = 'abcdefghjkmnprstuvwxyz'.split('');
-const COLUMN_COUNT = 6;
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+const COLUMN_COUNT = 4;
 
 type Column = {
   top: string;
@@ -21,15 +21,8 @@ type Round = {
   answer: number;
 };
 
-const RECENT_KEY = 'gia-perceptual-speed';
-const RECENT_WINDOW = 5000;
-
 function pickUniqueLetters(count: number): string[] {
   return shuffle([...LETTERS]).slice(0, count);
-}
-
-function withRandomCase(value: string): string {
-  return Math.random() < 0.5 ? value.toLowerCase() : value.toUpperCase();
 }
 
 function makeRound(): Round {
@@ -40,8 +33,8 @@ function makeRound(): Round {
   for (let i = 0; i < numSame; i += 1) {
     const letter = matchingLetters[i];
     columns.push({
-      top: withRandomCase(letter),
-      bottom: withRandomCase(letter),
+      top: letter.toLowerCase(),
+      bottom: letter.toUpperCase(),
       same: true,
     });
   }
@@ -49,8 +42,8 @@ function makeRound(): Round {
   while (columns.length < COLUMN_COUNT) {
     const [a, b] = pickUniqueLetters(2);
     columns.push({
-      top: withRandomCase(a),
-      bottom: withRandomCase(b),
+      top: a.toLowerCase(),
+      bottom: b.toUpperCase(),
       same: false,
     });
   }
@@ -61,19 +54,12 @@ function makeRound(): Round {
   };
 }
 
-function roundSignature(round: Round): string {
-  return `${round.answer}|${round.columns.map((column) => `${column.top}${column.bottom}`).join(',')}`;
-}
-
-function makeUniqueRound(): Round {
-  return generateRecentUnique(RECENT_KEY, RECENT_WINDOW, makeRound, roundSignature);
-}
-
 export default function GiaPerceptualSpeedTest({ onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeUniqueRound());
+  const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [started, setStarted] = useState(false);
   const submittedRef = useRef(false);
   const statsRef = useRef({ correct: 0, incorrect: 0 });
 
@@ -101,9 +87,14 @@ export default function GiaPerceptualSpeedTest({ onComplete }: TestGameProps) {
   const timer = useTimer({
     mode: 'down',
     durationMs: 120_000,
-    autoStart: true,
+    autoStart: false,
     onExpire: complete,
   });
+
+  const handleStart = () => {
+    setStarted(true);
+    timer.start();
+  };
 
   const answer = (value: number) => {
     if (finished || submittedRef.current) return;
@@ -114,8 +105,24 @@ export default function GiaPerceptualSpeedTest({ onComplete }: TestGameProps) {
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
-    setRound(makeUniqueRound());
+    setRound(makeRound());
   };
+
+  if (!started) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem', placeItems: 'center', minHeight: '300px', textAlign: 'center' }}>
+        <div style={{ display: 'grid', gap: '0.5rem' }}>
+          <h2 style={{ margin: 0 }}>Ready?</h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+            Count how many columns share the same letter (case-insensitive). You have 2 minutes.
+          </p>
+        </div>
+        <button type="button" className="button" onClick={handleStart} style={{ minWidth: '160px' }}>
+          Start Test
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
@@ -137,17 +144,17 @@ export default function GiaPerceptualSpeedTest({ onComplete }: TestGameProps) {
         }}
       >
         <h2 style={{ margin: 0 }}>How many columns have the same letter?</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.6rem' }}>
           {round.columns.map((column, index) => (
             <div
               key={index}
               style={{
                 border: '1px solid var(--border)',
                 borderRadius: '10px',
-                padding: '0.75rem',
+                padding: '0.9rem',
                 textAlign: 'center',
                 fontFamily: 'var(--font-mono)',
-                fontSize: '1.3rem',
+                fontSize: '1.6rem',
                 display: 'grid',
                 gap: '0.35rem',
               }}
@@ -159,7 +166,7 @@ export default function GiaPerceptualSpeedTest({ onComplete }: TestGameProps) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: '0.55rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.55rem' }}>
         {Array.from({ length: COLUMN_COUNT + 1 }, (_, count) => (
           <button key={count} type="button" className="button" onClick={() => answer(count)}>
             {count}

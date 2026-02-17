@@ -2,65 +2,36 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { generateRecentUnique, randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Timer from '@/components/Timer';
 import { useTimer } from '@/hooks/useTimer';
 
 type Round = {
-  anchor: number;
   options: number[];
   answer: number;
 };
 
-const RECENT_KEY = 'gia-number-speed';
-const RECENT_WINDOW = 5000;
-
-function uniqueOptions(values: number[]): number[] {
-  return [...new Set(values)];
-}
-
 function makeRound(): Round {
-  const anchor = randomInt(20, 180);
-  const far = randomInt(10, 36);
-  const second = Math.max(3, far - randomInt(3, 7));
-  const third = Math.max(2, second - randomInt(1, 5));
-  const fourth = Math.max(1, third - randomInt(1, 4));
-  const distances = [far, second, third, fourth];
-
-  const signs = shuffle([1, -1, Math.random() > 0.5 ? 1 : -1, Math.random() > 0.5 ? 1 : -1]);
-  let values = distances.map((distance, index) => anchor + distance * signs[index]);
-  if (uniqueOptions(values).length < 4) {
-    values = [
-      anchor + far,
-      anchor - second,
-      anchor + third,
-      anchor - fourth,
-    ];
-  }
-
-  const answer = values[0];
+  const middle = randomInt(10, 30);
+  const lower = randomInt(1, middle - 2);
+  const diff = middle - lower;
+  const shake = randomInt(1, diff - 1);
+  const isHigherFurther = Math.random() > 0.5;
+  const higher = isHigherFurther ? middle + diff + shake : middle + diff - shake;
 
   return {
-    anchor,
-    options: shuffle(values),
-    answer,
+    options: shuffle([lower, middle, higher]),
+    answer: isHigherFurther ? higher : lower,
   };
 }
 
-function roundSignature(round: Round): string {
-  return `${round.anchor}|${round.answer}|${round.options.join(',')}`;
-}
-
-function makeUniqueRound(): Round {
-  return generateRecentUnique(RECENT_KEY, RECENT_WINDOW, makeRound, roundSignature);
-}
-
 export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeUniqueRound());
+  const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [started, setStarted] = useState(false);
   const submittedRef = useRef(false);
   const statsRef = useRef({ correct: 0, incorrect: 0 });
 
@@ -88,9 +59,14 @@ export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
   const timer = useTimer({
     mode: 'down',
     durationMs: 120_000,
-    autoStart: true,
+    autoStart: false,
     onExpire: complete,
   });
+
+  const handleStart = () => {
+    setStarted(true);
+    timer.start();
+  };
 
   const answer = (value: number) => {
     if (finished || submittedRef.current) return;
@@ -101,8 +77,24 @@ export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
-    setRound(makeUniqueRound());
+    setRound(makeRound());
   };
+
+  if (!started) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem', placeItems: 'center', minHeight: '300px', textAlign: 'center' }}>
+        <div style={{ display: 'grid', gap: '0.5rem' }}>
+          <h2 style={{ margin: 0 }}>Ready?</h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+            Pick the number furthest from the median. You have 2 minutes.
+          </p>
+        </div>
+        <button type="button" className="button" onClick={handleStart} style={{ minWidth: '160px' }}>
+          Start Test
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
@@ -114,23 +106,9 @@ export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
         <ScoreDisplay label="Net" value={score.toFixed(2)} />
       </div>
 
-      <h2 style={{ margin: 0 }}>Which option is furthest from the middle value?</h2>
+      <h2 style={{ margin: 0 }}>Which number is furthest from the median?</h2>
 
-      <div
-        style={{
-          border: '1px solid var(--border)',
-          borderRadius: '12px',
-          padding: '0.8rem',
-          background: 'var(--surface-raised)',
-          fontFamily: 'var(--font-mono)',
-          fontSize: '1.3rem',
-          textAlign: 'center',
-        }}
-      >
-        Middle value: <strong>{round.anchor}</strong>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.6rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
         {round.options.map((value) => (
           <button
             key={value}

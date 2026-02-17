@@ -7,6 +7,7 @@ import type { ProfileResponse, CategoryHistoryResponse } from '@/lib/api/types';
 import { TEST_REGISTRY_BY_SLUG } from '@/lib/tests/registry';
 import { formatNumber } from '@/lib/utils';
 import GiaDashboard from '@/components/GiaDashboard';
+import styles from './profile.module.css';
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
@@ -57,8 +58,30 @@ export default function ProfilePage() {
   );
 
   if (loading) return (
-    <div className="flex-center" style={{ height: '60vh' }}>
-      <p className="text-muted">Loading HumansOnly Profile...</p>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.avatar} style={{ background: 'var(--surface-raised)' }}>
+          <span style={{ opacity: 0 }}>U</span>
+        </div>
+        <div className={styles.headerInfo}>
+          <div className="skeleton" style={{ height: '1.4rem', width: '140px', borderRadius: '6px' }} />
+          <div className={styles.headerMeta}>
+            <div className="skeleton" style={{ height: '0.8rem', width: '120px', borderRadius: '4px' }} />
+            <div className="skeleton" style={{ height: '0.8rem', width: '100px', borderRadius: '4px' }} />
+          </div>
+        </div>
+      </header>
+      <section>
+        <div className="skeleton" style={{ height: '200px', borderRadius: 'var(--radius-lg)' }} />
+      </section>
+      <section>
+        <div className="skeleton" style={{ height: '1.15rem', width: '140px', borderRadius: '6px', marginBottom: '0.75rem' }} />
+        <div style={{ display: 'grid', gap: '0.5rem' }}>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="skeleton" style={{ height: '2.5rem', borderRadius: '6px' }} />
+          ))}
+        </div>
+      </section>
     </div>
   );
 
@@ -73,45 +96,22 @@ export default function ProfilePage() {
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem', maxWidth: '800px', margin: '0 auto' }}>
-      {/* User Info Header - Minimal */}
+    <div className={styles.page}>
       {profile && (
-        <header style={{ 
-          display: 'flex',
-          alignItems: 'center',
-          gap: '2rem',
-          paddingBottom: '2rem',
-          borderBottom: '1px solid var(--border)'
-        }}>
-          <div style={{ 
-            width: '80px', 
-            height: '80px', 
-            borderRadius: '50%', 
-            background: 'var(--text-primary)', 
-            color: 'var(--bg)',
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            fontSize: '2rem',
-            fontWeight: 600
-          }}>
-            {profile.user.displayName?.[0] ?? 'U'}
+        <header className={styles.header}>
+          <div className={styles.avatar}>
+            {profile.user.displayName?.[0]?.toUpperCase() ?? 'U'}
           </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>{profile.user.displayName}</h1>
-            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                {profile.user.email || 'Private User'}
-              </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                Joined {new Date(profile.user.createdAt).toLocaleDateString()}
-              </span>
+          <div className={styles.headerInfo}>
+            <h1>{profile.user.displayName}</h1>
+            <div className={styles.headerMeta}>
+              <span>{profile.user.email || 'Private User'}</span>
+              <span>Joined {new Date(profile.user.createdAt).toLocaleDateString()}</span>
             </div>
           </div>
         </header>
       )}
 
-      {/* GIA Performance Dashboard */}
       <section>
         {historyError ? (
           <p style={{ margin: 0, color: 'var(--danger)' }}>
@@ -126,14 +126,9 @@ export default function ProfilePage() {
         )}
       </section>
 
-      {/* Best Scores Table */}
       <section>
-        <div className="mb-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.25rem', margin: 0 }}>
-             Personal Bests
-          </h2>
-        </div>
-        
+        <h2 className={styles.sectionTitle}>Personal Bests</h2>
+
         {sortedBests.length ? (
           <div className="table-container" style={{ border: 'none', background: 'transparent' }}>
             <table className="table">
@@ -151,15 +146,15 @@ export default function ProfilePage() {
                     <tr key={best.testSlug}>
                       <td style={{ fontWeight: 500, paddingLeft: 0 }}>{test?.name.replace('GIA ', '') ?? best.testSlug}</td>
                       <td className="font-mono">
-                        <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        <span className={styles.scoreValue}>
                           {formatNumber(best.bestScore, best.bestScore % 1 === 0 ? 0 : 2)}
                         </span>
-                        <span style={{ color: 'var(--text-muted)', marginLeft: '0.25rem', fontSize: '0.75rem' }}>
+                        <span className={styles.scoreUnit}>
                           {best.scoreUnit}
                         </span>
                       </td>
                       <td className="text-right" style={{ paddingRight: 0 }}>
-                        <Link href={`/leaderboard/${best.testSlug}`} style={{ fontSize: '0.875rem', textDecoration: 'none', color: 'var(--text-muted)' }}>
+                        <Link href={`/leaderboard/${best.testSlug}`} className={styles.lbLink}>
                           Leaderboard &rarr;
                         </Link>
                       </td>
@@ -170,7 +165,7 @@ export default function ProfilePage() {
             </table>
           </div>
         ) : (
-          <div className="text-center" style={{ padding: '4rem 0', color: 'var(--text-muted)' }}>
+          <div className={styles.emptyState}>
             <p>No assessment data yet.</p>
             <Link href="/" className="button mt-4">Start Assessment</Link>
           </div>

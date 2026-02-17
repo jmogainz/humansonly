@@ -106,10 +106,10 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
                 borderRadius: '12px',
                 border: '1px solid var(--border)',
                 background: active
-                  ? 'color-mix(in srgb, var(--accent) 50%, #fff)'
+                  ? 'color-mix(in srgb, var(--accent) 50%, var(--bg))'
                   : 'var(--surface-raised)',
                 boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
-                transition: 'all 130ms ease',
+                transition: 'all 80ms ease',
                 cursor: phase === 'input' ? 'pointer' : 'default',
               }}
             />

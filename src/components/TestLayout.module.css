@@ -1,38 +1,53 @@
 .wrapper {
   width: min(1000px, calc(100vw - 2rem));
   margin: 0 auto 2rem;
+  animation: fadeIn 0.1s ease both;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .back {
   color: var(--text-muted);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: color 50ms;
+}
+
+.back:hover {
+  color: var(--accent);
 }
 
 .header h1 {
   margin: 0.4rem 0 0;
   font-family: var(--font-heading);
-  font-size: clamp(1.3rem, 3vw, 2rem);
+  font-size: clamp(1.3rem, 3vw, 1.75rem);
 }
 
 .header p {
   margin: 0.35rem 0 0;
   color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .content {
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   padding: clamp(1rem, 2vw, 1.5rem);
   min-height: 350px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 900px) {

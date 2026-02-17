@@ -2,153 +2,62 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { generateRecentUnique, randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle } from '@/lib/utils';
 import Timer from '@/components/Timer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import { useTimer } from '@/hooks/useTimer';
 
-type WordGroup = {
-  family: string;
-  words: string[];
-};
-
-const WORD_GROUPS: WordGroup[] = [
-  { family: 'tools', words: ['hammer', 'wrench', 'pliers', 'saw', 'drill'] },
-  { family: 'tools', words: ['anvil', 'chisel', 'mallet', 'lathe', 'vise'] },
-  { family: 'animals', words: ['lion', 'tiger', 'panther', 'jaguar', 'leopard'] },
-  { family: 'animals', words: ['wolf', 'fox', 'lynx', 'otter', 'badger'] },
-  { family: 'music', words: ['violin', 'cello', 'viola', 'harp', 'bass'] },
-  { family: 'music', words: ['flute', 'trumpet', 'clarinet', 'oboe', 'trombone'] },
-  { family: 'weather', words: ['winter', 'spring', 'summer', 'autumn', 'monsoon'] },
-  { family: 'weather', words: ['rain', 'storm', 'drizzle', 'mist', 'fog'] },
-  { family: 'speed', words: ['swift', 'rapid', 'quick', 'fast', 'speedy'] },
-  { family: 'speed', words: ['hasty', 'brisk', 'fleet', 'snappy', 'nimble'] },
-  { family: 'calm', words: ['calm', 'quiet', 'peaceful', 'serene', 'still'] },
-  { family: 'calm', words: ['restful', 'gentle', 'soft', 'placid', 'steady'] },
-  { family: 'joy', words: ['joyful', 'happy', 'cheerful', 'glad', 'elated'] },
-  { family: 'joy', words: ['merry', 'jolly', 'upbeat', 'sunny', 'lively'] },
-  { family: 'taste', words: ['bitter', 'sour', 'tart', 'acidic', 'sharp'] },
-  { family: 'taste', words: ['salty', 'savory', 'spicy', 'smoky', 'rich'] },
-  { family: 'shapes', words: ['oval', 'circle', 'ellipse', 'round', 'orb'] },
-  { family: 'shapes', words: ['triangle', 'square', 'rectangle', 'polygon', 'rhombus'] },
-  { family: 'boats', words: ['ship', 'boat', 'ferry', 'yacht', 'canoe'] },
-  { family: 'boats', words: ['barge', 'skiff', 'dinghy', 'trawler', 'sloop'] },
-  { family: 'gems', words: ['ruby', 'sapphire', 'emerald', 'opal', 'topaz'] },
-  { family: 'gems', words: ['garnet', 'diamond', 'amber', 'jade', 'onyx'] },
-  { family: 'motion', words: ['sprint', 'jog', 'dash', 'race', 'run'] },
-  { family: 'motion', words: ['stride', 'walk', 'march', 'hurry', 'glide'] },
-  { family: 'speech', words: ['speak', 'talk', 'chat', 'converse', 'discuss'] },
-  { family: 'speech', words: ['argue', 'explain', 'describe', 'announce', 'narrate'] },
-  { family: 'writing', words: ['novel', 'poem', 'essay', 'story', 'drama'] },
-  { family: 'writing', words: ['memoir', 'article', 'script', 'fable', 'prose'] },
-  { family: 'medical', words: ['doctor', 'nurse', 'surgeon', 'therapist', 'medic'] },
-  { family: 'medical', words: ['clinic', 'ward', 'triage', 'pharmacy', 'diagnosis'] },
-  { family: 'fruit', words: ['apple', 'orange', 'banana', 'pear', 'grape'] },
-  { family: 'fruit', words: ['mango', 'peach', 'plum', 'kiwi', 'melon'] },
-  { family: 'footwear', words: ['sandal', 'boot', 'sneaker', 'loafer', 'heel'] },
-  { family: 'footwear', words: ['slipper', 'cleat', 'moccasin', 'wedge', 'oxford'] },
-  { family: 'furniture', words: ['desk', 'chair', 'sofa', 'table', 'stool'] },
-  { family: 'furniture', words: ['cabinet', 'dresser', 'shelf', 'bench', 'ottoman'] },
+const WORD_GROUPS: string[][] = [
+  ['hammer', 'wrench', 'pliers', 'saw', 'drill'],
+  ['lion', 'tiger', 'panther', 'jaguar', 'leopard'],
+  ['violin', 'cello', 'viola', 'harp', 'bass'],
+  ['winter', 'spring', 'summer', 'autumn', 'monsoon'],
+  ['swift', 'rapid', 'quick', 'fast', 'speedy'],
+  ['calm', 'quiet', 'peaceful', 'serene', 'still'],
+  ['joyful', 'happy', 'cheerful', 'glad', 'elated'],
+  ['bitter', 'sour', 'tart', 'acidic', 'sharp'],
+  ['oval', 'circle', 'ellipse', 'round', 'orb'],
+  ['ship', 'boat', 'ferry', 'yacht', 'canoe'],
+  ['ruby', 'sapphire', 'emerald', 'opal', 'topaz'],
+  ['sprint', 'jog', 'dash', 'race', 'run'],
+  ['speak', 'talk', 'chat', 'converse', 'discuss'],
+  ['novel', 'poem', 'essay', 'story', 'drama'],
+  ['frost', 'ice', 'snow', 'sleet', 'hail'],
+  ['doctor', 'nurse', 'surgeon', 'therapist', 'medic'],
+  ['triangle', 'square', 'rectangle', 'polygon', 'rhombus'],
+  ['apple', 'orange', 'banana', 'pear', 'grape'],
+  ['sandal', 'boot', 'sneaker', 'loafer', 'heel'],
+  ['desk', 'chair', 'sofa', 'table', 'stool'],
 ];
 
 type Round = {
-  mode: 'odd' | 'related';
-  prompt: string;
   options: string[];
   answer: string;
 };
 
-const RECENT_KEY = 'gia-word-meaning';
-const RECENT_WINDOW = 4000;
-
-function familyPool(family: string, excludeIndex: number): string[] {
-  return WORD_GROUPS
-    .flatMap((group, index) => (index !== excludeIndex && group.family === family ? group.words : []));
-}
-
-function pickDistractors(
-  sourceIndex: number,
-  used: Set<string>,
-  count: number,
-  preferSameFamily = true
-): string[] {
-  const sourceFamily = WORD_GROUPS[sourceIndex].family;
-  const sameFamily = preferSameFamily
-    ? shuffle(familyPool(sourceFamily, sourceIndex)).filter((word) => !used.has(word))
-    : [];
-  const otherFamilies = shuffle(
-    WORD_GROUPS.flatMap((group, index) => (
-      index !== sourceIndex && group.family !== sourceFamily ? group.words : []
-    ))
-  ).filter((word) => !used.has(word));
-  const fallback = shuffle(
-    WORD_GROUPS.flatMap((group, index) => (index !== sourceIndex ? group.words : []))
-  ).filter((word) => !used.has(word));
-  const merged = [...sameFamily, ...otherFamilies, ...fallback];
-  const picked: string[] = [];
-
-  for (const word of merged) {
-    if (picked.length >= count) break;
-    if (used.has(word)) continue;
-    used.add(word);
-    picked.push(word);
+function makeRound(): Round {
+  const firstIndex = randomInt(0, WORD_GROUPS.length - 1);
+  let secondIndex = randomInt(0, WORD_GROUPS.length - 1);
+  while (secondIndex === firstIndex) {
+    secondIndex = randomInt(0, WORD_GROUPS.length - 1);
   }
 
-  return picked;
-}
-
-function makeOddRound(): Round {
-  const sourceIndex = randomInt(0, WORD_GROUPS.length - 1);
-  const source = shuffle([...WORD_GROUPS[sourceIndex].words]);
-  const optionCount = Math.random() < 0.5 ? 4 : 5;
-  const relatedCount = optionCount - 1;
-  const related = source.slice(0, relatedCount);
-  const used = new Set(related);
-  const odd = pickDistractors(sourceIndex, used, 1, false)[0];
-
+  const groupA = shuffle([...WORD_GROUPS[firstIndex]]);
+  const groupB = shuffle([...WORD_GROUPS[secondIndex]]);
+  const pair = groupA.slice(0, 2);
+  const odd = groupB[0];
   return {
-    mode: 'odd',
-    prompt: 'Which word is least related to the others?',
-    options: shuffle([...related, odd]),
+    options: shuffle([...pair, odd]),
     answer: odd,
   };
 }
 
-function makeRelatedRound(): Round {
-  const sourceIndex = randomInt(0, WORD_GROUPS.length - 1);
-  const source = shuffle([...WORD_GROUPS[sourceIndex].words]);
-  const cue = source[0];
-  const correct = source[1];
-  const optionCount = Math.random() < 0.5 ? 4 : 5;
-  const distractorCount = optionCount - 1;
-  const used = new Set([cue, correct]);
-  const distractors = pickDistractors(sourceIndex, used, distractorCount);
-
-  return {
-    mode: 'related',
-    prompt: `Which word is most related to "${cue}"?`,
-    options: shuffle([correct, ...distractors]),
-    answer: correct,
-  };
-}
-
-function makeRound(): Round {
-  return Math.random() > 0.5 ? makeOddRound() : makeRelatedRound();
-}
-
-function roundSignature(round: Round): string {
-  return `${round.mode}|${round.prompt}|${round.answer}|${round.options.join(',')}`;
-}
-
-function makeUniqueRound(): Round {
-  return generateRecentUnique(RECENT_KEY, RECENT_WINDOW, makeRound, roundSignature);
-}
-
 export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeUniqueRound());
+  const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [started, setStarted] = useState(false);
   const submittedRef = useRef(false);
   const statsRef = useRef({ correct: 0, incorrect: 0 });
 
@@ -176,9 +85,14 @@ export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
   const timer = useTimer({
     mode: 'down',
     durationMs: 120_000,
-    autoStart: true,
+    autoStart: false,
     onExpire: complete,
   });
+
+  const handleStart = () => {
+    setStarted(true);
+    timer.start();
+  };
 
   const answer = (word: string) => {
     if (finished || submittedRef.current) return;
@@ -189,8 +103,24 @@ export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
-    setRound(makeUniqueRound());
+    setRound(makeRound());
   };
+
+  if (!started) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem', placeItems: 'center', minHeight: '300px', textAlign: 'center' }}>
+        <div style={{ display: 'grid', gap: '0.5rem' }}>
+          <h2 style={{ margin: 0 }}>Ready?</h2>
+          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+            Find the word that doesn&apos;t belong with the others. You have 2 minutes.
+          </p>
+        </div>
+        <button type="button" className="button" onClick={handleStart} style={{ minWidth: '160px' }}>
+          Start Test
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
@@ -202,9 +132,9 @@ export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
         <ScoreDisplay label="Net" value={score.toFixed(2)} />
       </div>
 
-      <h2 style={{ margin: 0 }}>{round.prompt}</h2>
+      <h2 style={{ margin: 0 }}>Which word doesn&apos;t belong?</h2>
 
-      <div style={{ display: 'grid', gap: '0.6rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
         {round.options.map((word) => (
           <button
             key={word}

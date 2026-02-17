@@ -28,20 +28,29 @@ export function useTimer(options: UseTimerOptions = {}) {
   useEffect(() => {
     if (!running) return;
 
-    const tick = () => {
-      if (!startedAtRef.current) return;
-      const elapsed = performance.now() - startedAtRef.current;
-      setNowMs(elapsed);
+    let rafId: number;
+    let lastUpdate = 0;
 
-      if (mode === 'down' && durationMs > 0 && elapsed >= durationMs) {
-        setRunning(false);
-        onExpire?.();
+    const tick = (now: number) => {
+      if (!startedAtRef.current) return;
+
+      if (now - lastUpdate >= intervalMs) {
+        lastUpdate = now;
+        const elapsed = performance.now() - startedAtRef.current;
+        setNowMs(elapsed);
+
+        if (mode === 'down' && durationMs > 0 && elapsed >= durationMs) {
+          setRunning(false);
+          onExpire?.();
+          return;
+        }
       }
+
+      rafId = requestAnimationFrame(tick);
     };
 
-    const id = window.setInterval(tick, intervalMs);
-    tick();
-    return () => window.clearInterval(id);
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, [running, mode, durationMs, intervalMs, onExpire]);
 
   const elapsedMs = nowMs;
