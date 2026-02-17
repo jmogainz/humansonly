@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import TestStartScreen from '@/components/TestStartScreen';
 
 function generateNumber(digits: number): string {
   let out = '';
@@ -12,7 +13,8 @@ function generateNumber(digits: number): string {
   return out;
 }
 
-export default function NumberMemoryTest({ onComplete }: TestGameProps) {
+export default function NumberMemoryTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [digits, setDigits] = useState(1);
   const [target, setTarget] = useState(() => generateNumber(1));
   const [phase, setPhase] = useState<'show' | 'input'>('show');
@@ -21,13 +23,13 @@ export default function NumberMemoryTest({ onComplete }: TestGameProps) {
   const prompt = useMemo(() => (phase === 'show' ? `Memorize ${digits} digit${digits > 1 ? 's' : ''}` : 'Enter the number'), [phase, digits]);
 
   useEffect(() => {
-    if (phase !== 'show') return;
+    if (!started || phase !== 'show') return;
     const visibleMs = Math.min(7000, 900 + digits * 550);
     const id = window.setTimeout(() => {
       setPhase('input');
     }, visibleMs);
     return () => window.clearTimeout(id);
-  }, [digits, phase]);
+  }, [digits, phase, started]);
 
   const nextLevel = (nextDigits: number) => {
     setDigits(nextDigits);
@@ -36,25 +38,37 @@ export default function NumberMemoryTest({ onComplete }: TestGameProps) {
     setPhase('show');
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem', justifyItems: 'center', textAlign: 'center' }}>
-      <p style={{ margin: 0, color: 'var(--text-muted)' }}>{prompt}</p>
+    <div className="game-container" style={{ alignItems: 'center', textAlign: 'center' }}>
+      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{prompt}</p>
 
       <div
+        className="game-grid-container"
         style={{
-          fontSize: 'clamp(2rem, 9vw, 4rem)',
+          fontSize: 'clamp(2rem, 10vw, 4.5rem)',
           fontFamily: 'var(--font-mono)',
-          minHeight: '5rem',
-          display: 'grid',
-          placeItems: 'center',
+          minHeight: '4rem',
         }}
       >
-        {phase === 'show' ? target : '•'.repeat(Math.min(12, digits))}
+        {phase === 'show' ? (
+          <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
+        ) : (
+          <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{'•'.repeat(Math.min(12, digits))}</div>
+        )}
       </div>
 
       {phase === 'input' ? (
         <form
-          style={{ display: 'grid', gap: '0.6rem', width: 'min(420px, 100%)' }}
+          style={{ display: 'grid', gap: '0.6rem', width: 'min(420px, 100%)', flexShrink: 0 }}
           onSubmit={(event) => {
             event.preventDefault();
             if (guess.trim() === target) {
@@ -85,7 +99,9 @@ export default function NumberMemoryTest({ onComplete }: TestGameProps) {
           />
           <button className="button" type="submit">Submit</button>
         </form>
-      ) : null}
+      ) : (
+        <div style={{ height: '80px', flexShrink: 0 }} />
+      )}
     </div>
   );
 }

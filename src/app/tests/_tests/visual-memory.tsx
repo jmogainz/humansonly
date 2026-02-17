@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
+import TestStartScreen from '@/components/TestStartScreen';
 
 function roundConfig(level: number) {
   const size = Math.min(7, 3 + Math.floor((level - 1) / 3));
@@ -13,7 +14,8 @@ function roundConfig(level: number) {
   return { size, pattern };
 }
 
-export default function VisualMemoryTest({ onComplete }: TestGameProps) {
+export default function VisualMemoryTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(1);
   const [lives, setLives] = useState(3);
   const [phase, setPhase] = useState<'show' | 'input'>('show');
@@ -23,10 +25,11 @@ export default function VisualMemoryTest({ onComplete }: TestGameProps) {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
+    if (!started) return;
     setPhase('show');
     const id = window.setTimeout(() => setPhase('input'), 1100);
     return () => window.clearTimeout(id);
-  }, [pattern]);
+  }, [pattern, started]);
 
   useEffect(() => {
     if (lives > 0 || submitted) return;
@@ -80,49 +83,58 @@ export default function VisualMemoryTest({ onComplete }: TestGameProps) {
     evaluateSelection(nextSelected);
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   const total = gridSize * gridSize;
 
   return (
-    <div style={{ display: 'grid', gap: '0.9rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+    <div className="game-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
         <LivesDisplay lives={lives} />
       </div>
-      <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>
         {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
       </p>
 
-      <div
-        style={{
-          width: 'min(560px, 100%)',
-          display: 'grid',
-          gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
-          gap: '0.45rem',
-        }}
-      >
-        {Array.from({ length: total }, (_, index) => {
-          const isPattern = patternSet.has(index);
-          const wasSelected = selected.has(index);
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() => handleClick(index)}
-              style={{
-                aspectRatio: '1 / 1',
-                borderRadius: '10px',
-                border: '1px solid var(--border)',
-                background:
-                  phase === 'show' && isPattern
-                    ? 'var(--accent)'
-                    : wasSelected
-                      ? 'color-mix(in srgb, var(--accent) 45%, var(--surface-raised))'
-                      : 'var(--surface-raised)',
-                cursor: phase === 'input' ? 'pointer' : 'default',
-              }}
-            />
-          );
-        })}
+      <div className="game-grid-container">
+        <div
+          className="game-grid"
+          style={{
+            gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+            gap: 'clamp(0.15rem, 1.2cqw, 0.45rem)',
+          }}
+        >
+          {Array.from({ length: total }, (_, index) => {
+            const isPattern = patternSet.has(index);
+            const wasSelected = selected.has(index);
+            return (
+              <button
+                key={index}
+                type="button"
+                className="game-tile"
+                onClick={() => handleClick(index)}
+                style={{
+                  background:
+                    phase === 'show' && isPattern
+                      ? 'var(--accent)'
+                      : wasSelected
+                        ? 'color-mix(in srgb, var(--accent) 45%, var(--surface-raised))'
+                        : 'var(--surface-raised)',
+                  cursor: phase === 'input' ? 'pointer' : 'default',
+                  borderRadius: 'clamp(4px, 1.5cqw, 10px)',
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );

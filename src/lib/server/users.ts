@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import { ensureDbSchema, getDbPool } from './db';
 import { randomDisplayNameCandidate } from './displayNames';
 
@@ -5,7 +6,7 @@ export type OidcAccount = {
   provider: string;
   providerAccountId: string;
   email?: string | null;
-  displayName?: string | null;
+  name?: string | null;
   imageUrl?: string | null;
 };
 
@@ -17,17 +18,11 @@ export type UserProfile = {
   createdAt: string;
 };
 
-// Generate a random display name
-function generateDisplayName(): string {
-  return randomDisplayNameCandidate((min, max) => {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  });
-}
-
 export async function upsertUserForOidcAccount(account: OidcAccount): Promise<string> {
   await ensureDbSchema();
   const pool = getDbPool();
   const client = await pool.connect();
+  const generatedDisplayName = randomDisplayNameCandidate((min, max) => crypto.randomInt(min, max + 1));
 
   try {
     await client.query('BEGIN');
@@ -39,14 +34,14 @@ export async function upsertUserForOidcAccount(account: OidcAccount): Promise<st
 
     if (existingLink.rowCount) {
       const userId = existingLink.rows[0].user_id;
-      // Update basic info but preserve the display name
       await client.query(
         `update users
          set email=coalesce($2, email),
-             image_url=coalesce($3, image_url),
+             name=coalesce(name, $3),
+             image_url=coalesce($4, image_url),
              updated_at=now()
          where id=$1`,
-        [userId, account.email ?? null, account.imageUrl ?? null]
+        [userId, account.email ?? null, generatedDisplayName, account.imageUrl ?? null]
       );
       await client.query('COMMIT');
       return userId;
@@ -62,12 +57,16 @@ export async function upsertUserForOidcAccount(account: OidcAccount): Promise<st
     }
 
     if (!userId) {
-      const randomName = generateDisplayName();
       const created = await client.query<{ id: string }>(
         'insert into users (email, name, image_url) values ($1, $2, $3) returning id',
-        [account.email ?? null, randomName, account.imageUrl ?? null]
+        [account.email ?? null, generatedDisplayName, account.imageUrl ?? null]
       );
       userId = created.rows[0].id;
+    } else {
+      await client.query(
+        'update users set name=coalesce(name, $2), image_url=coalesce($3, image_url), updated_at=now() where id=$1',
+        [userId, generatedDisplayName, account.imageUrl ?? null]
+      );
     }
 
     await client.query(

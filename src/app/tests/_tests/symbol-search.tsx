@@ -6,8 +6,9 @@ import { randomInt, shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Timer from '@/components/Timer';
 import { useTimer } from '@/hooks/useTimer';
+import TestStartScreen from '@/components/TestStartScreen';
 
-const SYMBOLS = ['★', '◆', '●', '▲', '☀', '☂', '♠', '♣', '♥', '☕', '✿', '✚', '☾', '♫', '☁'];
+const SYMBOLS = ['★', '◆', '●', '▲', '■', '⬢', '⬧', '✚', '✖', '✜', '✦', '✧', '◓', '◑', '◈'];
 
 type Round = {
   target: string;
@@ -31,7 +32,8 @@ function makeRound(): Round {
   return { target, row, answer: include };
 }
 
-export default function SymbolSearchTest({ onComplete }: TestGameProps) {
+export default function SymbolSearchTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [round, setRound] = useState<Round>(() => makeRound());
@@ -59,15 +61,21 @@ export default function SymbolSearchTest({ onComplete }: TestGameProps) {
   const timer = useTimer({
     mode: 'down',
     durationMs: 90_000,
-    autoStart: true,
+    autoStart: false,
     onExpire: complete,
   });
 
   useEffect(() => {
-    if (!timer.running && !finished && timer.remainingMs === 0) {
+    if (started && !timer.running && !finished) {
+      timer.start();
+    }
+  }, [started, timer, finished]);
+
+  useEffect(() => {
+    if (!timer.running && !finished && timer.remainingMs === 0 && started) {
       complete();
     }
-  }, [timer.running, timer.remainingMs, finished, complete]);
+  }, [timer.running, timer.remainingMs, finished, complete, started]);
 
   const accuracy = useMemo(() => {
     if (!attempts) return 100;
@@ -88,39 +96,62 @@ export default function SymbolSearchTest({ onComplete }: TestGameProps) {
     setRound(makeRound());
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
 
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <ScoreDisplay label="Correct" value={score} />
-        <ScoreDisplay label="Attempts" value={attempts} />
-        <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} />
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
+        <ScoreDisplay label="Correct" value={score} status="success" />
+        <ScoreDisplay label="Attempts" value={attempts} status="neutral" />
+        <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} status={accuracy > 80 ? 'success' : accuracy > 50 ? 'neutral' : 'danger'} />
       </div>
 
       <div
+        className="game-grid-container"
         style={{
           border: '1px solid var(--border)',
           borderRadius: '12px',
-          padding: '1rem',
-          display: 'grid',
-          gap: '0.8rem',
+          padding: 'clamp(0.5rem, 3vw, 1rem)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: 'clamp(0.5rem, 4vh, 1rem)',
+          background: 'var(--surface-raised)',
         }}
       >
-        <p style={{ margin: 0, color: 'var(--text-muted)' }}>Does the target appear in the row?</p>
-        <h2 style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: '2.4rem' }}>{round.target}</h2>
-        <div style={{ display: 'flex', gap: '0.55rem', flexWrap: 'wrap' }}>
+        <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>Does the target appear in the row?</p>
+        <h2 style={{ margin: 0, fontFamily: 'var(--font-mono)', fontSize: 'clamp(2rem, 10vw, 3rem)', textAlign: 'center' }}>{round.target}</h2>
+        <div 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 'clamp(0.3rem, 1.5vw, 0.55rem)', 
+            justifyContent: 'center',
+            width: '100%',
+            maxWidth: '320px',
+            marginInline: 'auto'
+          }}
+        >
           {round.row.map((symbol, index) => (
             <span
               key={`${symbol}-${index}`}
               style={{
                 border: '1px solid var(--border)',
-                borderRadius: '10px',
-                width: '2.5rem',
-                height: '2.5rem',
+                borderRadius: '8px',
+                aspectRatio: '1 / 1',
                 display: 'grid',
                 placeItems: 'center',
-                fontSize: '1.2rem',
+                fontSize: 'clamp(1rem, 5vw, 1.3rem)',
+                background: 'var(--surface)',
               }}
             >
               {symbol}
@@ -129,7 +160,7 @@ export default function SymbolSearchTest({ onComplete }: TestGameProps) {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.7rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.7rem', flexShrink: 0 }}>
         <button className="button" type="button" onClick={() => answer(true)}>YES</button>
         <button className="button buttonGhost" type="button" onClick={() => answer(false)}>NO</button>
       </div>

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
+import TestStartScreen from '@/components/TestStartScreen';
 
 type Cell = {
   id: number;
@@ -26,7 +27,8 @@ function makeLevel(level: number): Cell[] {
   }));
 }
 
-export default function ChimpTest({ onComplete }: TestGameProps) {
+export default function ChimpTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(4);
   const [strikes, setStrikes] = useState(0);
   const [cells, setCells] = useState<Cell[]>(() => makeLevel(4));
@@ -38,10 +40,11 @@ export default function ChimpTest({ onComplete }: TestGameProps) {
   const lives = maxLives - strikes;
 
   useEffect(() => {
+    if (!started) return;
     setPhase('show');
     const id = window.setTimeout(() => setPhase('hide'), 1050);
     return () => window.clearTimeout(id);
-  }, [cells]);
+  }, [cells, started]);
 
   useEffect(() => {
     if (lives > 0 || submitted) return;
@@ -105,45 +108,52 @@ export default function ChimpTest({ onComplete }: TestGameProps) {
     }
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="game-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {Math.min(level, MAX_LEVEL)}</strong>
         <LivesDisplay lives={lives} maxLives={maxLives} />
       </div>
 
-      <p style={{ margin: 0, color: 'var(--text-muted)' }}>{label}</p>
+      <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{label}</p>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-          gap: '0.55rem',
-          maxWidth: '580px',
-        }}
-      >
-        {cells.map((cell) => {
-          const showNumber = phase === 'show' || nextExpected > (cell.number ?? 999);
-          return (
-            <button
-              key={cell.id}
-              type="button"
-              onClick={() => handleCellClick(cell)}
-              style={{
-                aspectRatio: '1 / 1',
-                borderRadius: '10px',
-                border: '1px solid var(--border)',
-                background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
-                color: showNumber ? 'var(--tile-text)' : 'transparent',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '1.2rem',
-                cursor: phase === 'hide' ? 'pointer' : 'default',
-              }}
-            >
-              {cell.number ?? ''}
-            </button>
-          );
-        })}
+      <div className="game-grid-container">
+        <div
+          className="game-grid"
+          style={{
+            gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+            gap: 'clamp(0.2rem, 1.5cqw, 0.55rem)',
+          }}
+        >
+          {cells.map((cell) => {
+            const showNumber = phase === 'show' || nextExpected > (cell.number ?? 999);
+            return (
+              <button
+                key={cell.id}
+                type="button"
+                className="game-tile"
+                onClick={() => handleCellClick(cell)}
+                style={{
+                  background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
+                  color: showNumber ? 'var(--tile-text)' : 'transparent',
+                  cursor: phase === 'hide' ? 'pointer' : 'default',
+                  fontSize: 'clamp(0.8rem, 4cqw, 1.2rem)',
+                }}
+              >
+                {cell.number ?? ''}
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

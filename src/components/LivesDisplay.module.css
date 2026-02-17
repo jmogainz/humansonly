@@ -1,0 +1,32 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.shield {
+  width: 24px;
+  height: 24px;
+  transition: transform 120ms ease, opacity 140ms ease, filter 140ms ease;
+}
+
+.active {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 30%, transparent));
+}
+
+.spent {
+  opacity: 0.35;
+  transform: translateY(1px) scale(0.92);
+}
+
+.label {
+  margin-left: 0.25rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+}

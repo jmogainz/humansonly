@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const FACE_URI_CACHE = new Map<number, string>();
 
@@ -66,8 +67,9 @@ function buildLevel(level: number, source: number[]): LevelState {
   };
 }
 
-export default function FaceMemoryTest({ onComplete }: TestGameProps) {
+export default function FaceMemoryTest({ definition, onComplete }: TestGameProps) {
   const pool = useMemo(() => shuffle(Array.from({ length: 140 }, (_, index) => index + 1)), []);
+  const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(1);
   const [phase, setPhase] = useState<'study' | 'test'>('study');
   const [levelState, setLevelState] = useState<LevelState>(() => buildLevel(1, pool));
@@ -77,7 +79,7 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    if (phase !== 'study') return;
+    if (!started || phase !== 'study') return;
     setTimer(6 + level * 2);
     const interval = window.setInterval(() => {
       setTimer((prev) => {
@@ -91,7 +93,7 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [phase, level]);
+  }, [phase, level, started]);
 
   const handleAnswer = (choiceSeen: boolean) => {
     if (phase !== 'test') return;
@@ -145,18 +147,36 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
     [currentFace]
   );
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <ScoreDisplay label="Level" value={level} />
-        <ScoreDisplay label="Correct" value={`${correct}/${total}`} />
-        {phase === 'study' ? <ScoreDisplay label="Study Time" value={`${timer}s`} /> : null}
+    <div className="game-container">
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
+        <ScoreDisplay label="Level" value={level} status="neutral" />
+        <ScoreDisplay label="Correct" value={`${correct}/${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
+        {phase === 'study' ? <ScoreDisplay label="Study Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} /> : null}
       </div>
 
       {phase === 'study' ? (
-        <div style={{ display: 'grid', gap: '0.7rem' }}>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>Study these faces, then identify them in the next phase.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.7rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', flex: 1, minHeight: 0 }}>
+          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Study these faces, then identify them in the next phase.</p>
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(80px, 20vw, 140px), 1fr))', 
+              gap: 'clamp(0.4rem, 2vw, 0.7rem)', 
+              overflowY: 'auto',
+              flex: 1,
+              paddingRight: '4px'
+            }}
+          >
             {studyFaceUris.map(({ faceId, src }) => (
               <img
                 key={faceId}
@@ -168,18 +188,21 @@ export default function FaceMemoryTest({ onComplete }: TestGameProps) {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '0.8rem', justifyItems: 'center' }}>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
+        <div 
+          className="game-grid-container"
+          style={{ flexDirection: 'column', gap: 'clamp(0.5rem, 4vh, 1rem)' }}
+        >
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
             Face {testIndex + 1}/{levelState.testIds.length}
           </p>
           {currentFaceUri ? (
             <img
               src={currentFaceUri}
               alt="Face memory test"
-              style={{ width: 'min(260px, 80vw)', borderRadius: '14px', border: '1px solid var(--border)' }}
+              style={{ width: 'min(240px, 70cqh, 70cqw)', height: 'auto', aspectRatio: '220/260', borderRadius: '14px', border: '1px solid var(--border)' }}
             />
           ) : null}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(420px, 100%)', gap: '0.7rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(400px, 100%)', gap: '0.7rem' }}>
             <button className="button" type="button" onClick={() => handleAnswer(true)}>SEEN</button>
             <button className="button buttonGhost" type="button" onClick={() => handleAnswer(false)}>NEW</button>
           </div>

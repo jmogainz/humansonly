@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const PASSAGES = [
   'Cognitive training only works when you measure progress honestly and repeat difficult tasks consistently.',
@@ -36,7 +37,8 @@ function countCorrect(reference: string, typed: string): number {
   return correct;
 }
 
-export default function TypingTest({ onComplete }: TestGameProps) {
+export default function TypingTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [passage] = useState(() => shuffle(PASSAGES)[0]);
   const [typed, setTyped] = useState('');
   const [done, setDone] = useState(false);
@@ -57,9 +59,18 @@ export default function TypingTest({ onComplete }: TestGameProps) {
     return (correct / 5) / minutes;
   }, [correct, elapsedMs]);
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+    <div className="game-container">
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1rem)', flexWrap: 'wrap', flexShrink: 0 }}>
         <ScoreDisplay label="WPM" value={wpm.toFixed(1)} />
         <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} />
       </div>
@@ -68,9 +79,14 @@ export default function TypingTest({ onComplete }: TestGameProps) {
         style={{
           border: '1px solid var(--border)',
           borderRadius: '12px',
-          padding: '1rem',
-          lineHeight: 1.7,
+          padding: 'clamp(0.75rem, 3vw, 1.25rem)',
+          lineHeight: 1.5,
           fontFamily: 'var(--font-mono)',
+          fontSize: 'clamp(0.9rem, 3vw, 1.1rem)',
+          background: 'var(--surface-raised)',
+          flexShrink: 0,
+          maxHeight: '40%',
+          overflowY: 'auto'
         }}
       >
         {passage.split('').map((char, index) => {
@@ -126,15 +142,16 @@ export default function TypingTest({ onComplete }: TestGameProps) {
             });
           }
         }}
-        rows={6}
+        rows={4}
         placeholder="Start typing here..."
         autoCapitalize="off"
         autoCorrect="off"
         spellCheck={false}
-        style={{ fontFamily: 'var(--font-mono)' }}
+        style={{ fontFamily: 'var(--font-mono)', flex: '1', minHeight: '120px' }}
+        autoFocus
       />
 
-      <small style={{ color: 'var(--text-muted)' }}>
+      <small style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: '1.4', flexShrink: 0 }}>
         Timer starts on first keystroke. Finish the full paragraph to submit score. Pasting is disabled.
       </small>
     </div>

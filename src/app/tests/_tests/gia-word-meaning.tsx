@@ -2,10 +2,11 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle, generateRecentUnique } from '@/lib/utils';
 import Timer from '@/components/Timer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import { useTimer } from '@/hooks/useTimer';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const WORD_GROUPS: string[][] = [
   ['hammer', 'wrench', 'pliers', 'saw', 'drill'],
@@ -28,14 +29,35 @@ const WORD_GROUPS: string[][] = [
   ['apple', 'orange', 'banana', 'pear', 'grape'],
   ['sandal', 'boot', 'sneaker', 'loafer', 'heel'],
   ['desk', 'chair', 'sofa', 'table', 'stool'],
+  ['mercury', 'venus', 'mars', 'jupiter', 'saturn'],
+  ['bread', 'rice', 'pasta', 'cereal', 'oats'],
+  ['shirt', 'pants', 'jacket', 'dress', 'skirt'],
+  ['bicycle', 'car', 'bus', 'train', 'truck'],
+  ['pencil', 'pen', 'marker', 'crayon', 'chalk'],
+  ['cup', 'mug', 'glass', 'bottle', 'flask'],
+  ['fork', 'spoon', 'knife', 'spatula', 'whisk'],
+  ['bedroom', 'kitchen', 'bathroom', 'hallway', 'cellar'],
+  ['mountain', 'valley', 'plateau', 'canyon', 'cliff'],
+  ['ocean', 'river', 'lake', 'pond', 'stream'],
+  ['eagle', 'hawk', 'falcon', 'owl', 'vulture'],
+  ['oak', 'pine', 'maple', 'birch', 'cedar'],
+  ['rose', 'tulip', 'daisy', 'lily', 'orchid'],
+  ['gold', 'silver', 'copper', 'iron', 'bronze'],
+  ['piano', 'guitar', 'drums', 'flute', 'trumpet'],
+  ['football', 'tennis', 'hockey', 'golf', 'cricket'],
+  ['paris', 'london', 'tokyo', 'berlin', 'madrid'],
+  ['math', 'science', 'history', 'physics', 'biology'],
+  ['laptop', 'tablet', 'phone', 'desktop', 'monitor'],
+  ['red', 'blue', 'green', 'yellow', 'purple'],
 ];
 
 type Round = {
   options: string[];
   answer: string;
+  signature: string;
 };
 
-function makeRound(): Round {
+function makeRoundRaw(): Round {
   const firstIndex = randomInt(0, WORD_GROUPS.length - 1);
   let secondIndex = randomInt(0, WORD_GROUPS.length - 1);
   while (secondIndex === firstIndex) {
@@ -46,16 +68,30 @@ function makeRound(): Round {
   const groupB = shuffle([...WORD_GROUPS[secondIndex]]);
   const pair = groupA.slice(0, 2);
   const odd = groupB[0];
+  
+  const options = shuffle([...pair, odd]);
+  
   return {
-    options: shuffle([...pair, odd]),
+    options,
     answer: odd,
+    signature: `${pair.sort().join('|')}:${odd}`,
   };
 }
 
-export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
+function makeRound(): Round {
+  return generateRecentUnique(
+    'gia-word-meaning',
+    15,
+    makeRoundRaw,
+    (r) => r.signature
+  );
+}
+
+export default function GiaWordMeaningTest({ definition, onComplete }: TestGameProps) {
   const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
+  const [netStatus, setNetStatus] = useState<'success' | 'danger' | 'neutral'>('neutral');
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const submittedRef = useRef(false);
@@ -98,8 +134,10 @@ export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
     if (finished || submittedRef.current) return;
     if (word === round.answer) {
       statsRef.current.correct += 1;
+      setNetStatus('success');
     } else {
       statsRef.current.incorrect += 1;
+      setNetStatus('danger');
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
@@ -108,44 +146,56 @@ export default function GiaWordMeaningTest({ onComplete }: TestGameProps) {
 
   if (!started) {
     return (
-      <div style={{ display: 'grid', gap: '1.5rem', placeItems: 'center', minHeight: '300px', textAlign: 'center' }}>
-        <div style={{ display: 'grid', gap: '0.5rem' }}>
-          <h2 style={{ margin: 0 }}>Ready?</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Find the word that doesn&apos;t belong with the others. You have 2 minutes.
-          </p>
-        </div>
-        <button type="button" className="button" onClick={handleStart} style={{ minWidth: '160px' }}>
-          Start Test
-        </button>
-      </div>
+      <TestStartScreen
+        description="Find the word that doesn&apos;t belong with the others. You have 2 minutes."
+        onStart={handleStart}
+      />
     );
   }
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
 
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <ScoreDisplay label="Correct" value={correct} />
-        <ScoreDisplay label="Incorrect" value={incorrect} />
-        <ScoreDisplay label="Net" value={score.toFixed(2)} />
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
       </div>
 
-      <h2 style={{ margin: 0 }}>Which word doesn&apos;t belong?</h2>
+      <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>Which word doesn&apos;t belong?</h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
-        {round.options.map((word) => (
-          <button
-            key={word}
-            type="button"
-            className="button"
-            onClick={() => answer(word)}
-            style={{ textTransform: 'capitalize', minHeight: '3.1rem' }}
-          >
-            {word}
-          </button>
-        ))}
+      <div 
+        className="game-grid-container"
+        style={{ alignItems: 'flex-start' }}
+      >
+        <div 
+          className="game-grid"
+          style={{ 
+            gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', 
+            gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
+            aspectRatio: 'auto',
+            height: 'auto',
+            width: '100%',
+            maxWidth: '380px'
+          }}
+        >
+          {round.options.map((word) => (
+            <button
+              key={word}
+              type="button"
+              className="game-tile"
+              onClick={() => answer(word)}
+              style={{ 
+                textTransform: 'capitalize', 
+                padding: '1rem',
+                fontSize: 'clamp(1rem, 5cqw, 1.3rem)'
+              }}
+            >
+              {word}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -253,3 +253,32 @@ export async function getAllScoresForCategory(userId: string, category: string):
     createdAt: row.created_at.toISOString(),
   }));
 }
+
+export async function getAllScoresForUser(userId: string): Promise<StoredScore[]> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+
+  const result = await pool.query<{
+    id: string;
+    test_slug: string;
+    score_value: number;
+    score_unit: string;
+    metadata: Record<string, unknown> | null;
+    created_at: Date;
+  }>(
+    `select id, test_slug, score_value::float8 as score_value, score_unit, metadata, created_at
+     from scores
+     where user_id=$1
+     order by created_at asc`,
+    [userId]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    testSlug: row.test_slug,
+    scoreValue: row.score_value,
+    scoreUnit: row.score_unit,
+    metadata: row.metadata,
+    createdAt: row.created_at.toISOString(),
+  }));
+}

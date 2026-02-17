@@ -128,15 +128,20 @@ Method:
 13. `object-tracking`
    - Failing: No inter-object collision resolution causes overlap ambiguity; mobile precision suffers.
 14. `gia-reasoning`
-   - Failing: Grammar issues and overly formulaic solvability.
+   - Status: **Passing**
+   - Notes: Rebuilt sentence templates for grammar and expanded variety.
 15. `gia-perceptual-speed`
-   - Risk: Limited stimulus complexity ceiling.
+   - Status: **Passing**
+   - Notes: Added recent-round uniqueness.
 16. `gia-number-speed`
-   - Failing: Middle option is never correct by construction (obvious elimination heuristic).
+   - Status: **Passing**
+   - Notes: Redesigned to alternate between Median and Furthest-from-Median to eliminate elimination heuristics.
 17. `gia-word-meaning`
-   - Failing: Pattern too predictable (2 related + 1 odd) and too small dataset.
+   - Status: **Passing**
+   - Notes: Doubled dataset and added recent-round uniqueness.
 18. `gia-spatial`
-   - Risk: Low-item complexity and potential glyph ambiguity at some transforms/fonts.
+   - Status: **Passing**
+   - Notes: Increased complexity to 3 columns and added recent-round uniqueness.
 
 ---
 
@@ -157,11 +162,11 @@ Method:
 
 ### P1 — GIA item quality and fairness
 
-1. Rebuild GIA reasoning sentence templates for grammatical correctness.
-2. Increase reasoning generator complexity beyond polarity-parity rule.
-3. Redesign GIA number speed generator so any option can be correct.
-4. Expand GIA word-meaning datasets and reduce pattern obviousness.
-5. Expand GIA spatial complexity (more columns/instances, stronger distractors).
+1. [x] Rebuild GIA reasoning sentence templates for grammatical correctness.
+2. [x] Increase reasoning generator complexity beyond polarity-parity rule.
+3. [x] Redesign GIA number speed generator so any option can be correct.
+4. [x] Expand GIA word-meaning datasets and reduce pattern obviousness.
+5. [x] Expand GIA spatial complexity (more columns/instances, stronger distractors).
 6. Add difficulty telemetry and answer distribution checks for all GIA subtests.
 
 ### P2 — Robustness and polish

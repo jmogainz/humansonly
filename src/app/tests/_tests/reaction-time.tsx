@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import TestStartScreen from '@/components/TestStartScreen';
 
 type Phase = 'idle' | 'wait' | 'go' | 'too-soon';
 
 const TOTAL_ATTEMPTS = 5;
 
-export default function ReactionTimeTest({ onComplete }: TestGameProps) {
+export default function ReactionTimeTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [attempts, setAttempts] = useState<number[]>([]);
   const startRef = useRef<number | null>(null);
@@ -79,6 +81,15 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
     }
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   const remaining = TOTAL_ATTEMPTS - attempts.length;
 
   const message =
@@ -96,7 +107,7 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
     phase === 'wait' ? 'var(--phase-wait)' : phase === 'go' ? 'var(--phase-go)' : phase === 'too-soon' ? 'var(--phase-warn)' : 'var(--phase-idle)';
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="game-container">
       <div
         role="button"
         tabIndex={0}
@@ -109,7 +120,7 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
         }}
         style={{
           width: '100%',
-          minHeight: '340px',
+          flex: '1',
           borderRadius: '14px',
           background: color,
           display: 'grid',
@@ -117,17 +128,18 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
           textAlign: 'center',
           cursor: 'pointer',
           transition: 'background 0ms ease',
+          minHeight: 0
         }}
       >
-        <div style={{ display: 'grid', gap: '0.4rem' }}>
-          <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: '2rem' }}>{message}</h2>
-          <p style={{ margin: 0, color: 'var(--phase-text)', opacity: 0.95 }}>
+        <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
+          <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 2.5rem)' }}>{message}</h2>
+          <p style={{ margin: 0, color: 'var(--phase-text)', opacity: 0.95, fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
             {attempts.length}/{TOTAL_ATTEMPTS} rounds complete
           </p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flexShrink: 0 }}>
         {attempts.map((attempt, index) => (
           <span
             key={index}
@@ -135,7 +147,9 @@ export default function ReactionTimeTest({ onComplete }: TestGameProps) {
               fontFamily: 'var(--font-mono)',
               border: '1px solid var(--border)',
               borderRadius: '999px',
-              padding: '0.25rem 0.6rem',
+              padding: '0.2rem 0.5rem',
+              fontSize: '0.8rem',
+              background: 'var(--surface-raised)'
             }}
           >
             {Math.round(attempt)} ms

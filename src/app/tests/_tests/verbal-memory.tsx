@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import LivesDisplay from '@/components/LivesDisplay';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const WORDS = Array.from(new Set([
   'planet', 'forest', 'camera', 'pencil', 'signal', 'window', 'garden', 'music', 'orange', 'memory',
@@ -43,7 +44,8 @@ function pickNextWord(seen: Set<string>, usedWords: Set<string>, round: number, 
   return WORDS[Math.floor(Math.random() * WORDS.length)];
 }
 
-export default function VerbalMemoryTest({ onComplete }: TestGameProps) {
+export default function VerbalMemoryTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [score, setScore] = useState(0);
   const [lives, setLives] = useState(3);
   const [round, setRound] = useState(1);
@@ -88,28 +90,37 @@ export default function VerbalMemoryTest({ onComplete }: TestGameProps) {
     setWord(pickNextWord(nextSeen, nextUsed, nextRound, word));
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-        <ScoreDisplay label="Score" value={score} />
+    <div className="game-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap' }}>
+          <ScoreDisplay label="Score" value={score} status="success" />
+          <ScoreDisplay label="Round" value={round} status="neutral" />
+        </div>
         <LivesDisplay lives={lives} />
-        <ScoreDisplay label="Progress" value={status} />
       </div>
 
       <div
+        className="game-grid-container"
         style={{
-          minHeight: '240px',
           border: '1px solid var(--border)',
           borderRadius: '14px',
-          display: 'grid',
-          placeItems: 'center',
           background: 'var(--surface-raised)',
         }}
       >
-        <h2 style={{ margin: 0, fontSize: 'clamp(2rem, 7vw, 3.5rem)', fontFamily: 'var(--font-mono)' }}>{word}</h2>
+        <h2 style={{ margin: 0, fontSize: 'clamp(1.8rem, 8vw, 3.5rem)', fontFamily: 'var(--font-mono)', textAlign: 'center' }}>{word}</h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem', flexShrink: 0 }}>
         <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
         <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
       </div>

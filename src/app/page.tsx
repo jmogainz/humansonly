@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import TestCard from '@/components/TestCard';
+import TestList from '@/components/TestList';
+import HeroCTA from '@/components/HeroCTA';
 import { listPlayableTestsByCategory } from '@/lib/tests/registry';
 import styles from './page.module.css';
 
@@ -16,12 +16,7 @@ export default function HomePage() {
           Track your performance. Compete globally.
         </p>
         <div className={styles.cta}>
-          <Link href="/tests/gia-reasoning" className="button">
-            Start Assessment
-          </Link>
-          <a href="#all-tests" className="button buttonGhost">
-            Browse Tests
-          </a>
+          <HeroCTA />
         </div>
       </header>
 
@@ -29,22 +24,14 @@ export default function HomePage() {
         <div className={styles.sectionHeader}>
           <h2>GIA Core Modules</h2>
         </div>
-        <div className={styles.list}>
-          {giaTests.map((test, i) => (
-            <TestCard key={test.slug} test={test} featured index={i} />
-          ))}
-        </div>
+        <TestList tests={giaTests} featured />
       </section>
 
       <section className={styles.section} id="all-tests">
         <div className={styles.sectionHeader}>
           <h2>Benchmark Tests</h2>
         </div>
-        <div className={styles.list}>
-          {otherTests.map((test, i) => (
-            <TestCard key={test.slug} test={test} index={i} />
-          ))}
-        </div>
+        <TestList tests={otherTests} />
       </section>
     </div>
   );

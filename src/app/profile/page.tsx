@@ -2,17 +2,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
 import type { ProfileResponse, CategoryHistoryResponse } from '@/lib/api/types';
 import { TEST_REGISTRY_BY_SLUG } from '@/lib/tests/registry';
 import { formatNumber } from '@/lib/utils';
-import GiaDashboard from '@/components/GiaDashboard';
+import PerformanceDashboard from '@/components/PerformanceDashboard';
+import { Spinner } from '@/components/Spinner';
 import styles from './profile.module.css';
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const [history, setHistory] = useState<CategoryHistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
 
@@ -21,7 +25,7 @@ export default function ProfilePage() {
 
     Promise.allSettled([
       apiGet<ProfileResponse>('/api/profile'),
-      apiGet<CategoryHistoryResponse>('/api/scores/history?category=gia'),
+      apiGet<CategoryHistoryResponse>('/api/scores/history'),
     ])
       .then(([profileResult, historyResult]) => {
         if (!mounted) return;
@@ -37,7 +41,7 @@ export default function ProfilePage() {
           setHistory(historyResult.value);
           setHistoryError(null);
         } else {
-          const message = historyResult.reason instanceof Error ? historyResult.reason.message : 'Failed to load GIA history';
+          const message = historyResult.reason instanceof Error ? historyResult.reason.message : 'Failed to load history';
           setHistoryError(message);
           setHistory(null);
         }
@@ -90,7 +94,17 @@ export default function ProfilePage() {
       <div className="text-center">
         <h2 style={{ color: 'var(--danger)' }}>Failed to load profile</h2>
         <p>{error}</p>
-        <Link href="/" className="button">Back Home</Link>
+        <button
+          onClick={() => {
+            setIsNavigating(true);
+            router.push('/');
+          }}
+          className="button"
+          disabled={isNavigating}
+        >
+          {isNavigating ? <Spinner size={16} /> : null}
+          {isNavigating ? 'Loading...' : 'Back Home'}
+        </button>
       </div>
     </div>
   );
@@ -115,13 +129,13 @@ export default function ProfilePage() {
       <section>
         {historyError ? (
           <p style={{ margin: 0, color: 'var(--danger)' }}>
-            GIA history is temporarily unavailable: {historyError}
+            History is temporarily unavailable: {historyError}
           </p>
         ) : history && history.scores.length > 0 ? (
-          <GiaDashboard scores={history.scores} />
+          <PerformanceDashboard scores={history.scores} />
         ) : (
           <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Complete GIA tests to unlock your performance dashboard.
+            Complete tests to unlock your performance dashboard.
           </p>
         )}
       </section>
@@ -167,7 +181,17 @@ export default function ProfilePage() {
         ) : (
           <div className={styles.emptyState}>
             <p>No assessment data yet.</p>
-            <Link href="/" className="button mt-4">Start Assessment</Link>
+            <button
+              onClick={() => {
+                setIsNavigating(true);
+                router.push('/');
+              }}
+              className="button mt-4"
+              disabled={isNavigating}
+            >
+              {isNavigating ? <Spinner size={16} /> : null}
+              {isNavigating ? 'Loading...' : 'Start Assessment'}
+            </button>
           </div>
         )}
       </section>

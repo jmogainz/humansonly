@@ -5,6 +5,7 @@ import TestPageClient from '../_shared/TestPageClient';
 
 type TestPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ flow?: string | string[]; start?: string | string[] }>;
 };
 
 export async function generateStaticParams() {
@@ -26,12 +27,16 @@ export async function generateMetadata({ params }: TestPageProps): Promise<Metad
   };
 }
 
-export default async function TestPage({ params }: TestPageProps) {
+export default async function TestPage({ params, searchParams }: TestPageProps) {
   const { slug } = await params;
+  const query = await searchParams;
   const test = getTestBySlug(slug);
   if (!test || test.playable === false) {
     notFound();
   }
 
-  return <TestPageClient definition={test} />;
+  const flowParam = typeof query.flow === 'string' ? query.flow : null;
+  const startParam = typeof query.start === 'string' ? query.start : null;
+
+  return <TestPageClient definition={test} flowParam={flowParam} startParam={startParam} />;
 }

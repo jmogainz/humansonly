@@ -2,34 +2,61 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle, generateRecentUnique } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Timer from '@/components/Timer';
 import { useTimer } from '@/hooks/useTimer';
+import TestStartScreen from '@/components/TestStartScreen';
 
 type Round = {
   options: number[];
   answer: number;
+  question: string;
+  signature: string;
 };
 
-function makeRound(): Round {
-  const middle = randomInt(10, 30);
+function makeRoundRaw(): Round {
+  // Increased range from 10-30 to 10-90
+  const middle = randomInt(10, 90);
   const lower = randomInt(1, middle - 2);
   const diff = middle - lower;
-  const shake = randomInt(1, diff - 1);
+  const shake = randomInt(1, Math.max(1, diff - 1));
   const isHigherFurther = Math.random() > 0.5;
   const higher = isHigherFurther ? middle + diff + shake : middle + diff - shake;
 
+  const options = [lower, middle, higher];
+  
+  // Randomly ask for the median or the furthest from median
+  const isAskingMedian = Math.random() > 0.5;
+  const question = isAskingMedian 
+    ? "Which number is the median?" 
+    : "Which number is furthest from the median?";
+  const answer = isAskingMedian ? middle : (isHigherFurther ? higher : lower);
+  
+  const signature = `${isAskingMedian ? 'm' : 'f'}:${options.sort((a, b) => a - b).join('|')}`;
+
   return {
-    options: shuffle([lower, middle, higher]),
-    answer: isHigherFurther ? higher : lower,
+    options: shuffle(options),
+    answer,
+    question,
+    signature,
   };
 }
 
-export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
+function makeRound(): Round {
+  return generateRecentUnique(
+    'gia-number-speed',
+    15,
+    makeRoundRaw,
+    (r) => r.signature
+  );
+}
+
+export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameProps) {
   const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
+  const [netStatus, setNetStatus] = useState<'success' | 'danger' | 'neutral'>('neutral');
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const submittedRef = useRef(false);
@@ -72,8 +99,10 @@ export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
     if (finished || submittedRef.current) return;
     if (value === round.answer) {
       statsRef.current.correct += 1;
+      setNetStatus('success');
     } else {
       statsRef.current.incorrect += 1;
+      setNetStatus('danger');
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
@@ -82,44 +111,52 @@ export default function GiaNumberSpeedTest({ onComplete }: TestGameProps) {
 
   if (!started) {
     return (
-      <div style={{ display: 'grid', gap: '1.5rem', placeItems: 'center', minHeight: '300px', textAlign: 'center' }}>
-        <div style={{ display: 'grid', gap: '0.5rem' }}>
-          <h2 style={{ margin: 0 }}>Ready?</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Pick the number furthest from the median. You have 2 minutes.
-          </p>
-        </div>
-        <button type="button" className="button" onClick={handleStart} style={{ minWidth: '160px' }}>
-          Start Test
-        </button>
-      </div>
+      <TestStartScreen
+        description="Pick the median or the number furthest from it as requested. You have 2 minutes."
+        onStart={handleStart}
+      />
     );
   }
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
 
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <ScoreDisplay label="Correct" value={correct} />
-        <ScoreDisplay label="Incorrect" value={incorrect} />
-        <ScoreDisplay label="Net" value={score.toFixed(2)} />
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
       </div>
 
-      <h2 style={{ margin: 0 }}>Which number is furthest from the median?</h2>
+      <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)', flexShrink: 0 }}>{round.question}</h2>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
-        {round.options.map((value) => (
-          <button
-            key={value}
-            type="button"
-            className="button"
-            style={{ fontFamily: 'var(--font-mono)', fontSize: '1.2rem', minHeight: '3.2rem' }}
-            onClick={() => answer(value)}
-          >
-            {value}
-          </button>
-        ))}
+      <div 
+        className="game-grid-container"
+        style={{ alignItems: 'flex-start' }}
+      >
+        <div 
+          className="game-grid"
+          style={{ 
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
+            gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
+            aspectRatio: 'auto',
+            height: 'auto',
+            width: '100%',
+            maxWidth: '480px'
+          }}
+        >
+          {round.options.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className="game-tile"
+              style={{ fontSize: 'clamp(1.2rem, 6cqw, 1.8rem)', padding: '1rem 0' }}
+              onClick={() => answer(value)}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

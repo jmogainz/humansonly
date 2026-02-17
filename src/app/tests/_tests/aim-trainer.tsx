@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import { clamp } from '@/lib/utils';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const TARGET_COUNT = 30;
 const TARGET_SIZE = 44;
@@ -19,7 +20,7 @@ function randomTarget(width: number, height: number) {
   };
 }
 
-export default function AimTrainerTest({ onComplete }: TestGameProps) {
+export default function AimTrainerTest({ definition, onComplete }: TestGameProps) {
   const arenaRef = useRef<HTMLDivElement | null>(null);
   const [started, setStarted] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -95,32 +96,35 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
     setSpawnedAt(now);
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={handleStart}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+    <div className="game-container">
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
         <ScoreDisplay label="Hits" value={`${hits}/${TARGET_COUNT}`} />
         <ScoreDisplay label="Average" value={`${Math.round(average)} ms`} />
       </div>
 
-      {!started ? (
-        <button className="button" type="button" onClick={handleStart}>
-          Start Aim Trainer
-        </button>
-      ) : null}
-
       <div
+        className="game-grid-container"
         ref={arenaRef}
         style={{
-          width: '100%',
-          minHeight: 'clamp(280px, 55vw, 420px)',
           borderRadius: '14px',
           border: '1px solid var(--border)',
           background: 'linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 70%, transparent), var(--surface))',
           position: 'relative',
           overflow: 'hidden',
+          display: 'block'
         }}
       >
-        {started && !finished ? (
+        {!finished ? (
           <button
             type="button"
             onClick={handleHit}
@@ -139,7 +143,7 @@ export default function AimTrainerTest({ onComplete }: TestGameProps) {
           />
         ) : (
           <p style={{ margin: '1rem', color: 'var(--text-muted)' }}>
-            {finished ? 'Run complete. Saving result...' : 'Click start to begin 30 target challenge.'}
+            Run complete. Saving result...
           </p>
         )}
       </div>

@@ -9,6 +9,8 @@ type GiaSession = {
   startedAt: number;
   scores: Partial<Record<(typeof GIA_SLUGS)[number], number>>;
   submittedCombined: boolean;
+  flowActive: boolean;
+  nextIndex: number;
 };
 
 function now(): number {
@@ -20,6 +22,8 @@ function emptySession(): GiaSession {
     startedAt: now(),
     scores: {},
     submittedCombined: false,
+    flowActive: false,
+    nextIndex: 0,
   };
 }
 
@@ -39,6 +43,8 @@ function readSession(): GiaSession {
       startedAt: parsed.startedAt,
       scores: parsed.scores ?? {},
       submittedCombined: Boolean(parsed.submittedCombined),
+      flowActive: Boolean(parsed.flowActive),
+      nextIndex: typeof parsed.nextIndex === 'number' ? parsed.nextIndex : 0,
     };
   } catch {
     return emptySession();
@@ -54,25 +60,36 @@ export function recordGiaSubtestScore(
   slug: string,
   score: number
 ):
-  | { ready: false }
+  | { ready: false; accepted: boolean }
   | {
+      accepted: true;
       ready: true;
       total: number;
       breakdown: Record<(typeof GIA_SLUGS)[number], number>;
     } {
   if (!GIA_SLUGS.includes(slug as (typeof GIA_SLUGS)[number])) {
-    return { ready: false };
+    return { ready: false, accepted: false };
   }
 
   const session = readSession();
+  if (!session.flowActive) {
+    return { ready: false, accepted: false };
+  }
+
   const key = slug as (typeof GIA_SLUGS)[number];
+  const expectedSlug = GIA_SLUGS[session.nextIndex];
+  if (expectedSlug !== key) {
+    return { ready: false, accepted: false };
+  }
+
   session.scores[key] = score;
+  session.nextIndex += 1;
 
   const allComplete = GIA_SLUGS.every((testSlug) => typeof session.scores[testSlug] === 'number');
   writeSession(session);
 
   if (!allComplete || session.submittedCombined) {
-    return { ready: false };
+    return { ready: false, accepted: true };
   }
 
   const breakdown = Object.fromEntries(
@@ -82,6 +99,7 @@ export function recordGiaSubtestScore(
   const total = GIA_SLUGS.reduce((sum, testSlug) => sum + (session.scores[testSlug] ?? 0), 0);
 
   return {
+    accepted: true,
     ready: true,
     total,
     breakdown,
@@ -91,6 +109,18 @@ export function recordGiaSubtestScore(
 export function markGiaCombinedSubmitted(): void {
   const session = readSession();
   session.submittedCombined = true;
+  session.flowActive = false;
+  writeSession(session);
+}
+
+export function startGiaAssessmentSession(): void {
+  const session: GiaSession = {
+    startedAt: now(),
+    scores: {},
+    submittedCombined: false,
+    flowActive: true,
+    nextIndex: 0,
+  };
   writeSession(session);
 }
 

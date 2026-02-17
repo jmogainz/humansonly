@@ -15,7 +15,7 @@ export default function ShareCard({ title, scoreText }: ShareCardProps) {
       type="button"
       className="button buttonGhost"
       onClick={async () => {
-        const text = `${title}\n${scoreText}\nhttps://humansonly.io`;
+        const text = `${title}\n${scoreText}\nhttps://tryhumansonly.com`;
         if (navigator.share) {
           await navigator.share({ text, title: 'HumansOnly' });
           return;

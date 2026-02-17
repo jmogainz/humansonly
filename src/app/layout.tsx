@@ -126,11 +126,31 @@ const themeBootstrap = `
 })();
 `;
 
+const viewportBootstrap = `
+(() => {
+  const setViewportVars = () => {
+    const viewportHeight = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--app-vh', \`\${Math.round(viewportHeight)}px\`);
+  };
+
+  try {
+    setViewportVars();
+    window.addEventListener('resize', setViewportVars, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setViewportVars, { passive: true });
+    }
+  } catch {
+    // Ignore; CSS fallback will use 100dvh/100vh.
+  }
+})();
+`;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${outfit.variable} ${jetBrainsMono.variable}`}>
         <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+        <script dangerouslySetInnerHTML={{ __html: viewportBootstrap }} />
         <Providers>
           <Header />
           <main>{children}</main>

@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import styles from './ResultScreen.module.css';
 import PercentileBar from './PercentileBar';
 import LeaderboardMini from './LeaderboardMini';
 import type { ScoreUnit } from '@/lib/tests/types';
 import { formatNumber } from '@/lib/utils';
 import ShareCard from './ShareCard';
+import { Spinner } from './Spinner';
 
 type ResultScreenProps = {
   testSlug: string;
@@ -28,7 +30,10 @@ export default function ResultScreen({
   personalBest,
   onPlayAgain,
 }: ResultScreenProps) {
+  const router = useRouter();
   const [display, setDisplay] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const target = useMemo(() => (Number.isFinite(scoreValue) ? scoreValue : 0), [scoreValue]);
 
   useEffect(() => {
@@ -62,8 +67,29 @@ export default function ResultScreen({
       <PercentileBar percentile={percentile} />
 
       <div className={styles.actions}>
-        <button className="button" type="button" onClick={onPlayAgain}>Play Again</button>
-        <Link href={`/leaderboard/${testSlug}`} className="button buttonGhost">View Leaderboard</Link>
+        <button
+          className="button"
+          type="button"
+          disabled={isResetting || isNavigating}
+          onClick={() => {
+            setIsResetting(true);
+            onPlayAgain();
+          }}
+        >
+          {isResetting ? <Spinner size={16} /> : null}
+          {isResetting ? 'Resetting...' : 'Play Again'}
+        </button>
+        <button
+          className="button buttonGhost"
+          disabled={isResetting || isNavigating}
+          onClick={() => {
+            setIsNavigating(true);
+            router.push(`/leaderboard/${testSlug}`);
+          }}
+        >
+          {isNavigating ? <Spinner size={16} /> : null}
+          {isNavigating ? 'Loading...' : 'View Leaderboard'}
+        </button>
         <ShareCard title="HumansOnly Result" scoreText={`${scoreLabel}: ${scoreValue.toFixed(2)} ${scoreUnit}`} />
       </div>
 

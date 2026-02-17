@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const ANSWERS = [12, 8, 6, 29, 45, 5, 73, 15, 26, 74, 16, 42, 3, 9, 57];
 
@@ -81,7 +82,8 @@ function classify(correct: number): string {
   return 'Strong color deficiency pattern';
 }
 
-export default function ColorBlindnessTest({ onComplete }: TestGameProps) {
+export default function ColorBlindnessTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [plates, setPlates] = useState<Plate[]>(() => ANSWERS.map((answer) => ({ answer, src: null })));
   const [index, setIndex] = useState(0);
   const [guess, setGuess] = useState('');
@@ -105,13 +107,17 @@ export default function ColorBlindnessTest({ onComplete }: TestGameProps) {
   }, []);
 
   useEffect(() => {
-    ensurePlate(0);
-  }, [ensurePlate]);
+    if (started) {
+      ensurePlate(0);
+    }
+  }, [ensurePlate, started]);
 
   useEffect(() => {
-    ensurePlate(index);
-    ensurePlate(index + 1);
-  }, [index, ensurePlate]);
+    if (started) {
+      ensurePlate(index);
+      ensurePlate(index + 1);
+    }
+  }, [index, ensurePlate, started]);
 
   const plate = plates[index];
 
@@ -142,43 +148,62 @@ export default function ColorBlindnessTest({ onComplete }: TestGameProps) {
     setGuess('');
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem', justifyItems: 'center' }}>
-      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', width: 'min(420px, 100%)' }}>
+    <div className="game-container" style={{ alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', justifyContent: 'space-between', width: 'min(420px, 100%)', flexShrink: 0 }}>
         <ScoreDisplay label="Progress" value={`${index + 1}/${plates.length}`} />
         <ScoreDisplay label="Correct" value={correct} />
       </div>
 
-      {plate?.src ? (
-        <img
-          src={plate.src}
-          alt="Ishihara plate"
-          style={{ width: 'min(360px, 80vw)', borderRadius: '50%', border: '1px solid var(--border)' }}
-        />
-      ) : (
-        <div
-          style={{
-            width: 'min(360px, 80vw)',
-            aspectRatio: '1 / 1',
-            borderRadius: '50%',
-            border: '1px solid var(--border)',
-            display: 'grid',
-            placeItems: 'center',
-            color: 'var(--text-muted)',
-          }}
-        >
-          Generating plate...
-        </div>
-      )}
+      <div className="game-grid-container">
+        {plate?.src ? (
+          <img
+            src={plate.src}
+            alt="Ishihara plate"
+            style={{ 
+              width: 'min(360px, 90cqh, 90cqw)', 
+              height: 'auto',
+              aspectRatio: '1 / 1',
+              borderRadius: '50%', 
+              border: '1px solid var(--border)' 
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 'min(360px, 90cqh, 90cqw)', 
+              aspectRatio: '1 / 1',
+              borderRadius: '50%',
+              border: '1px solid var(--border)',
+              display: 'grid',
+              placeItems: 'center',
+              color: 'var(--text-muted)',
+              background: 'var(--surface-raised)'
+            }}
+          >
+            Generating plate...
+          </div>
+        )}
+      </div>
 
       <form
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
-        style={{ width: 'min(420px, 100%)', display: 'grid', gap: '0.65rem' }}
+        style={{ width: 'min(420px, 100%)', display: 'grid', gap: '0.65rem', flexShrink: 0 }}
       >
         <input
+          autoFocus
           value={guess}
           inputMode="numeric"
           onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
@@ -188,7 +213,7 @@ export default function ColorBlindnessTest({ onComplete }: TestGameProps) {
         <button type="submit" className="button" disabled={!plate?.src || !guess.trim()}>Next Plate</button>
       </form>
 
-      <small style={{ color: 'var(--text-muted)', textAlign: 'center' }}>
+      <small style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem', flexShrink: 0 }}>
         Screening only. This is not a medical diagnosis.
       </small>
     </div>

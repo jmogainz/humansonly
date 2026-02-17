@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import TestStartScreen from '@/components/TestStartScreen';
 
 type Circle = {
   id: number;
@@ -119,10 +120,11 @@ function resolveCollisions(circles: Circle[], width: number, height: number): vo
   }
 }
 
-export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
+export default function ObjectTrackingTest({ definition, onComplete }: TestGameProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const circlesRef = useRef<Circle[]>([]);
   const submittedRef = useRef(false);
+  const [started, setStarted] = useState(false);
   const [arena, setArena] = useState<{ width: number; height: number }>({ width: MAX_WIDTH, height: MAX_HEIGHT });
   const [level, setLevel] = useState(1);
   const [phase, setPhase] = useState<'highlight' | 'moving' | 'select'>('highlight');
@@ -162,10 +164,11 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
   }, [arena.width, arena.height, phase, selected]);
 
   useEffect(() => {
+    if (!started) return;
     circlesRef.current = buildCircles(level, arena.width, arena.height);
     setTargetCount(circlesRef.current.filter((circle) => circle.target).length);
     draw();
-  }, [arena.width, arena.height, level, draw]);
+  }, [arena.width, arena.height, level, draw, started]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -189,25 +192,27 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
   }, []);
 
   useEffect(() => {
-    draw();
-  }, [draw]);
+    if (started) {
+      draw();
+    }
+  }, [draw, started]);
 
   useEffect(() => {
-    if (phase !== 'highlight') return;
+    if (!started || phase !== 'highlight') return;
     const id = window.setTimeout(() => {
       setPhase('moving');
     }, 1800);
     return () => window.clearTimeout(id);
-  }, [phase, level]);
+  }, [phase, level, started]);
 
   useEffect(() => {
-    if (phase !== 'moving') return;
+    if (!started || phase !== 'moving') return;
 
-    const started = performance.now();
+    const startedTime = performance.now();
     let raf = 0;
 
     const tick = (time: number) => {
-      const elapsed = time - started;
+      const elapsed = time - startedTime;
       for (const circle of circlesRef.current) {
         circle.x += circle.vx;
         circle.y += circle.vy;
@@ -236,12 +241,12 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [phase, arena.width, arena.height, draw]);
+  }, [phase, arena.width, arena.height, draw, started]);
 
   useEffect(() => {
-    if (phase !== 'select') return;
+    if (phase !== 'select' || !started) return;
     draw();
-  }, [phase, draw]);
+  }, [phase, draw, started]);
 
   const evaluateSelection = (nextSelected: Set<number>) => {
     const targetIds = circlesRef.current.filter((circle) => circle.target).map((circle) => circle.id);
@@ -287,36 +292,50 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
     setSelected(next);
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '0.8rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+    <div className="game-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', flexShrink: 0 }}>
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
         <small style={{ color: 'var(--text-muted)' }}>
           {phase === 'highlight'
-            ? `Memorize ${targetCount} highlighted circles`
+            ? `Memorize ${targetCount} targets`
             : phase === 'moving'
               ? 'Track while circles move'
               : `Select ${targetCount} targets, then submit`}
         </small>
       </div>
 
-      <canvas
-        ref={canvasRef}
-        width={arena.width}
-        height={arena.height}
-        onPointerDown={handleCanvasPointerDown}
-        style={{
-          width: '100%',
-          maxWidth: `${MAX_WIDTH}px`,
-          borderRadius: '12px',
-          border: '1px solid var(--border)',
-          cursor: phase === 'select' ? 'pointer' : 'default',
-          background: 'var(--surface-raised)',
-          touchAction: 'manipulation',
-        }}
-      />
+      <div className="game-grid-container">
+        <canvas
+          ref={canvasRef}
+          width={arena.width}
+          height={arena.height}
+          onPointerDown={handleCanvasPointerDown}
+          style={{
+            width: '100%',
+            height: '100%',
+            maxWidth: `${MAX_WIDTH}px`,
+            maxHeight: `${MAX_HEIGHT}px`,
+            margin: '0 auto',
+            borderRadius: '12px',
+            border: '1px solid var(--border)',
+            cursor: phase === 'select' ? 'pointer' : 'default',
+            background: 'var(--surface-raised)',
+            touchAction: 'manipulation',
+          }}
+        />
+      </div>
       {phase === 'select' ? (
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
           <small style={{ color: 'var(--text-muted)' }}>
             Selected {selected.size}/{targetCount}
           </small>
@@ -325,6 +344,7 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
               type="button"
               className="button buttonGhost"
               onClick={() => setSelected(new Set())}
+              style={{ padding: '0.5rem 1rem' }}
             >
               Clear
             </button>
@@ -333,8 +353,9 @@ export default function ObjectTrackingTest({ onComplete }: TestGameProps) {
               className="button"
               disabled={selected.size !== targetCount}
               onClick={() => evaluateSelection(selected)}
+              style={{ padding: '0.5rem 1.5rem' }}
             >
-              Submit Selection
+              Submit
             </button>
           </div>
         </div>

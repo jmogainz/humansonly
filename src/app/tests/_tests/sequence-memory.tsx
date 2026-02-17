@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const GRID = 3;
 
@@ -16,7 +17,8 @@ function nextIndex(previous: number | null = null) {
   return next;
 }
 
-export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
+export default function SequenceMemoryTest({ definition, onComplete }: TestGameProps) {
+  const [started, setStarted] = useState(false);
   const [sequence, setSequence] = useState<number[]>([nextIndex()]);
   const [inputIndex, setInputIndex] = useState(0);
   const [phase, setPhase] = useState<'show' | 'input'>('show');
@@ -24,6 +26,7 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
+    if (!started) return;
     setPhase('show');
     setInputIndex(0);
 
@@ -53,7 +56,7 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
       cancelled = true;
       timers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [sequence]);
+  }, [sequence, started]);
 
   const handleClick = (index: number) => {
     if (phase !== 'input' || finished) return;
@@ -77,44 +80,52 @@ export default function SequenceMemoryTest({ onComplete }: TestGameProps) {
     setInputIndex((prev) => prev + 1);
   };
 
+  if (!started) {
+    return (
+      <TestStartScreen
+        description={definition.description}
+        onStart={() => setStarted(true)}
+      />
+    );
+  }
+
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="game-container">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {sequence.length}</strong>
         <small style={{ color: 'var(--text-muted)' }}>
           {phase === 'show' ? 'Watch the sequence' : `Repeat from ${inputIndex + 1}/${sequence.length}`}
         </small>
       </div>
 
-      <div
-        style={{
-          width: 'min(520px, 100%)',
-          display: 'grid',
-          gridTemplateColumns: `repeat(${GRID}, minmax(0, 1fr))`,
-          gap: '0.6rem',
-        }}
-      >
-        {Array.from({ length: GRID * GRID }, (_, index) => {
-          const active = activeCell === index;
-          return (
-            <button
-              key={index}
-              type="button"
-              onClick={() => handleClick(index)}
-              style={{
-                aspectRatio: '1 / 1',
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
-                background: active
-                  ? 'color-mix(in srgb, var(--accent) 50%, var(--bg))'
-                  : 'var(--surface-raised)',
-                boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
-                transition: 'all 80ms ease',
-                cursor: phase === 'input' ? 'pointer' : 'default',
-              }}
-            />
-          );
-        })}
+      <div className="game-grid-container">
+        <div
+          className="game-grid"
+          style={{
+            gridTemplateColumns: `repeat(${GRID}, minmax(0, 1fr))`,
+            gap: 'clamp(0.25rem, 2cqw, 0.6rem)',
+          }}
+        >
+          {Array.from({ length: GRID * GRID }, (_, index) => {
+            const active = activeCell === index;
+            return (
+              <button
+                key={index}
+                type="button"
+                className="game-tile"
+                onClick={() => handleClick(index)}
+                style={{
+                  background: active
+                    ? 'color-mix(in srgb, var(--accent) 50%, var(--bg))'
+                    : 'var(--surface-raised)',
+                  boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
+                  cursor: phase === 'input' ? 'pointer' : 'default',
+                  borderRadius: 'clamp(6px, 2cqw, 12px)',
+                }}
+              />
+            );
+          })}
+        </div>
       </div>
     </div>
   );

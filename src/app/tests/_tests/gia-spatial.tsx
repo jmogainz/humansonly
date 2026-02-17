@@ -2,13 +2,14 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle, generateRecentUnique } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Timer from '@/components/Timer';
 import { useTimer } from '@/hooks/useTimer';
+import TestStartScreen from '@/components/TestStartScreen';
 
 const LETTERS = ['F', 'G', 'J', 'L', 'N', 'P', 'Q', 'R', 'S', 'Z'];
-const COLUMN_COUNT = 2;
+const COLUMN_COUNT = 3;
 
 type LetterInstance = {
   char: string;
@@ -26,6 +27,7 @@ type Round = {
   letter: string;
   columns: Column[];
   answer: number;
+  signature: string;
 };
 
 function letterInstance(char: string, mirrored?: boolean): LetterInstance {
@@ -36,28 +38,42 @@ function letterInstance(char: string, mirrored?: boolean): LetterInstance {
   };
 }
 
-function makeRound(): Round {
+function makeRoundRaw(): Round {
   const letter = LETTERS[randomInt(0, LETTERS.length - 1)];
-  const numOneMirrored = randomInt(0, COLUMN_COUNT);
+  const numSame = randomInt(0, COLUMN_COUNT);
   const columns: Column[] = Array.from({ length: COLUMN_COUNT }, (_, i) => {
-    const isOneMirrored = i < numOneMirrored;
+    const isSame = i < numSame;
     const mirror = Math.random() > 0.5;
     const top = letterInstance(letter, mirror);
     const bottom = letterInstance(letter, mirror);
-    if (isOneMirrored) {
+    if (!isSame) {
       bottom.mirrored = !top.mirrored;
     }
     return {
       top,
       bottom,
-      same: !isOneMirrored,
+      same: isSame,
     };
   });
+  
+  const shuffled = shuffle(columns);
+  const signature = `${letter}:${shuffled.map(c => `${c.top.rotation}${c.top.mirrored ? 'm' : ''}${c.bottom.rotation}${c.bottom.mirrored ? 'm' : ''}`).join('|')}`;
+
   return {
     letter,
-    columns: shuffle(columns),
-    answer: COLUMN_COUNT - numOneMirrored,
+    columns: shuffled,
+    answer: numSame,
+    signature,
   };
+}
+
+function makeRound(): Round {
+  return generateRecentUnique(
+    'gia-spatial',
+    10,
+    makeRoundRaw,
+    (r) => r.signature
+  );
 }
 
 function LetterView({ value }: { value: LetterInstance }) {
@@ -66,7 +82,7 @@ function LetterView({ value }: { value: LetterInstance }) {
       style={{
         display: 'inline-block',
         fontFamily: 'var(--font-mono)',
-        fontSize: '2rem',
+        fontSize: 'clamp(1.2rem, 8cqh, 2rem)',
         transform: `rotate(${value.rotation * 90}deg) scaleX(${value.mirrored ? -1 : 1})`,
       }}
     >
@@ -75,10 +91,11 @@ function LetterView({ value }: { value: LetterInstance }) {
   );
 }
 
-export default function GiaSpatialTest({ onComplete }: TestGameProps) {
+export default function GiaSpatialTest({ definition, onComplete }: TestGameProps) {
   const [round, setRound] = useState<Round>(() => makeRound());
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
+  const [netStatus, setNetStatus] = useState<'success' | 'danger' | 'neutral'>('neutral');
   const [finished, setFinished] = useState(false);
   const [started, setStarted] = useState(false);
   const submittedRef = useRef(false);
@@ -121,8 +138,10 @@ export default function GiaSpatialTest({ onComplete }: TestGameProps) {
     if (finished || submittedRef.current) return;
     if (value === round.answer) {
       statsRef.current.correct += 1;
+      setNetStatus('success');
     } else {
       statsRef.current.incorrect += 1;
+      setNetStatus('danger');
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
@@ -131,58 +150,63 @@ export default function GiaSpatialTest({ onComplete }: TestGameProps) {
 
   if (!started) {
     return (
-      <div style={{ display: 'grid', gap: '1.5rem', placeItems: 'center', minHeight: '300px', textAlign: 'center' }}>
-        <div style={{ display: 'grid', gap: '0.5rem' }}>
-          <h2 style={{ margin: 0 }}>Ready?</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Determine how many boxes contain the same letter (rotated is OK, mirrored is not). You have 2 minutes.
-          </p>
-        </div>
-        <button type="button" className="button" onClick={handleStart} style={{ minWidth: '160px' }}>
-          Start Test
-        </button>
-      </div>
+      <TestStartScreen
+        description="Determine how many boxes contain the same letter (rotated is OK, mirrored is not). You have 2 minutes."
+        onStart={handleStart}
+      />
     );
   }
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="game-container">
       <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
 
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <ScoreDisplay label="Correct" value={correct} />
-        <ScoreDisplay label="Incorrect" value={incorrect} />
-        <ScoreDisplay label="Net" value={score.toFixed(2)} />
+      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
       </div>
 
-      <h2 style={{ margin: 0 }}>How many boxes have the same letter?</h2>
-      <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-        Rotated letters are considered the same, while mirrored letters are not.
-      </p>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem' }}>
-        {round.columns.map((column, index) => (
-          <div
-            key={index}
-            style={{
-              border: '1px solid var(--border)',
-              borderRadius: '12px',
-              minHeight: '170px',
-              display: 'grid',
-              placeItems: 'center',
-              gap: '1.3rem',
-              padding: '1rem 0.4rem',
-              background: 'var(--surface-raised)',
-            }}
-          >
-            <LetterView value={column.top} />
-            <LetterView value={column.bottom} />
-          </div>
-        ))}
+      <div style={{ flexShrink: 0 }}>
+        <h2 style={{ margin: 0, fontSize: 'clamp(1rem, 4vw, 1.5rem)' }}>How many boxes have the same letter?</h2>
+        <p style={{ margin: '0.2rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          Rotated letters are considered the same, while mirrored letters are not.
+        </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.6rem' }}>
-        {[0, 1, 2].map((value) => (
+      <div className="game-grid-container">
+        <div 
+          className="game-grid"
+          style={{ 
+            gridTemplateColumns: `repeat(${COLUMN_COUNT}, minmax(0, 1fr))`, 
+            gap: 'clamp(0.4rem, 2cqw, 0.8rem)',
+            aspectRatio: 'auto',
+            height: '100%',
+            maxWidth: '600px'
+          }}
+        >
+          {round.columns.map((column, index) => (
+            <div
+              key={index}
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                display: 'grid',
+                placeItems: 'center',
+                gap: 'clamp(0.5rem, 5cqh, 1.3rem)',
+                padding: 'clamp(0.5rem, 4cqh, 1rem) 0.4rem',
+                background: 'var(--surface-raised)',
+              }}
+            >
+              <LetterView value={column.top} />
+              <LetterView value={column.bottom} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLUMN_COUNT + 1}, minmax(0, 1fr))`, gap: '0.6rem', flexShrink: 0, maxWidth: '400px', marginInline: 'auto', width: '100%' }}>
+        {Array.from({ length: COLUMN_COUNT + 1 }, (_, value) => (
           <button key={value} type="button" className="button" onClick={() => answer(value)}>
             {value}
           </button>

@@ -1,0 +1,39 @@
+.listWrapper {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+/* The "track" for the indicator */
+.listWrapper::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-subtle);
+  opacity: 0.5;
+}
+
+.indicator {
+  position: absolute;
+  left: -0.5px; /* Center on the 1px track */
+  width: 2px;
+  background: var(--accent);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), 
+              height 0.25s cubic-bezier(0.22, 1, 0.36, 1), 
+              opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 0 10px var(--accent-subtle);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.itemWrapper {
+  width: 100%;
+}

@@ -3,7 +3,7 @@ import NextAuth, { type NextAuthOptions } from 'next-auth';
 import Google from 'next-auth/providers/google';
 import Apple from 'next-auth/providers/apple';
 import { env } from '@/lib/server/env';
-import { upsertUserForOidcAccount } from '@/lib/server/users';
+import { getUserProfile, upsertUserForOidcAccount } from '@/lib/server/users';
 
 const envSecret = env('AUTH_SECRET') || env('NEXTAUTH_SECRET');
 if (envSecret && !process.env.NEXTAUTH_SECRET) {
@@ -106,6 +106,10 @@ export const authOptions: NextAuthOptions = {
     maxAge: 10 * 24 * 60 * 60,
     updateAge: 24 * 60 * 60,
   },
+  pages: {
+    signIn: '/',
+    error: '/',
+  },
   cookies: {
     pkceCodeVerifier: {
       name: '__Secure-next-auth.pkce.code_verifier',
@@ -133,7 +137,7 @@ export const authOptions: NextAuthOptions = {
           provider: account.provider,
           providerAccountId: account.providerAccountId,
           email: token.email ?? user?.email ?? null,
-          displayName: (token.name as string | undefined) ?? user?.name ?? null,
+          name: (token.name as string | undefined) ?? user?.name ?? null,
           imageUrl: (token.picture as string | undefined) ?? user?.image ?? null,
         });
         token.userId = userId;
@@ -146,6 +150,10 @@ export const authOptions: NextAuthOptions = {
     session: async ({ session, token }) => {
       if (session.user && token.userId) {
         session.user.id = token.userId;
+        const profile = await getUserProfile(token.userId);
+        if (profile?.displayName) {
+          session.user.name = profile.displayName;
+        }
       }
       return session;
     },

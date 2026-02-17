@@ -1,6 +1,6 @@
 import { getSessionUserId } from '@/lib/server/session';
 import { jsonError, jsonOk } from '@/lib/server/responses';
-import { getAllScoresForCategory } from '@/lib/server/scores';
+import { getAllScoresForCategory, getAllScoresForUser } from '@/lib/server/scores';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -10,16 +10,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
 
-    if (!category) {
-      return jsonError(400, 'MISSING_CATEGORY', 'category is required');
-    }
-
     const userId = await getSessionUserId();
     if (!userId) {
       return jsonError(401, 'AUTH_REQUIRED', 'Sign in to view history');
     }
 
-    const scores = await getAllScoresForCategory(userId, category);
+    const scores = category
+      ? await getAllScoresForCategory(userId, category)
+      : await getAllScoresForUser(userId);
     return jsonOk({ scores });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load scores';
