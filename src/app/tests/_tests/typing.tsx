@@ -62,21 +62,19 @@ export default function TypingTest({ definition, onComplete }: TestGameProps) {
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="WPM" value={wpm.toFixed(1)} />
+        <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="WPM" value={wpm.toFixed(1)} />
-            <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <div
               style={{
                 border: '1px solid var(--border)',
@@ -166,9 +164,9 @@ export default function TypingTest({ definition, onComplete }: TestGameProps) {
             <small style={{ color: 'var(--text-muted)', fontSize: '0.8rem', lineHeight: '1.4', textAlign: 'center', maxWidth: '500px', marginInline: 'auto' }}>
               Timer starts on first keystroke. Finish the full paragraph to submit score. Pasting is disabled.
             </small>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,2 +1,3 @@
 # Migration runs are recorded by deployment tooling.
 prod forward 000000 000001 2026-02-17T08:20:50Z applied
+prod forward 000001 000001 2026-02-17T10:30:58Z noop

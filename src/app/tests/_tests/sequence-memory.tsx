@@ -84,20 +84,18 @@ export default function SequenceMemoryTest({ definition, onComplete }: TestGameP
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Level" value={sequence.length} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Level" value={sequence.length} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: 0, fontSize: '1rem' }}>
               {phase === 'show' ? 'Watch the sequence' : `Repeat sequence: ${inputIndex + 1} / ${sequence.length}`}
             </p>
@@ -132,9 +130,9 @@ export default function SequenceMemoryTest({ definition, onComplete }: TestGameP
                 })}
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

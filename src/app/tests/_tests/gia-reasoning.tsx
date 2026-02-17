@@ -180,80 +180,74 @@ export default function GiaReasoningTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score} status={netStatus} />
+      </Scoreboard>
+      
+      <Timer progress={1 - timer.progress} />
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description="Read each statement, then answer the question. You have 2 minutes."
             onStart={handleStart}
           />
-        </div>
-      ) : (
-        <>
-          {!finished && (
-            <Scoreboard>
-              <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
-              <ScoreDisplay label="Correct" value={correct} status="success" />
-              <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
-              <ScoreDisplay label="Net" value={score} status={netStatus} />
-            </Scoreboard>
-          )}
-          
-          <Timer progress={1 - timer.progress} />
-
-          <div className="game-content">
-            <div
-              style={{
-                border: '1px solid var(--border)',
-                borderRadius: '16px',
-                padding: 'clamp(1.5rem, 6vw, 3rem)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                gap: 'clamp(1.5rem, 5vh, 2.5rem)',
-                background: 'var(--surface-raised)',
-                width: '100%',
-                maxWidth: '640px',
-                marginInline: 'auto'
-              }}
-            >
-              {phase === 'statement' ? (
-                <div style={{ textAlign: 'center', display: 'grid', gap: '1.5rem', width: '100%' }}>
-                  <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>Statement</small>
-                  <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem, 6vw, 2.25rem)', fontWeight: 600, lineHeight: 1.3 }}>{round.statement}</h2>
-                  <button 
-                    type="button" 
-                    className="button" 
-                    onClick={() => setPhase('question')}
-                    style={{ padding: '0.8rem 2.5rem', fontSize: '1rem', marginInline: 'auto', minWidth: '200px' }}
-                  >
-                    Show Question
-                  </button>
+        ) : (
+          <div
+            style={{
+              border: '1px solid var(--border)',
+              borderRadius: '16px',
+              padding: 'clamp(1.5rem, 6vw, 3rem)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 'clamp(1.5rem, 5vh, 2.5rem)',
+              background: 'var(--surface-raised)',
+              width: '100%',
+              maxWidth: '640px',
+              marginInline: 'auto'
+            }}
+          >
+            {phase === 'statement' ? (
+              <div style={{ textAlign: 'center', display: 'grid', gap: '1.5rem', width: '100%' }}>
+                <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>Statement</small>
+                <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem, 6vw, 2.25rem)', fontWeight: 600, lineHeight: 1.3 }}>{round.statement}</h2>
+                <button 
+                  type="button" 
+                  className="button" 
+                  onClick={() => setPhase('question')}
+                  style={{ padding: '0.8rem 2.5rem', fontSize: '1rem', marginInline: 'auto', minWidth: '200px' }}
+                >
+                  Show Question
+                </button>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', display: 'grid', gap: '1.5rem', width: '100%' }}>
+                <div style={{ display: 'grid', gap: '0.4rem' }}>
+                  <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>Question</small>
+                  <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem, 6vw, 2.25rem)', fontWeight: 600, lineHeight: 1.3 }}>{round.question}</h2>
                 </div>
-              ) : (
-                <div style={{ textAlign: 'center', display: 'grid', gap: '1.5rem', width: '100%' }}>
-                  <div style={{ display: 'grid', gap: '0.4rem' }}>
-                    <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>Question</small>
-                    <h2 style={{ margin: 0, fontSize: 'clamp(1.3rem, 6vw, 2.25rem)', fontWeight: 600, lineHeight: 1.3 }}>{round.question}</h2>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem', maxWidth: '440px', marginInline: 'auto', width: '100%' }}>
-                    {round.options.map((name) => (
-                      <button 
-                        key={name} 
-                        type="button" 
-                        className="button" 
-                        onClick={() => answer(name)}
-                        style={{ padding: '0.8rem 1rem', fontSize: '1.15rem' }}
-                      >
-                        {name}
-                      </button>
-                    ))}
-                  </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem', maxWidth: '440px', marginInline: 'auto', width: '100%' }}>
+                  {round.options.map((name) => (
+                    <button 
+                      key={name} 
+                      type="button" 
+                      className="button" 
+                      onClick={() => answer(name)}
+                      style={{ padding: '0.8rem 1rem', fontSize: '1.15rem' }}
+                    >
+                      {name}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -93,22 +93,20 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Score" value={score} status="success" />
+        <ScoreDisplay label="Round" value={round} status="neutral" />
+        <LivesDisplay lives={lives} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Score" value={score} status="success" />
-            <ScoreDisplay label="Round" value={round} status="neutral" />
-            <LivesDisplay lives={lives} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <div
               style={{
                 border: '1px solid var(--border)',
@@ -127,9 +125,9 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
               <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
               <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

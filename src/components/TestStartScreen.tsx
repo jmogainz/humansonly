@@ -21,11 +21,9 @@ export default function TestStartScreen({ title = 'Ready?', description, onStart
         gap: 'clamp(1.5rem, 4vh, 2.5rem)',
         alignItems: 'center',
         justifyContent: 'center',
-        flex: '1',
         textAlign: 'center',
         width: '100%',
         maxWidth: '600px',
-        margin: '0 auto',
         padding: '1rem',
         animation: 'scaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) both',
       }}

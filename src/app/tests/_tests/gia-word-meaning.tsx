@@ -363,60 +363,57 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
     setRound(makeRound());
   };
 
-    return (
-      <div className="game-container">
+  return (
+    <div className="game-container">
+      <Scoreboard>
+        <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
+      </Scoreboard>
+
+      <Timer progress={1 - timer.progress} />
+
+      <div className="game-content">
         {!started ? (
-          <div className="game-content">
-            <TestStartScreen
-              description="Find the word that doesn&apos;t belong with the others. You have 2 minutes."
-              onStart={handleStart}
-            />
-          </div>
+          <TestStartScreen
+            description="Find the word that doesn&apos;t belong with the others. You have 2 minutes."
+            onStart={handleStart}
+          />
         ) : (
           <>
-                      {!finished && (
-                        <Scoreboard>
-                          <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
-                          <ScoreDisplay label="Correct" value={correct} status="success" />
-                          <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
-                          <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
-                        </Scoreboard>
-                      )}
-            
-                      <Timer progress={1 - timer.progress} />  
-            <div className="game-content">
-              <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>Which word doesn&apos;t belong?</h2>
-  
-              <div 
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(1, minmax(0, 1fr))', 
-                  gap: 'clamp(0.6rem, 2vw, 1rem)',
-                  width: '100%',
-                  maxWidth: '400px',
-                  marginInline: 'auto'
-                }}
-              >
-                {round.options.map((word) => (
-                  <button
-                    key={word}
-                    type="button"
-                    className="game-tile"
-                    onClick={() => answer(word)}
-                    style={{ 
-                      textTransform: 'capitalize', 
-                      padding: '1.25rem',
-                      fontSize: 'clamp(1.1rem, 5vw, 1.4rem)',
-                      borderRadius: '12px'
-                    }}
-                  >
-                    {word}
-                  </button>
-                ))}
-              </div>
+            <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>Which word doesn&apos;t belong?</h2>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
+                gap: 'clamp(0.6rem, 2vw, 1rem)',
+                width: '100%',
+                maxWidth: '400px',
+                marginInline: 'auto'
+              }}
+            >
+              {round.options.map((word) => (
+                <button
+                  key={word}
+                  type="button"
+                  className="game-tile"
+                  onClick={() => answer(word)}
+                  style={{
+                    textTransform: 'capitalize',
+                    padding: '1.25rem',
+                    fontSize: 'clamp(1.1rem, 5vw, 1.4rem)',
+                    borderRadius: '12px'
+                  }}
+                >
+                  {word}
+                </button>
+              ))}
             </div>
           </>
         )}
       </div>
-    );
-  }
+    </div>
+  );
+}

@@ -1,35 +1,27 @@
 'use client';
 
+import styles from './PercentileBar.module.css';
+
 type PercentileBarProps = {
   percentile: number | null;
 };
 
 export default function PercentileBar({ percentile }: PercentileBarProps) {
   if (percentile === null) {
-    return <p style={{ color: 'var(--text-muted)' }}>Percentile will appear after leaderboard sync.</p>;
+    return <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Percentile will appear after leaderboard sync.</p>;
   }
 
   const clamped = Math.max(0, Math.min(100, percentile));
 
   return (
-    <div style={{ display: 'grid', gap: '0.4rem' }}>
-      <p style={{ margin: 0 }}>
+    <div className={styles.container}>
+      <p>
         Better than <strong>{clamped.toFixed(1)}%</strong> of players
       </p>
-      <div
-        style={{
-          height: '8px',
-          borderRadius: '999px',
-          background: 'color-mix(in srgb, var(--surface-raised) 70%, var(--border))',
-          overflow: 'hidden',
-        }}
-      >
+      <div className={styles.bar}>
         <div
-          style={{
-            width: `${clamped}%`,
-            height: '100%',
-            background: 'var(--accent)',
-          }}
+          className={styles.fill}
+          style={{ width: `${clamped}%` }}
         />
       </div>
     </div>

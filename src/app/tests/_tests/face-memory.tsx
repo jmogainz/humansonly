@@ -150,26 +150,24 @@ export default function FaceMemoryTest({ definition, onComplete }: TestGameProps
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Level" value={level} status="neutral" />
+        <ScoreDisplay label="Correct" value={`${correct} / ${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
+        {phase === 'study' ? (
+          <ScoreDisplay label="Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} />
+        ) : (
+           <ScoreDisplay label="Progress" value={`${testIndex + 1} / ${levelState.testIds.length}`} />
+        )}
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Level" value={level} status="neutral" />
-            <ScoreDisplay label="Correct" value={`${correct} / ${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
-            {phase === 'study' ? (
-              <ScoreDisplay label="Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} />
-            ) : (
-               <ScoreDisplay label="Progress" value={`${testIndex + 1} / ${levelState.testIds.length}`} />
-            )}
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             {phase === 'study' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minHeight: 0 }}>
                 <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>Study these faces carefully.</p>
@@ -213,9 +211,9 @@ export default function FaceMemoryTest({ definition, onComplete }: TestGameProps
                 </div>
               </div>
             )}
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

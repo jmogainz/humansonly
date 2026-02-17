@@ -60,20 +60,18 @@ export default function HueTest({ definition, onComplete }: TestGameProps) {
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Level" value={level} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Level" value={level} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>Click the tile with a slightly different hue.</p>
 
             <div className="game-grid-container">
@@ -102,9 +100,9 @@ export default function HueTest({ definition, onComplete }: TestGameProps) {
                 })}
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

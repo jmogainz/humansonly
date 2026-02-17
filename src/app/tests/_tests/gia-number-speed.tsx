@@ -106,55 +106,52 @@ export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameP
     setRound(makeRound());
   };
 
-    return (
-      <div className="game-container">
+  return (
+    <div className="game-container">
+      <Scoreboard>
+        <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
+      </Scoreboard>
+
+      <Timer progress={1 - timer.progress} />
+
+      <div className="game-content">
         {!started ? (
-          <div className="game-content">
-            <TestStartScreen
-              description="Pick the number furthest from the median. You have 2 minutes."
-              onStart={handleStart}
-            />
-          </div>
+          <TestStartScreen
+            description="Pick the number furthest from the median. You have 2 minutes."
+            onStart={handleStart}
+          />
         ) : (
           <>
-                      {!finished && (
-                        <Scoreboard>
-                          <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
-                          <ScoreDisplay label="Correct" value={correct} status="success" />
-                          <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
-                          <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
-                        </Scoreboard>
-                      )}
-            
-                      <Timer progress={1 - timer.progress} />  
-            <div className="game-content">
-              <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>{round.question}</h2>
-  
-              <div 
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
-                  gap: 'clamp(0.6rem, 2vw, 1rem)',
-                  width: '100%',
-                  maxWidth: '520px',
-                  marginInline: 'auto'
-                }}
-              >
-                {round.options.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className="game-tile"
-                    style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)', padding: '1.5rem 0', borderRadius: '14px' }}
-                    onClick={() => answer(value)}
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
+            <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>{round.question}</h2>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 'clamp(0.6rem, 2vw, 1rem)',
+                width: '100%',
+                maxWidth: '520px',
+                marginInline: 'auto'
+              }}
+            >
+              {round.options.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="game-tile"
+                  style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)', padding: '1.5rem 0', borderRadius: '14px' }}
+                  onClick={() => answer(value)}
+                >
+                  {value}
+                </button>
+              ))}
             </div>
           </>
         )}
       </div>
-    );
-  }
+    </div>
+  );
+}

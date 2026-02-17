@@ -97,23 +97,20 @@ export default function AimTrainerTest({ definition, onComplete }: TestGameProps
     setSpawnedAt(now);
   };
 
-    return (
-      <div className="game-container">
-        {!started ? (
-          <div className="game-content">
-            <TestStartScreen
-              description={definition.description}
-              onStart={handleStart}
-            />
-          </div>
-        ) : (
-          <>
-            <Scoreboard>
-              <ScoreDisplay label="Hits" value={`${hits} / ${TARGET_COUNT}`} />
-              <ScoreDisplay label="Average" value={`${Math.round(average)} ms`} />
-            </Scoreboard>
-  
-            <div className="game-content" style={{ padding: 0 }}>
+      return (
+        <div className="game-container">
+          <Scoreboard>
+            <ScoreDisplay label="Hits" value={`${hits} / ${TARGET_COUNT}`} />
+            <ScoreDisplay label="Average" value={`${Math.round(average)} ms`} />
+          </Scoreboard>
+    
+          <div className="game-content" style={{ padding: 0 }}>
+            {!started ? (
+              <TestStartScreen
+                description={definition.description}
+                onStart={handleStart}
+              />
+            ) : (
               <div
                 className="game-grid-container"
                 ref={arenaRef}
@@ -151,9 +148,8 @@ export default function AimTrainerTest({ definition, onComplete }: TestGameProps
                   </div>
                 )}
               </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
+            )}
+          </div>
+        </div>
+      );
+    }

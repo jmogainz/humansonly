@@ -92,21 +92,19 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Level" value={level} />
+        <LivesDisplay lives={lives} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Level" value={level} />
-            <LivesDisplay lives={lives} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>
               {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
             </p>
@@ -143,9 +141,9 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
                 })}
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

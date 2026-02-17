@@ -105,57 +105,53 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Round" value={`${Math.min(TOTAL_ATTEMPTS, attempts.length + 1)} / ${TOTAL_ATTEMPTS}`} />
+        {attempts.length > 0 && (
+          <ScoreDisplay 
+            label="Last" 
+            value={`${Math.round(attempts[attempts.length - 1])} ms`} 
+            status="neutral" 
+          />
+        )}
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Round" value={`${Math.min(TOTAL_ATTEMPTS, attempts.length + 1)} / ${TOTAL_ATTEMPTS}`} />
-            {attempts.length > 0 && (
-              <ScoreDisplay 
-                label="Last" 
-                value={`${Math.round(attempts[attempts.length - 1])} ms`} 
-                status="neutral" 
-              />
-            )}
-          </Scoreboard>
-
-          <div className="game-content" style={{ padding: 0 }}>
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={handleClick}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault();
-                  handleClick();
-                }
-              }}
-              style={{
-                width: '100%',
-                flex: '1',
-                borderRadius: '0 0 14px 14px',
-                background: color,
-                display: 'grid',
-                placeItems: 'center',
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'background 0ms ease',
-                minHeight: 0
-              }}
-            >
-              <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
-                <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 3rem)', fontWeight: 700 }}>{message}</h2>
-              </div>
+        ) : (
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={handleClick}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                handleClick();
+              }
+            }}
+            style={{
+              width: '100%',
+              flex: '1',
+              borderRadius: '0 0 14px 14px',
+              background: color,
+              display: 'grid',
+              placeItems: 'center',
+              textAlign: 'center',
+              cursor: 'pointer',
+              transition: 'background 0ms ease',
+              minHeight: 0
+            }}
+          >
+            <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
+              <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 3rem)', fontWeight: 700 }}>{message}</h2>
             </div>
           </div>
-        </>
-      )}
+        )}
+      </div>
 
       {started && (
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', flexShrink: 0, padding: '1rem' }}>

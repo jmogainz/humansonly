@@ -19,6 +19,7 @@ type ResultScreenProps = {
   percentile: number | null;
   personalBest: boolean;
   onPlayAgain: () => void;
+  statusNode?: React.ReactNode;
 };
 
 export default function ResultScreen({
@@ -29,6 +30,7 @@ export default function ResultScreen({
   percentile,
   personalBest,
   onPlayAgain,
+  statusNode,
 }: ResultScreenProps) {
   const router = useRouter();
   const [display, setDisplay] = useState(0);
@@ -55,6 +57,7 @@ export default function ResultScreen({
 
   return (
     <section className={styles.result}>
+      {statusNode}
       <p className={styles.kicker}>Result</p>
       <h2>{scoreLabel}</h2>
       <p className={styles.mainScore}>

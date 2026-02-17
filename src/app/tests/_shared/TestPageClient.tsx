@@ -211,75 +211,75 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
       }
     >
       {result ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', flex: 1, minHeight: 0 }}>
-          {submitting && !submitError ? (
-            <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Saving score...</p>
-          ) : null}
-          {submitError ? (
-            <div
-              style={{
-                margin: 0,
-                border: '1px solid color-mix(in srgb, var(--danger) 45%, var(--border))',
-                borderRadius: '10px',
-                padding: '0.75rem 0.8rem',
-                display: 'grid',
-                gap: '0.5rem',
-                flexShrink: 0,
-              }}
-            >
-              <p style={{ margin: 0, color: 'var(--danger)' }}>{submitError}</p>
-              {pendingPayload ? (
-                <div>
-                  <button
-                    type="button"
-                    className="button buttonGhost"
-                    onClick={() => {
-                      void handleComplete(pendingPayload);
-                    }}
-                    disabled={submitting}
-                  >
-                    {submitting ? <Spinner size={16} /> : null}
-                    {submitting ? 'Retrying...' : 'Retry Submission'}
-                  </button>
+        <ResultScreen
+          testSlug={definition.slug}
+          scoreLabel={result.label}
+          scoreValue={result.score}
+          scoreUnit={definition.scoreUnit}
+          percentile={result.percentile}
+          personalBest={result.personalBest}
+          statusNode={
+            <>
+              {submitting && !submitError ? (
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saving score...</p>
+              ) : null}
+              {submitError ? (
+                <div
+                  style={{
+                    margin: 0,
+                    border: '1px solid color-mix(in srgb, var(--danger) 45%, var(--border))',
+                    borderRadius: '10px',
+                    padding: '0.75rem 0.8rem',
+                    display: 'grid',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <p style={{ margin: 0, color: 'var(--danger)', fontSize: '0.9rem' }}>{submitError}</p>
+                  {pendingPayload ? (
+                    <div>
+                      <button
+                        type="button"
+                        className="button buttonGhost"
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}
+                        onClick={() => {
+                          void handleComplete(pendingPayload);
+                        }}
+                        disabled={submitting}
+                      >
+                        {submitting ? <Spinner size={16} /> : null}
+                        {submitting ? 'Retrying...' : 'Retry Submission'}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
-            </div>
-          ) : null}
-          {combinedNotice ? (
-            <p
-              style={{
-                margin: 0,
-                border: '1px solid color-mix(in srgb, var(--accent) 45%, var(--border))',
-                borderRadius: '10px',
-                padding: '0.65rem 0.8rem',
-                fontFamily: 'var(--font-mono)',
-                color: 'var(--text-muted)',
-                flexShrink: 0,
-              }}
-            >
-              {combinedNotice}
-            </p>
-          ) : null}
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <ResultScreen
-              testSlug={definition.slug}
-              scoreLabel={result.label}
-              scoreValue={result.score}
-              scoreUnit={definition.scoreUnit}
-              percentile={result.percentile}
-              personalBest={result.personalBest}
-              onPlayAgain={() => {
-                completionLockRef.current = false;
-                setResult(null);
-                setRunId((prev) => prev + 1);
-                setCombinedNotice(null);
-                setSubmitError(null);
-                setPendingPayload(null);
-                setFlowTransition(null);
-              }}
-            />
-          </div>
-        </div>
+              {combinedNotice ? (
+                <p
+                  style={{
+                    margin: 0,
+                    border: '1px solid color-mix(in srgb, var(--accent) 45%, var(--border))',
+                    borderRadius: '10px',
+                    padding: '0.65rem 0.8rem',
+                    fontFamily: 'var(--font-mono)',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.8rem',
+                  }}
+                >
+                  {combinedNotice}
+                </p>
+              ) : null}
+            </>
+          }
+          onPlayAgain={() => {
+            completionLockRef.current = false;
+            setResult(null);
+            setRunId((prev) => prev + 1);
+            setCombinedNotice(null);
+            setSubmitError(null);
+            setPendingPayload(null);
+            setFlowTransition(null);
+          }}
+        />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
           <Game

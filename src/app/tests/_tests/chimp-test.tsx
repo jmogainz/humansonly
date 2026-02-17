@@ -115,21 +115,19 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Level" value={Math.min(level, MAX_LEVEL)} />
+        <LivesDisplay lives={lives} maxLives={maxLives} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Level" value={Math.min(level, MAX_LEVEL)} />
-            <LivesDisplay lives={lives} maxLives={maxLives} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>{label}</p>
 
             <div className="game-grid-container">
@@ -162,9 +160,9 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
                 })}
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

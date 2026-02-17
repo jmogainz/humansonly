@@ -296,25 +296,23 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Level" value={level} />
+        {phase === 'select' ? (
+           <ScoreDisplay label="Selected" value={`${selected.size} / ${targetCount}`} status={selected.size === targetCount ? 'success' : 'neutral'} />
+        ) : (
+           <ScoreDisplay label="Targets" value={targetCount} />
+        )}
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Level" value={level} />
-            {phase === 'select' ? (
-               <ScoreDisplay label="Selected" value={`${selected.size} / ${targetCount}`} status={selected.size === targetCount ? 'success' : 'neutral'} />
-            ) : (
-               <ScoreDisplay label="Targets" value={targetCount} />
-            )}
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: 0, fontSize: '1rem' }}>
               {phase === 'highlight'
                 ? `Memorize ${targetCount} targets`
@@ -366,9 +364,9 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
                 </div>
               </div>
             )}
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

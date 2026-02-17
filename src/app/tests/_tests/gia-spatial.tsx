@@ -151,27 +151,23 @@ export default function GiaSpatialTest({ definition, onComplete }: TestGameProps
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
+        <ScoreDisplay label="Correct" value={correct} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
+      </Scoreboard>
+
+      <Timer progress={1 - timer.progress} />
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description="Determine how many boxes contain the same letter (rotated is OK, mirrored is not). You have 2 minutes."
             onStart={handleStart}
           />
-        </div>
-      ) : (
-        <>
-          {!finished && (
-            <Scoreboard>
-              <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
-              <ScoreDisplay label="Correct" value={correct} status="success" />
-              <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
-              <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
-            </Scoreboard>
-          )}
-          
-          <Timer progress={1 - timer.progress} />
-
-          <div className="game-content">
+        ) : (
+          <>
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ margin: 0, fontSize: 'clamp(1.1rem, 5vw, 1.6rem)' }}>How many boxes have the same letter?</h2>
               <p style={{ margin: '0.2rem 0 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
@@ -179,46 +175,44 @@ export default function GiaSpatialTest({ definition, onComplete }: TestGameProps
               </p>
             </div>
 
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2rem' }}>
-              <div 
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: `repeat(${COLUMN_COUNT}, minmax(0, 1fr))`, 
-                  gap: 'clamp(0.5rem, 2vw, 1rem)',
-                  width: '100%',
-                  maxWidth: '520px'
-                }}
-              >
-                {round.columns.map((column, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      border: '1px solid var(--border)',
-                      borderRadius: '12px',
-                      display: 'grid',
-                      placeItems: 'center',
-                      gap: 'clamp(0.8rem, 4vh, 1.5rem)',
-                      padding: 'clamp(0.8rem, 4vw, 1.5rem) 0',
-                      background: 'var(--surface-raised)',
-                    }}
-                  >
-                    <LetterView value={column.top} />
-                    <LetterView value={column.bottom} />
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLUMN_COUNT + 1}, minmax(0, 1fr))`, gap: '0.6rem', maxWidth: '360px', width: '100%' }}>
-                {Array.from({ length: COLUMN_COUNT + 1 }, (_, value) => (
-                  <button key={value} type="button" className="button" onClick={() => answer(value)}>
-                    {value}
-                  </button>
-                ))}
-              </div>
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: `repeat(${COLUMN_COUNT}, minmax(0, 1fr))`, 
+                gap: 'clamp(0.5rem, 2vw, 1rem)',
+                width: '100%',
+                maxWidth: '520px'
+              }}
+            >
+              {round.columns.map((column, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: '12px',
+                    display: 'grid',
+                    placeItems: 'center',
+                    gap: 'clamp(0.8rem, 4vh, 1.5rem)',
+                    padding: 'clamp(0.8rem, 4vw, 1.5rem) 0',
+                    background: 'var(--surface-raised)',
+                  }}
+                >
+                  <LetterView value={column.top} />
+                  <LetterView value={column.bottom} />
+                </div>
+              ))}
             </div>
-          </div>
-        </>
-      )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLUMN_COUNT + 1}, minmax(0, 1fr))`, gap: '0.6rem', maxWidth: '360px', width: '100%' }}>
+              {Array.from({ length: COLUMN_COUNT + 1 }, (_, value) => (
+                <button key={value} type="button" className="button" onClick={() => answer(value)}>
+                  {value}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

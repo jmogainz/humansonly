@@ -151,21 +151,19 @@ export default function ColorBlindnessTest({ definition, onComplete }: TestGameP
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Progress" value={`${index + 1} / ${plates.length}`} />
+        <ScoreDisplay label="Correct" value={correct} />
+      </Scoreboard>
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          <Scoreboard>
-            <ScoreDisplay label="Progress" value={`${index + 1} / ${plates.length}`} />
-            <ScoreDisplay label="Correct" value={correct} />
-          </Scoreboard>
-
-          <div className="game-content">
+        ) : (
+          <>
             <div className="game-grid-container">
               {plate?.src ? (
                 <img
@@ -219,9 +217,9 @@ export default function ColorBlindnessTest({ definition, onComplete }: TestGameP
             <small style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem', opacity: 0.8 }}>
               Screening only. This is not a medical diagnosis.
             </small>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

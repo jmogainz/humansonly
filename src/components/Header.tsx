@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import AuthButton from './AuthButton';
 import ThemeToggle from './ThemeToggle';
 import Logo from './Logo';
@@ -12,6 +13,12 @@ import styles from './Header.module.css';
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const pathname = usePathname();
+
+  // Close menu when navigating
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
 
   return (
     <>

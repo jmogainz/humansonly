@@ -40,83 +40,81 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
     setPhase('show');
   };
 
-    return (
-      <div className="game-container">
-        {!started ? (
+      return (
+        <div className="game-container">
+          <Scoreboard>
+            <ScoreDisplay label="Level" value={`${digits} Digits`} />
+          </Scoreboard>
+    
           <div className="game-content">
-            <TestStartScreen
-              description={definition.description}
-              onStart={() => setStarted(true)}
-            />
-          </div>
-        ) : (
-          <>
-            <Scoreboard>
-              <ScoreDisplay label="Level" value={`${digits} Digits`} />
-            </Scoreboard>
-  
-            <div className="game-content">
-              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1rem', textAlign: 'center' }}>{prompt}</p>
-  
-              <div
-                style={{
-                  fontSize: 'clamp(2rem, 10vw, 4rem)',
-                  fontFamily: 'var(--font-mono)',
-                  minHeight: '4.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '100%',
-                  fontWeight: 600,
-                  letterSpacing: '0.05em'
-                }}
-              >
-                {phase === 'show' ? (
-                  <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
-                ) : (
-                  <div style={{ wordBreak: 'break-all', maxWidth: '100%', opacity: 0.3 }}>{'•'.repeat(Math.min(12, digits))}</div>
-                )}
-              </div>
-  
-              {phase === 'input' ? (
-                <form
-                  style={{ display: 'grid', gap: '0.75rem', width: 'min(400px, 100%)', marginInline: 'auto' }}
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    if (guess.trim() === target) {
-                      nextLevel(digits + 1);
-                      return;
-                    }
-                    const bestDigits = Math.max(0, digits - 1);
-                    onComplete({
-                      score: bestDigits,
-                      unit: 'digits',
-                      metadata: {
-                        target,
-                        guess,
-                        attemptedDigits: digits,
-                        bestDigits,
-                      },
-                      label: `${bestDigits} digits`,
-                    });
+            {!started ? (
+              <TestStartScreen
+                description={definition.description}
+                onStart={() => setStarted(true)}
+              />
+            ) : (
+              <>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1rem', textAlign: 'center' }}>{prompt}</p>
+    
+                <div
+                  style={{
+                    fontSize: 'clamp(2rem, 10vw, 4rem)',
+                    fontFamily: 'var(--font-mono)',
+                    minHeight: '4.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    fontWeight: 600,
+                    letterSpacing: '0.05em'
                   }}
                 >
-                  <input
-                    autoFocus
-                    inputMode="numeric"
-                    value={guess}
-                    onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
-                    placeholder="Type number"
-                    style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '1.4rem', padding: '0.75rem' }}
-                  />
-                  <button className="button" type="submit" style={{ padding: '0.75rem' }}>Submit Answer</button>
-                </form>
-              ) : (
-                <div style={{ height: '84px' }} />
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
+                  {phase === 'show' ? (
+                    <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
+                  ) : (
+                    <div style={{ wordBreak: 'break-all', maxWidth: '100%', opacity: 0.3 }}>{'•'.repeat(Math.min(12, digits))}</div>
+                  )}
+                </div>
+    
+                {phase === 'input' ? (
+                  <form
+                    style={{ display: 'grid', gap: '0.75rem', width: 'min(400px, 100%)', marginInline: 'auto' }}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (guess.trim() === target) {
+                        nextLevel(digits + 1);
+                        return;
+                      }
+                      const bestDigits = Math.max(0, digits - 1);
+                      onComplete({
+                        score: bestDigits,
+                        unit: 'digits',
+                        metadata: {
+                          target,
+                          guess,
+                          attemptedDigits: digits,
+                          bestDigits,
+                        },
+                        label: `${bestDigits} digits`,
+                      });
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      inputMode="numeric"
+                      value={guess}
+                      onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
+                      placeholder="Type number"
+                      style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '1.4rem', padding: '0.75rem' }}
+                    />
+                    <button className="button" type="submit" style={{ padding: '0.75rem' }}>Submit Answer</button>
+                  </form>
+                ) : (
+                  <div style={{ height: '84px' }} />
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }

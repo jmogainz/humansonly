@@ -103,27 +103,23 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      {!started ? (
-        <div className="game-content">
+      <Scoreboard>
+        <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
+        <ScoreDisplay label="Correct" value={score} status="success" />
+        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+        <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} status={accuracy > 80 ? 'success' : accuracy > 50 ? 'neutral' : 'danger'} />
+      </Scoreboard>
+
+      <Timer progress={1 - timer.progress} />
+
+      <div className="game-content">
+        {!started ? (
           <TestStartScreen
             description={definition.description}
             onStart={() => setStarted(true)}
           />
-        </div>
-      ) : (
-        <>
-          {!finished && (
-            <Scoreboard>
-              <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
-              <ScoreDisplay label="Correct" value={score} status="success" />
-              <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
-              <ScoreDisplay label="Accuracy" value={`${accuracy.toFixed(1)}%`} status={accuracy > 80 ? 'success' : accuracy > 50 ? 'neutral' : 'danger'} />
-            </Scoreboard>
-          )}
-
-          <Timer progress={1 - timer.progress} />
-
-          <div className="game-content">
+        ) : (
+          <>
             <div
               style={{
                 border: '1px solid var(--border)',
@@ -175,9 +171,9 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
               <button className="button" type="button" onClick={() => answer(true)}>YES</button>
               <button className="button buttonGhost" type="button" onClick={() => answer(false)}>NO</button>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
