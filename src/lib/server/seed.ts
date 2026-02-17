@@ -12,17 +12,18 @@ export async function seedUserData(userId: string) {
   console.log(`Seeding account data for user ${userId}...`);
 
   for (const test of TEST_REGISTRY) {
-    if (!test.leaderboardEnabled || test.playable === false) continue;
+    if (!test.leaderboardEnabled) continue;
+    if (test.playable === false && test.slug !== 'gia-combined') continue;
 
     // Add 3-5 scores per test to create a "history"
     const count = 3 + Math.floor(Math.random() * 3);
     for (let i = 0; i < count; i++) {
-      const scoreValue = generatePlausibleScore(test.slug, test.category);
+      const { scoreValue, metadata } = generatePlausibleScoreWithMetadata(test.slug, test.category);
       await submitScoreForUser(userId, {
         testSlug: test.slug,
         scoreValue,
         scoreUnit: test.scoreUnit,
-        metadata: { seeded: true },
+        metadata: { ...metadata, seeded: true },
       });
     }
   }
@@ -66,27 +67,69 @@ export async function seedGlobalLeaderboard() {
     if (!test.leaderboardEnabled || test.playable === false) continue;
 
     for (const user of dummyUsers) {
-      const scoreValue = generatePlausibleScore(test.slug, test.category);
+      const { scoreValue } = generatePlausibleScoreWithMetadata(test.slug, test.category);
       await updateLeaderboardBest(redis, test.slug, user.id, scoreValue, test.direction);
     }
   }
 }
 
-function generatePlausibleScore(slug: string, category: string): number {
+function generatePlausibleScoreWithMetadata(slug: string, category: string): { scoreValue: number; metadata?: Record<string, any> } {
+  let scoreValue = 0;
+  let metadata: Record<string, any> = {};
+
   switch (slug) {
-    case 'reaction-time': return 180 + Math.random() * 100;
-    case 'chimp-test': return 8 + Math.floor(Math.random() * 12);
-    case 'typing': return 60 + Math.random() * 60;
-    case 'visual-memory': return 7 + Math.floor(Math.random() * 8);
-    case 'aim-trainer': return 300 + Math.random() * 200;
-    case 'number-memory': return 8 + Math.floor(Math.random() * 6);
-    case 'verbal-memory': return 40 + Math.floor(Math.random() * 60);
-    case 'sequence-memory': return 8 + Math.floor(Math.random() * 10);
-    case 'symbol-search': return 40 + Math.floor(Math.random() * 30);
-    case 'hue-test': return 20 + Math.floor(Math.random() * 15);
-    case 'object-tracking': return 6 + Math.floor(Math.random() * 6);
+    case 'reaction-time': 
+      scoreValue = 180 + Math.random() * 100;
+      break;
+    case 'chimp-test': 
+      scoreValue = 8 + Math.floor(Math.random() * 12);
+      break;
+    case 'typing': 
+      scoreValue = 60 + Math.random() * 60;
+      break;
+    case 'visual-memory': 
+      scoreValue = 7 + Math.floor(Math.random() * 8);
+      break;
+    case 'aim-trainer': 
+      scoreValue = 300 + Math.random() * 200;
+      break;
+    case 'number-memory': 
+      scoreValue = 8 + Math.floor(Math.random() * 6);
+      break;
+    case 'verbal-memory': 
+      scoreValue = 40 + Math.floor(Math.random() * 60);
+      break;
+    case 'sequence-memory': 
+      scoreValue = 8 + Math.floor(Math.random() * 10);
+      break;
+    case 'symbol-search': 
+      {
+        const correct = 40 + Math.floor(Math.random() * 30);
+        const incorrect = Math.floor(Math.random() * 5);
+        scoreValue = correct;
+        metadata = { correct, incorrect, attempts: correct + incorrect };
+      }
+      break;
+    case 'hue-test': 
+      scoreValue = 20 + Math.floor(Math.random() * 15);
+      break;
+    case 'object-tracking': 
+      scoreValue = 6 + Math.floor(Math.random() * 6);
+      break;
     default:
-      if (category === 'gia') return 15 + Math.floor(Math.random() * 20);
-      return 50 + Math.random() * 50;
+      if (category === 'gia' || slug === 'gia-combined') {
+        const correct = 20 + Math.floor(Math.random() * 25);
+        const incorrect = Math.floor(Math.random() * 8);
+        let penalty = 0.5;
+        if (slug === 'gia-reasoning') penalty = 1;
+        if (slug === 'gia-perceptual-speed') penalty = 0.25;
+        
+        scoreValue = correct - (incorrect * penalty);
+        metadata = { correct, incorrect, penalty };
+      } else {
+        scoreValue = 50 + Math.random() * 50;
+      }
   }
+
+  return { scoreValue, metadata };
 }

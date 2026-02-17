@@ -14,6 +14,11 @@ const NAMES = [
   'Zane', 'Aria', 'Kian', 'Sara', 'Ravi', 'Elena', 'Kai', 'Jade', 'Aiden', 'Mina',
   'Yara', 'Hugo', 'Layla', 'Isaac', 'Tara', 'Zoya', 'Rohan', 'Liam', 'Cleo', 'Eli',
   'Amara', 'Caleb', 'Elias', 'Hana', 'Jude', 'Kira', 'Luka', 'Mira', 'Nico', 'Sasha',
+  'Arjun', 'Beatrice', 'Chen', 'Dante', 'Esme', 'Finn', 'Gia', 'Hiro', 'Ines', 'Jasper',
+  'Kenza', 'Lior', 'Malik', 'Noa', 'Oscar', 'Paloma', 'Quinn', 'Remy', 'Soren', 'Talia',
+  'Uma', 'Vigo', 'Wren', 'Xander', 'Yuna', 'Zayd', 'Alba', 'Bodhi', 'Cora', 'Dax',
+  'Elodie', 'Felix', 'Gwen', 'Ida', 'Jace', 'Kaia', 'Lenz', 'Maia', 'Noel', 'Opal',
+  'Pax', 'Rumi', 'Silas', 'Thea', 'Uri', 'Veda', 'Wolf', 'Xena', 'Zion', 'Amos',
 ];
 
 interface AdjectivePair {
@@ -31,11 +36,11 @@ const PAIRS: AdjectivePair[] = [
   { pos: 'calm', posComp: 'calmer', neg: 'anxious', negComp: 'more anxious' },
   { pos: 'friendly', posComp: 'friendlier', neg: 'hostile', negComp: 'more hostile' },
   { pos: 'smart', posComp: 'smarter', neg: 'dim', negComp: 'dimmer' },
-  { pos: 'organized', posComp: 'organized', neg: 'chaotic', negComp: 'more chaotic' },
-  { pos: 'patient', posComp: 'patient', neg: 'impulsive', negComp: 'more impulsive' },
+  { pos: 'organized', posComp: 'more organized', neg: 'chaotic', negComp: 'more chaotic' },
+  { pos: 'patient', posComp: 'more patient', neg: 'impulsive', negComp: 'more impulsive' },
   { pos: 'kind', posComp: 'kinder', neg: 'cruel', negComp: 'crueler' },
-  { pos: 'creative', posComp: 'creative', neg: 'uncreative', negComp: 'less creative' },
-  { pos: 'focused', posComp: 'focused', neg: 'distracted', negComp: 'more distracted' },
+  { pos: 'creative', posComp: 'more creative', neg: 'uncreative', negComp: 'more uncreative' },
+  { pos: 'focused', posComp: 'more focused', neg: 'distracted', negComp: 'more distracted' },
   { pos: 'heavy', posComp: 'heavier', neg: 'light', negComp: 'lighter' },
   { pos: 'rich', posComp: 'richer', neg: 'poor', negComp: 'poorer' },
   { pos: 'happy', posComp: 'happier', neg: 'sad', negComp: 'sadder' },
@@ -55,6 +60,21 @@ const PAIRS: AdjectivePair[] = [
   { pos: 'hot', posComp: 'hotter', neg: 'cold', negComp: 'colder' },
   { pos: 'dry', posComp: 'dryer', neg: 'wet', negComp: 'wetter' },
   { pos: 'tough', posComp: 'tougher', neg: 'fragile', negComp: 'more fragile' },
+  { pos: 'bold', posComp: 'bolder', neg: 'timid', negComp: 'more timid' },
+  { pos: 'wealthy', posComp: 'wealthier', neg: 'needy', negComp: 'needier' },
+  { pos: 'energetic', posComp: 'more energetic', neg: 'lethargic', negComp: 'more lethargic' },
+  { pos: 'generous', posComp: 'more generous', neg: 'stingy', negComp: 'stingier' },
+  { pos: 'honest', posComp: 'more honest', neg: 'deceitful', negComp: 'more deceitful' },
+  { pos: 'loyal', posComp: 'more loyal', neg: 'fickle', negComp: 'more fickle' },
+  { pos: 'modest', posComp: 'more modest', neg: 'vain', negComp: 'vainer' },
+  { pos: 'polite', posComp: 'more polite', neg: 'rude', negComp: 'ruder' },
+  { pos: 'reliable', posComp: 'more reliable', neg: 'erratic', negComp: 'more erratic' },
+  { pos: 'wise', posComp: 'wiser', neg: 'foolish', negComp: 'more foolish' },
+  { pos: 'agile', posComp: 'more agile', neg: 'clumsy', negComp: 'clumsier' },
+  { pos: 'vibrant', posComp: 'more vibrant', neg: 'dull', negComp: 'duller' },
+  { pos: 'steady', posComp: 'steadier', neg: 'shaky', negComp: 'shakier' },
+  { pos: 'mature', posComp: 'more mature', neg: 'childish', negComp: 'more childish' },
+  { pos: 'graceful', posComp: 'more graceful', neg: 'awkward', negComp: 'more awkward' },
 ];
 
 type Round = {
@@ -76,32 +96,37 @@ function makeRoundRaw(): Round {
   const pair = PAIRS[pairIndex];
   
   const isName1Positive = Math.random() > 0.5;
-  const positiveName = isName1Positive ? name1 : name2;
-  const negativeName = isName1Positive ? name2 : name1;
+  const p = isName1Positive ? name1 : name2;
+  const n = isName1Positive ? name2 : name1;
 
-  const statementType = randomInt(0, 3); 
-  let statement = '';
-  switch (statementType) {
-    case 0:
-      statement = `${positiveName} is ${pair.posComp} than ${negativeName}.`;
-      break;
-    case 1:
-      statement = `${negativeName} is ${pair.negComp} than ${positiveName}.`;
-      break;
-    case 2:
-      statement = `${negativeName} is not as ${pair.pos} as ${positiveName}.`;
-      break;
-    case 3:
-      statement = `${positiveName} is not as ${pair.neg} as ${negativeName}.`;
-      break;
-  }
+  const statementTemplates = [
+    () => `${p} is ${pair.posComp} than ${n}.`,
+    () => `${n} is ${pair.negComp} than ${p}.`,
+    () => `${n} is not as ${pair.pos} as ${p}.`,
+    () => `${p} is not as ${pair.neg} as ${n}.`,
+    () => `If ${n} is ${pair.pos}, then ${p} is even ${pair.posComp}.`,
+    () => `If ${p} is ${pair.neg}, then ${n} is even ${pair.negComp}.`,
+    () => `Compared to ${n}, ${p} is ${pair.posComp}.`,
+    () => `Compared to ${p}, ${n} is ${pair.negComp}.`,
+    () => `Between ${p} and ${n}, ${p} is the ${pair.posComp} one.`,
+    () => `Between ${p} and ${n}, ${n} is the ${pair.negComp} one.`,
+  ];
 
-  const questionPositive = Math.random() > 0.5;
-  const question = questionPositive 
-    ? `Who is ${pair.posComp}?` 
-    : `Who is ${pair.negComp}?`;
+  const statementIndex = randomInt(0, statementTemplates.length - 1);
+  const statement = statementTemplates[statementIndex]();
 
-  const answer = questionPositive ? positiveName : negativeName;
+  const questionTemplates = [
+    { text: `Who is ${pair.posComp}?`, answer: p },
+    { text: `Who is ${pair.negComp}?`, answer: n },
+    { text: `Which one is ${pair.posComp}?`, answer: p },
+    { text: `Which one is ${pair.negComp}?`, answer: n },
+    { text: `Who is less ${pair.pos}?`, answer: n },
+    { text: `Who is less ${pair.neg}?`, answer: p },
+  ];
+
+  const questionObj = questionTemplates[randomInt(0, questionTemplates.length - 1)];
+  const question = questionObj.text;
+  const answer = questionObj.answer;
   const options = Math.random() > 0.5 ? [name1, name2] : [name2, name1];
 
   return {
@@ -109,7 +134,7 @@ function makeRoundRaw(): Round {
     question,
     answer,
     options: [options[0], options[1]],
-    signature: `${pair.pos}-${name1}-${name2}`,
+    signature: `${pair.pos}-${statementIndex}-${question}-${name1}-${name2}`,
   };
 }
 

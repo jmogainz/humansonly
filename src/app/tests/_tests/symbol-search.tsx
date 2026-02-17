@@ -51,6 +51,8 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
       score: finalScore,
       unit: 'correct/90s',
       metadata: {
+        correct: finalScore,
+        incorrect: finalAttempts - finalScore,
         attempts: finalAttempts,
         accuracy: finalAttempts ? finalScore / finalAttempts : 0,
       },

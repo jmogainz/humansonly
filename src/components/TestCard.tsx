@@ -35,11 +35,11 @@ export default function TestCard({ test, featured, index = 0, isHovered }: TestC
       <div className={styles.content}>
         <div className={styles.titleWrapper}>
           <h3>{test.name}</h3>
-          {featured && <span className={styles.featuredBadge}>CORE</span>}
         </div>
         <p>{test.description}</p>
       </div>
       <div className={styles.meta}>
+        {featured && <span className={styles.featuredBadge}>CORE</span>}
         <span className={styles.unit}>{test.scoreUnit}</span>
         <span className={styles.arrow}>
           {isLoading ? (

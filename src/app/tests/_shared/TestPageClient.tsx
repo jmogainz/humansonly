@@ -186,7 +186,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
               style={{
                 width: `${(flowTransition.completedCount / GIA_SLUGS.length) * 100}%`,
                 height: '100%',
-                background: 'linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, white))',
+                background: 'var(--accent)',
                 transition: 'width 250ms ease',
               }}
             />

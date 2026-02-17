@@ -5,15 +5,15 @@
   --font-mono: var(--font-mono), 'JetBrains Mono', monospace;
 
   /* Precision Instrument - Light Mode */
-  --bg: #fafafa;
-  --surface: #f0f0f2;
-  --surface-raised: #e8e8ec;
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --surface-raised: #f1f2f5;
   --text-primary: #111113;
   --text-muted: #6b6b76;
-  --border: #dcdce0;
+  --border: #e5e7eb;
   --accent: #06b6d4;
   --accent-hover: #0891b2;
-  --accent-subtle: rgba(6, 182, 212, 0.08);
+  --accent-subtle: rgba(6, 182, 212, 0.05);
   --accent-foreground: #ffffff;
   --danger: #ef4444;
   --success: #10b981;

@@ -28,7 +28,7 @@ export default function PercentileBar({ percentile }: PercentileBarProps) {
           style={{
             width: `${clamped}%`,
             height: '100%',
-            background: 'linear-gradient(90deg, var(--accent), var(--accent-hover))',
+            background: 'var(--accent)',
           }}
         />
       </div>

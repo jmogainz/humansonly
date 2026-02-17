@@ -6,9 +6,12 @@ create table if not exists users (
   email text,
   name text,
   image_url text,
+  display_name_updated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create unique index if not exists idx_users_name_lower_unique on users (lower(name)) where (name is not null);
 
 create table if not exists oidc_accounts (
   provider text not null,

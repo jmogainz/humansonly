@@ -20,6 +20,10 @@
   letter-spacing: -0.03em;
 }
 
+.titleBlock h2 span {
+  color: var(--accent);
+}
+
 .titleBlock p {
   margin: 0.45rem 0 0;
   color: var(--text-muted);
@@ -39,8 +43,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.7rem 0.85rem;
-  background:
-    linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 12%), var(--surface));
+  background: var(--surface);
   box-shadow: var(--card-shadow);
 }
 
@@ -66,9 +69,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1rem;
-  background:
-    radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 34%),
-    linear-gradient(180deg, var(--surface), color-mix(in srgb, var(--surface) 84%, var(--accent) 16%));
+  background: var(--surface);
   box-shadow: var(--card-shadow);
 }
 
@@ -93,11 +94,12 @@
 
 .sectionHeading h3 {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
   font-family: var(--font-mono);
+  font-weight: 600;
 }
 
 .sectionHeading p {
@@ -122,8 +124,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.9rem;
-  background:
-    linear-gradient(170deg, color-mix(in srgb, var(--surface) 92%, var(--accent) 8%), var(--surface));
+  background: var(--surface);
   box-shadow: var(--card-shadow);
   transform: translateY(10px) scale(0.985);
   opacity: 0;
@@ -136,32 +137,29 @@
 .cardExpanded {
   grid-column: 1 / -1;
   transform: translateY(0) scale(1) !important;
-  background:
-    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 40%),
-    linear-gradient(170deg, color-mix(in srgb, var(--surface) 95%, var(--accent) 5%), var(--surface));
+  background: var(--surface);
   border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
   padding: 1.25rem;
   box-shadow: var(--card-shadow-hover);
 }
 
-.card::before {
-  content: '';
-  position: absolute;
-  inset: -35% 45% 45% -35%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 28%, transparent), transparent 66%);
-  pointer-events: none;
-  opacity: 0.34;
-  animation: drift 7.8s ease-in-out infinite;
-}
-
 .card:hover {
   transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+  border-color: var(--accent);
   box-shadow: var(--card-shadow-hover);
+}
+
+.card:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: 0.1s;
 }
 
 .cardExpanded:hover {
   transform: translateY(-2px) !important;
+}
+
+.cardExpanded:active {
+  transform: translateY(0) scale(0.995) !important;
 }
 
 .expandButton {
@@ -185,13 +183,43 @@
   color: var(--accent);
 }
 
+.shareButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.card:hover .shareButton {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.shareButton:hover {
+  background: var(--surface);
+  transform: scale(1.05);
+}
+
+.shareButton svg {
+  width: 13px;
+  height: 13px;
+}
+
 .miniChartFrame {
   position: relative;
   z-index: 1;
   height: 120px;
-  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
+  border: 1px solid var(--border);
   border-radius: calc(var(--radius-sm) + 2px);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 88%, var(--accent) 12%), var(--surface));
+  background: var(--surface);
   padding: 0.25rem;
 }
 
@@ -199,10 +227,9 @@
   position: relative;
   z-index: 1;
   height: 320px;
-  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: 
-    linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--accent) 8%), var(--surface));
+  background: var(--surface);
   padding: 1rem 0.5rem;
 }
 
@@ -367,4 +394,41 @@
   .card:hover {
     transform: none;
   }
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.cardHeader h4 {
+  margin: 0.1rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.runPill {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  background: var(--surface-raised);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
 }

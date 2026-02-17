@@ -53,14 +53,15 @@
 }
 
 .featuredBadge {
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   font-family: var(--font-mono);
   background: var(--accent);
   color: var(--accent-foreground);
-  padding: 0.1rem 0.35rem;
+  padding: 0.2rem 0.4rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
   border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .content h3 {
@@ -133,7 +134,8 @@
   .content p {
     font-size: 0.75rem;
   }
-  .unit {
+  .unit,
+  .featuredBadge {
     display: none;
   }
 }

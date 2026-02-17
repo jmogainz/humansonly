@@ -1,25 +1,38 @@
 'use client';
 
 import { useState } from 'react';
-import { TEST_REGISTRY_BY_SLUG } from '@/lib/tests/registry';
+import type { TestDefinition } from '@/lib/tests/types';
 import { formatNumber } from '@/lib/utils';
 import { Spinner } from './Spinner';
 
-type StatsShareCardProps = {
+type TestStatsShareCardProps = {
   displayName: string;
-  bests: Array<{ testSlug: string; bestScore: number; scoreUnit: string }>;
+  test: TestDefinition;
+  stats: {
+    runs: number;
+    best: number | null;
+    avg: number | null;
+    trend: number | null;
+  };
+  className?: string;
 };
 
-export default function StatsShareCard({ displayName, bests }: StatsShareCardProps) {
+export default function TestStatsShareCard({ 
+  displayName, 
+  test, 
+  stats,
+  className 
+}: TestStatsShareCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const giaBests = bests.filter(b => {
-    const test = TEST_REGISTRY_BY_SLUG.get(b.testSlug);
-    return test && test.category === 'gia';
-  });
+  const formatScore = (value: number | null): string => {
+    if (value === null) return 'NA';
+    const digits = Number.isInteger(value) ? 0 : 2;
+    return formatNumber(value, digits);
+  };
 
-  const handleShare = async () => {
-    if (giaBests.length === 0) return;
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsGenerating(true);
     
     try {
@@ -44,6 +57,8 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
       const accentColor = isDark ? '#22d3ee' : '#06b6d4';
       const textColor = isDark ? '#ededf0' : '#111113';
       const mutedTextColor = isDark ? '#8b8b96' : '#6b6b76';
+      const successColor = isDark ? '#4ade80' : '#16a34a';
+      const dangerColor = isDark ? '#f87171' : '#dc2626';
       
       // Background
       ctx.fillStyle = isDark ? '#0a0a0c' : '#f9fafb';
@@ -88,12 +103,13 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
       ctx.textAlign = 'left';
       ctx.fillText('HumansOnly', logoImg ? 115 : 60, 102);
 
+      // Title: Test Name
       ctx.font = 'bold 52px Outfit, sans-serif';
-      ctx.fillText('Cognitive Atlas', 60, 180);
+      ctx.fillText(test.name.replace('GIA ', ''), 60, 180);
 
       ctx.fillStyle = mutedTextColor;
       ctx.font = '28px Outfit, sans-serif';
-      ctx.fillText(`Analysis for ${displayName}`, 60, 235);
+      ctx.fillText(`Performance for ${displayName}`, 60, 235);
 
       // Divider
       ctx.strokeStyle = isDark ? '#2a2a32' : '#e5e7eb';
@@ -103,64 +119,39 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
       ctx.lineTo(740, 280);
       ctx.stroke();
 
-      // Stats Grid
-      const sortedGiaTests = [...giaBests]
-        .sort((a, b) => {
-          if (a.testSlug === 'gia-combined') return -1;
-          if (b.testSlug === 'gia-combined') return 1;
-          return a.testSlug.localeCompare(b.testSlug);
-        });
+      // Stats rows
+      const rows = [
+        { label: 'Total Runs', value: stats.runs.toString() },
+        { label: 'Best Score', value: `${formatScore(stats.best)} ${test.scoreUnit}` },
+        { label: 'Average Score', value: `${formatScore(stats.avg)} ${test.scoreUnit}` },
+        { label: 'Trend', value: stats.trend === null ? 'NA' : `${stats.trend > 0 ? '+' : '-'}${formatScore(Math.abs(stats.trend))}`, isTrend: true },
+      ];
 
-      let y = 360;
-      for (const best of sortedGiaTests) {
-        if (y > 920) break;
-
-        const test = TEST_REGISTRY_BY_SLUG.get(best.testSlug);
-        const isCombined = best.testSlug === 'gia-combined';
-        const name = test?.name.replace('GIA ', '') ?? best.testSlug;
-        
-        // Row background for highlights
-        if (isCombined) {
-          ctx.fillStyle = `${accentColor}15`;
-          ctx.beginPath();
-          ctx.roundRect(40, y - 50, 720, 100, 16);
-          ctx.fill();
-        }
-
-        // Indicator
-        ctx.fillStyle = isCombined ? accentColor : mutedTextColor;
+      let y = 380;
+      for (const row of rows) {
+        // Row background
+        ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)';
         ctx.beginPath();
-        if (isCombined) {
-          ctx.arc(75, y, 12, 0, Math.PI * 2);
-        } else {
-          ctx.roundRect(72, y - 12, 6, 24, 3);
-        }
+        ctx.roundRect(40, y - 50, 720, 100, 16);
         ctx.fill();
 
-        // Test name
-        ctx.fillStyle = isCombined ? textColor : textColor;
-        ctx.font = isCombined ? '700 38px Outfit, sans-serif' : '500 30px Outfit, sans-serif';
+        // Label
+        ctx.fillStyle = mutedTextColor;
+        ctx.font = '500 28px Outfit, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(name, 110, y);
+        ctx.fillText(row.label, 80, y);
 
-        // Score
-        ctx.fillStyle = isCombined ? accentColor : textColor;
-        ctx.font = isCombined ? 'bold 44px JetBrains Mono, monospace' : '600 34px JetBrains Mono, monospace';
-        ctx.textAlign = 'right';
-        const scoreStr = `${formatNumber(best.bestScore, best.bestScore % 1 === 0 ? 0 : 2)}${isCombined ? '' : ' ' + best.scoreUnit}`;
-        ctx.fillText(scoreStr, 725, y);
-
-        // Subtle row line
-        if (!isCombined) {
-          ctx.strokeStyle = isDark ? '#1a1a20' : '#f0f0f5';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(60, y + 45);
-          ctx.lineTo(740, y + 45);
-          ctx.stroke();
+        // Value
+        let valueColor = textColor;
+        if (row.isTrend && stats.trend !== null) {
+          valueColor = stats.trend > 0 ? successColor : dangerColor;
         }
+        ctx.fillStyle = valueColor;
+        ctx.font = 'bold 38px JetBrains Mono, monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(row.value, 720, y);
 
-        y += isCombined ? 120 : 85;
+        y += 130;
       }
 
       // Footer
@@ -169,25 +160,26 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
       ctx.font = '24px Outfit, sans-serif';
       ctx.fillText('tryhumansonly.com', canvas.width / 2, 940);
 
-      // Wait a tiny bit for fonts to potentially settle (not perfect but helps)
+      // Wait a tiny bit for fonts to potentially settle
       await new Promise(r => setTimeout(r, 100));
 
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png', 1.0));
       if (!blob) throw new Error('Failed to create blob');
 
-      const file = new File([blob], 'humansonly-atlas.png', { type: 'image/png' });
+      const fileName = `humansonly-${test.slug}-stats.png`;
+      const file = new File([blob], fileName, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: 'HumansOnly GIA Profile',
-          text: 'Check out my GIA cognitive profile on https://tryhumansonly.com',
+          title: `HumansOnly - ${test.name}`,
+          text: `Check out my ${test.name} stats on https://tryhumansonly.com`,
         });
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'humansonly-atlas.png';
+        a.download = fileName;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -200,37 +192,18 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
 
   return (
     <button
-      className="button buttonGhost"
+      className={className}
       onClick={handleShare}
-      disabled={isGenerating || giaBests.length === 0}
-      title="Share your performance atlas"
-      style={{ 
-        padding: '0.5rem 0.85rem',
-        fontSize: '0.85rem',
-        height: 'auto',
-        border: '1px solid var(--border)',
-        background: 'var(--surface-raised)',
-        boxShadow: 'var(--card-shadow)'
-      }}
+      disabled={isGenerating}
+      title="Share test stats"
     >
-      {isGenerating ? <Spinner size={16} /> : (
-        <svg 
-          width="16" 
-          height="16" 
-          viewBox="0 0 24 24" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2.5" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-          style={{ marginRight: '0.5rem' }}
-        >
+      {isGenerating ? <Spinner size={14} /> : (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
           <polyline points="16 6 12 2 8 6" />
           <line x1="12" y1="2" x2="12" y2="15" />
         </svg>
       )}
-      {isGenerating ? 'Generating...' : 'Share Atlas'}
     </button>
   );
 }
