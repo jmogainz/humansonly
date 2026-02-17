@@ -132,7 +132,10 @@ export default function ProfilePage() {
             History is temporarily unavailable: {historyError}
           </p>
         ) : history && history.scores.length > 0 ? (
-          <PerformanceDashboard scores={history.scores} />
+          <PerformanceDashboard 
+            displayName={profile?.user.displayName ?? 'Human'} 
+            scores={history.scores} 
+          />
         ) : (
           <p style={{ margin: 0, color: 'var(--text-muted)' }}>
             Complete tests to unlock your performance dashboard.

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Spinner } from './Spinner';
@@ -9,12 +9,19 @@ import { Spinner } from './Spinner';
 export default function AuthButton() {
   const auth = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [authError, setAuthError] = useState<string | null>(null);
   const [showProviders, setShowProviders] = useState(false);
   const [pendingProvider, setPendingProvider] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [isNavigatingProfile, setIsNavigatingProfile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (pathname === '/profile') {
+      setIsNavigatingProfile(false);
+    }
+  }, [pathname]);
 
   useEffect(() => {
     if (!showProviders) return;

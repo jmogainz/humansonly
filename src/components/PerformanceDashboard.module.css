@@ -129,7 +129,19 @@
   opacity: 0;
   animation: cardIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   animation-delay: calc(0.08s + (var(--card-index) * 0.028s));
-  transition: transform 130ms ease, box-shadow 130ms ease, border-color 130ms ease;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.cardExpanded {
+  grid-column: 1 / -1;
+  transform: translateY(0) scale(1) !important;
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 15%, transparent), transparent 40%),
+    linear-gradient(170deg, color-mix(in srgb, var(--surface) 95%, var(--accent) 5%), var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  padding: 1.25rem;
+  box-shadow: var(--card-shadow-hover);
 }
 
 .card::before {
@@ -148,40 +160,29 @@
   box-shadow: var(--card-shadow-hover);
 }
 
-.cardHeader {
-  position: relative;
-  z-index: 1;
+.cardExpanded:hover {
+  transform: translateY(-2px) !important;
+}
+
+.expandButton {
   display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
-  align-items: flex-start;
-}
-
-.cardHeader h4 {
-  margin: 0.15rem 0 0;
-  font-size: 0.94rem;
-  line-height: 1.2;
-}
-
-.eyebrow {
-  margin: 0;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-}
-
-.runPill {
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.18rem 0.48rem;
-  font-size: 0.61rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  background: var(--surface-raised);
   color: var(--text-muted);
+  font-size: 1.1rem;
   font-family: var(--font-mono);
-  background: color-mix(in srgb, var(--surface-raised) 88%, var(--accent) 12%);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.card:hover .expandButton {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .miniChartFrame {
@@ -194,6 +195,42 @@
   padding: 0.25rem;
 }
 
+.detailedChartFrame {
+  position: relative;
+  z-index: 1;
+  height: 320px;
+  border: 1px solid color-mix(in srgb, var(--border) 88%, var(--accent) 12%);
+  border-radius: var(--radius);
+  background: 
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, var(--accent) 8%), var(--surface));
+  padding: 1rem 0.5rem;
+}
+
+.granularLegend {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
 .stats {
   position: relative;
   z-index: 1;
@@ -202,6 +239,19 @@
   gap: 0.25rem;
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.statsExpanded {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 0.25rem;
+  padding-top: 1rem;
+}
+
+@media (min-width: 641px) {
+  .statsExpanded {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
 }
 
 .statItem {

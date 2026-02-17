@@ -4,6 +4,7 @@ import Google from 'next-auth/providers/google';
 import Apple from 'next-auth/providers/apple';
 import { env } from '@/lib/server/env';
 import { getUserProfile, upsertUserForOidcAccount } from '@/lib/server/users';
+import { seedUserData, seedGlobalLeaderboard } from '@/lib/server/seed';
 
 const envSecret = env('AUTH_SECRET') || env('NEXTAUTH_SECRET');
 if (envSecret && !process.env.NEXTAUTH_SECRET) {
@@ -141,6 +142,16 @@ export const authOptions: NextAuthOptions = {
           imageUrl: (token.picture as string | undefined) ?? user?.image ?? null,
         });
         token.userId = userId;
+
+        if (env('NEXT_PUBLIC_ENV') === 'dev') {
+          // Seed global leaderboard on any login if in dev
+          await seedGlobalLeaderboard();
+
+          // Only seed personal account history if signing in with Apple
+          if (account.provider === 'apple') {
+            await seedUserData(userId);
+          }
+        }
       }
       if (account?.provider) {
         token.provider = account.provider;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -14,8 +14,10 @@ import { TEST_REGISTRY } from '@/lib/tests/registry';
 import type { ScoreDirection, TestDefinition } from '@/lib/tests/types';
 import { formatNumber } from '@/lib/utils';
 import styles from './PerformanceDashboard.module.css';
+import StatsShareCard from './StatsShareCard';
 
 type PerformanceDashboardProps = {
+  displayName: string;
   scores: Array<{
     testSlug: string;
     scoreValue: number;
@@ -60,9 +62,11 @@ function getCategoryLabel(test: TestDefinition): string {
   return test.category === 'gia' ? 'GIA' : 'Human Benchmark';
 }
 
-export default function PerformanceDashboard({ scores }: PerformanceDashboardProps) {
+export default function PerformanceDashboard({ displayName, scores }: PerformanceDashboardProps) {
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+
   const scoreDataByTest = useMemo(() => {
-    const grouped = new Map<string, ScorePoint[]>();
+    const grouped = new Map<string, (ScorePoint & { metadata: any })[]>();
     TEST_REGISTRY.forEach((test) => {
       grouped.set(test.slug, []);
     });
@@ -77,6 +81,7 @@ export default function PerformanceDashboard({ scores }: PerformanceDashboardPro
         timestamp: createdAt.getTime(),
         score: score.scoreValue,
         run: 0,
+        metadata: score.metadata,
       });
     });
 
@@ -93,6 +98,28 @@ export default function PerformanceDashboard({ scores }: PerformanceDashboardPro
 
     return grouped;
   }, [scores]);
+
+  const toggleExpand = (slug: string) => {
+    setExpandedSlug(expandedSlug === slug ? null : slug);
+  };
+
+  const calculatedBests = useMemo(() => {
+    const bests: Array<{ testSlug: string; bestScore: number; scoreUnit: string }> = [];
+    scoreDataByTest.forEach((points, slug) => {
+      if (points.length === 0) return;
+      const test = TEST_REGISTRY.find(t => t.slug === slug);
+      if (!test) return;
+      const bestValue = getBest(points, test.direction);
+      if (bestValue !== null) {
+        bests.push({
+          testSlug: slug,
+          bestScore: bestValue,
+          scoreUnit: test.scoreUnit,
+        });
+      }
+    });
+    return bests;
+  }, [scoreDataByTest]);
 
   const activityData = useMemo(() => {
     const buckets = new Map<string, ActivityPoint>();
@@ -152,7 +179,10 @@ export default function PerformanceDashboard({ scores }: PerformanceDashboardPro
     <div className={styles.dashboard}>
       <header className={styles.header}>
         <div className={styles.titleBlock}>
-          <h2>Performance Atlas</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.25rem' }}>
+            <h2 style={{ margin: 0 }}>Performance Atlas</h2>
+            <StatsShareCard displayName={displayName} bests={calculatedBests} />
+          </div>
           <p>Every test. Every run. One progression surface.</p>
         </div>
         <div className={styles.kpis}>
@@ -240,49 +270,110 @@ export default function PerformanceDashboard({ scores }: PerformanceDashboardPro
                     : styles.trendNeutral;
               const gradientId = `spark-${test.slug}`;
 
+              const isExpanded = expandedSlug === test.slug;
+              const hasGranularData = points.some(p => p.metadata?.correct !== undefined || p.metadata?.incorrect !== undefined);
+
+              const expandedStats = isExpanded ? {
+                avg: points.reduce((acc, p) => acc + p.score, 0) / points.length,
+                maxCorrect: hasGranularData ? Math.max(...points.map(p => Number(p.metadata?.correct || 0))) : null,
+                avgCorrect: hasGranularData ? points.reduce((acc, p) => acc + Number(p.metadata?.correct || 0), 0) / points.length : null,
+              } : null;
+
               return (
                 <article
                   key={test.slug}
-                  className={styles.card}
+                  className={`${styles.card} ${isExpanded ? styles.cardExpanded : ''}`}
                   style={{ '--card-index': TEST_REGISTRY.findIndex((candidate) => candidate.slug === test.slug) } as React.CSSProperties}
+                  onClick={() => toggleExpand(test.slug)}
                 >
                   <div className={styles.cardHeader}>
                     <div>
                       <p className={styles.eyebrow}>{getCategoryLabel(test)}</p>
                       <h4>{test.name.replace('GIA ', '')}</h4>
                     </div>
-                    <span className={styles.runPill}>{points.length} runs</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className={styles.runPill}>{points.length} runs</span>
+                      <button className={styles.expandButton} aria-label={isExpanded ? 'Collapse' : 'Expand'}>
+                        {isExpanded ? '−' : '+'}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className={styles.miniChartFrame}>
+                  <div className={isExpanded ? styles.detailedChartFrame : styles.miniChartFrame}>
                     {points.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={120}>
-                        <AreaChart data={points} margin={{ top: 8, right: 0, left: 0, bottom: 0 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={points} margin={{ top: isExpanded ? 20 : 8, right: isExpanded ? 20 : 0, left: isExpanded ? 0 : 0, bottom: isExpanded ? 10 : 0 }}>
                           <defs>
                             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.35} />
+                              <stop offset="0%" stopColor="var(--accent)" stopOpacity={isExpanded ? 0.2 : 0.35} />
                               <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
                             </linearGradient>
+                            <linearGradient id={`${gradientId}-correct`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--success)" stopOpacity={0.15} />
+                              <stop offset="100%" stopColor="var(--success)" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id={`${gradientId}-incorrect`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--danger)" stopOpacity={0.15} />
+                              <stop offset="100%" stopColor="var(--danger)" stopOpacity={0} />
+                            </linearGradient>
                           </defs>
-                          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="run" axisLine={false} tickLine={false} stroke="var(--text-muted)" fontSize={10} />
-                          <YAxis hide domain={["auto", "auto"]} />
+                          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} opacity={isExpanded ? 0.5 : 1} />
+                          <XAxis 
+                            dataKey={isExpanded ? "dateLabel" : "run"} 
+                            axisLine={false} 
+                            tickLine={false} 
+                            stroke="var(--text-muted)" 
+                            fontSize={isExpanded ? 11 : 10}
+                            minTickGap={20}
+                          />
+                          <YAxis hide={!isExpanded} axisLine={false} tickLine={false} stroke="var(--text-muted)" fontSize={11} width={35} />
                           <Tooltip
-                            labelFormatter={(value) => `Run ${String(value)}`}
-                            formatter={(value) => formatScore(Number(value))}
+                            labelFormatter={(value, p) => isExpanded && p[0] ? new Date(p[0].payload.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : `Run ${String(value)}`}
+                            formatter={(value, name) => [formatScore(Number(value)), name === 'score' ? 'Score' : name.charAt(0).toUpperCase() + name.slice(1)]}
                             contentStyle={{
                               background: 'var(--surface)',
                               border: '1px solid var(--border)',
-                              borderRadius: '8px',
-                              fontSize: '11px',
+                              borderRadius: '12px',
+                              fontSize: isExpanded ? '12px' : '11px',
+                              boxShadow: 'var(--card-shadow-hover)',
+                              padding: '8px 12px',
                             }}
-                            cursor={{ stroke: 'var(--accent)', strokeWidth: 1, strokeDasharray: '3 3' }}
+                            cursor={{ stroke: 'var(--accent)', strokeWidth: 1.5, strokeDasharray: '4 4' }}
                           />
+                          
+                          {isExpanded && hasGranularData && (
+                            <>
+                              <Area
+                                type="monotone"
+                                dataKey="metadata.correct"
+                                name="correct"
+                                stroke="var(--success)"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                fill={`url(#${gradientId}-correct)`}
+                                isAnimationActive
+                                animationDuration={800}
+                              />
+                              <Area
+                                type="monotone"
+                                dataKey="metadata.incorrect"
+                                name="incorrect"
+                                stroke="var(--danger)"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                fill={`url(#${gradientId}-incorrect)`}
+                                isAnimationActive
+                                animationDuration={900}
+                              />
+                            </>
+                          )}
+
                           <Area
                             type="monotone"
                             dataKey="score"
+                            name="score"
                             stroke="var(--accent)"
-                            strokeWidth={2}
+                            strokeWidth={isExpanded ? 3 : 2}
                             fill={`url(#${gradientId})`}
                             isAnimationActive
                             animationDuration={700}
@@ -294,7 +385,24 @@ export default function PerformanceDashboard({ scores }: PerformanceDashboardPro
                     )}
                   </div>
 
-                  <div className={styles.stats}>
+                  {isExpanded && hasGranularData && (
+                    <div className={styles.granularLegend}>
+                      <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: 'var(--accent)' }} />
+                        <span>Net Score</span>
+                      </div>
+                      <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: 'var(--success)' }} />
+                        <span>Correct</span>
+                      </div>
+                      <div className={styles.legendItem}>
+                        <span className={styles.legendDot} style={{ background: 'var(--danger)' }} />
+                        <span>Incorrect</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`${styles.stats} ${isExpanded ? styles.statsExpanded : ''}`}>
                     <div className={styles.statItem}>
                       <span className={styles.statLabel}>Latest</span>
                       <span className={styles.statValue}>
@@ -313,6 +421,32 @@ export default function PerformanceDashboard({ scores }: PerformanceDashboardPro
                         {trendLabel}
                       </span>
                     </div>
+                    {isExpanded && expandedStats && (
+                      <>
+                        <div className={styles.statItem}>
+                          <span className={styles.statLabel}>Average</span>
+                          <span className={styles.statValue}>
+                            {formatScore(expandedStats.avg)} {test.scoreUnit}
+                          </span>
+                        </div>
+                        {hasGranularData && (
+                          <>
+                            <div className={styles.statItem}>
+                              <span className={styles.statLabel}>Best Correct</span>
+                              <span className={styles.statValue}>
+                                {expandedStats.maxCorrect}
+                              </span>
+                            </div>
+                            <div className={styles.statItem}>
+                              <span className={styles.statLabel}>Avg Correct</span>
+                              <span className={styles.statValue}>
+                                {expandedStats.avgCorrect?.toFixed(1)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 </article>
               );
