@@ -37,7 +37,7 @@
 @media (max-width: 1024px) {
     .container {
         left: 50%; /* Re-center on smaller screens where space is tight */
-        width: 100%;
+        width: 1200px;
         opacity: 0.2;
     }
     .canvas {

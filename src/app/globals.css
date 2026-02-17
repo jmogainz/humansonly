@@ -81,6 +81,7 @@ body {
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 body {
@@ -88,7 +89,6 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   transition: background-color 0.1s ease, color 0.1s ease;
-  overflow-x: hidden;
 }
 
 /* Layout */
