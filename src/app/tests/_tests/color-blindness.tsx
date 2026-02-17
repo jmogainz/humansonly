@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 
@@ -149,71 +150,76 @@ export default function ColorBlindnessTest({ definition, onComplete }: TestGameP
   };
 
   return (
-    <div className="game-container" style={{ alignItems: 'center' }}>
-      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', justifyContent: 'space-between', width: 'min(420px, 100%)', flexShrink: 0 }}>
-        <ScoreDisplay label="Progress" value={`${index + 1}/${plates.length}`} />
-        <ScoreDisplay label="Correct" value={correct} />
-      </div>
-
+    <div className="game-container">
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
+        </div>
       ) : (
         <>
-          <div className="game-grid-container">
-            {plate?.src ? (
-              <img
-                src={plate.src}
-                alt="Ishihara plate"
-                style={{ 
-                  width: 'min(360px, 90cqh, 90cqw)', 
-                  height: 'auto',
-                  aspectRatio: '1 / 1',
-                  borderRadius: '50%', 
-                  border: '1px solid var(--border)' 
-                }}
+          <Scoreboard>
+            <ScoreDisplay label="Progress" value={`${index + 1} / ${plates.length}`} />
+            <ScoreDisplay label="Correct" value={correct} />
+          </Scoreboard>
+
+          <div className="game-content">
+            <div className="game-grid-container">
+              {plate?.src ? (
+                <img
+                  src={plate.src}
+                  alt="Ishihara plate"
+                  style={{ 
+                    width: 'min(360px, 80cqh, 80cqw)', 
+                    height: 'auto',
+                    aspectRatio: '1 / 1',
+                    borderRadius: '50%', 
+                    border: '4px solid var(--surface-raised)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 'min(360px, 80cqh, 80cqw)', 
+                    aspectRatio: '1 / 1',
+                    borderRadius: '50%',
+                    border: '1px solid var(--border)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    color: 'var(--text-muted)',
+                    background: 'var(--surface-raised)'
+                  }}
+                >
+                  Generating plate...
+                </div>
+              )}
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                submit();
+              }}
+              style={{ width: 'min(400px, 100%)', display: 'grid', gap: '0.75rem', marginInline: 'auto' }}
+            >
+              <input
+                autoFocus
+                value={guess}
+                inputMode="numeric"
+                onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
+                placeholder="Enter number seen"
+                style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.25rem', padding: '0.75rem' }}
               />
-            ) : (
-              <div
-                style={{
-                  width: 'min(360px, 90cqh, 90cqw)', 
-                  aspectRatio: '1 / 1',
-                  borderRadius: '50%',
-                  border: '1px solid var(--border)',
-                  display: 'grid',
-                  placeItems: 'center',
-                  color: 'var(--text-muted)',
-                  background: 'var(--surface-raised)'
-                }}
-              >
-                Generating plate...
-              </div>
-            )}
+              <button type="submit" className="button" disabled={!plate?.src || !guess.trim()} style={{ padding: '0.75rem' }}>Next Plate</button>
+            </form>
+
+            <small style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem', opacity: 0.8 }}>
+              Screening only. This is not a medical diagnosis.
+            </small>
           </div>
-
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              submit();
-            }}
-            style={{ width: 'min(420px, 100%)', display: 'grid', gap: '0.65rem', flexShrink: 0 }}
-          >
-            <input
-              autoFocus
-              value={guess}
-              inputMode="numeric"
-              onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
-              placeholder="Enter the number you see"
-              style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.1rem' }}
-            />
-            <button type="submit" className="button" disabled={!plate?.src || !guess.trim()}>Next Plate</button>
-          </form>
-
-          <small style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem', flexShrink: 0 }}>
-            Screening only. This is not a medical diagnosis.
-          </small>
         </>
       )}
     </div>

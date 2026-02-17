@@ -22,7 +22,9 @@ export COMPOSE_DB_NAME := humansonly_pg_db
 export MIGRATIONS_PATH := $(REPO_ROOT)/migrations
 
 BWS_ENV := $(if $(filter $(ENV),dev-test),dev,$(ENV))
-export BWS_PROJECT_NAME_FOR_DB_SECRETS := shared-$(BWS_ENV)
+export BWS_PROJECT_NAME_FOR_DB_SECRETS := $(APP_NAME)-$(BWS_ENV)
+export VERCEL_TOKEN_BWS_PROJECT_NAME := $(APP_NAME)-$(BWS_ENV)
+export FLY_API_TOKEN_BWS_PROJECT_NAME := $(APP_NAME)-$(BWS_ENV)
 
 ifndef INCLUDED_ENV_CONFIGURATION
   include $(DEVOPS_TOOLKIT_PATH)/shared/make/utils/env_configuration.mk

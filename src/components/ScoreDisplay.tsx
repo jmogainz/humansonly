@@ -30,28 +30,33 @@ export default function ScoreDisplay({ label = 'Score', value, status = 'neutral
 
   return (
     <div style={{ 
-      display: 'grid', 
-      gap: '0.1rem',
+      display: 'flex', 
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '2px',
       transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-      transform: isPulsing ? 'scale(1.05)' : 'scale(1)',
+      transform: isPulsing ? 'scale(1.02)' : 'scale(1)',
     }}>
-      <small style={{ 
+      <span style={{ 
         color: 'var(--text-muted)', 
         fontFamily: 'var(--font-mono)',
         fontSize: '0.65rem',
         textTransform: 'uppercase',
-        letterSpacing: '0.05em'
+        letterSpacing: '0.1em',
+        fontWeight: 500
       }}>
         {label}
-      </small>
-      <strong style={{ 
+      </span>
+      <span style={{ 
         fontFamily: 'var(--font-mono)', 
         fontSize: '1.25rem',
+        fontWeight: 600,
         color: isPulsing ? color : 'var(--text-primary)',
         transition: 'color 0.2s ease',
+        lineHeight: 1
       }}>
         {value}
-      </strong>
+      </span>
     </div>
   );
 }

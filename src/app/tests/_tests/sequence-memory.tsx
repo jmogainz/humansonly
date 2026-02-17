@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import Scoreboard from '@/components/Scoreboard';
+import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 
 const GRID = 3;
@@ -82,48 +84,53 @@ export default function SequenceMemoryTest({ definition, onComplete }: TestGameP
 
   return (
     <div className="game-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {sequence.length}</strong>
-      </div>
-
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
+        </div>
       ) : (
         <>
-          <small style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-            {phase === 'show' ? 'Watch the sequence' : `Repeat from ${inputIndex + 1}/${sequence.length}`}
-          </small>
+          <Scoreboard>
+            <ScoreDisplay label="Level" value={sequence.length} />
+          </Scoreboard>
 
-          <div className="game-grid-container">
-            <div
-              className="game-grid"
-              style={{
-                gridTemplateColumns: `repeat(${GRID}, minmax(0, 1fr))`,
-                gap: 'clamp(0.25rem, 2cqw, 0.6rem)',
-              }}
-            >
-              {Array.from({ length: GRID * GRID }, (_, index) => {
-                const active = activeCell === index;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    className="game-tile"
-                    onClick={() => handleClick(index)}
-                    style={{
-                      background: active
-                        ? 'color-mix(in srgb, var(--accent) 50%, var(--bg))'
-                        : 'var(--surface-raised)',
-                      boxShadow: active ? '0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent)' : 'none',
-                      cursor: phase === 'input' ? 'pointer' : 'default',
-                      borderRadius: 'clamp(6px, 2cqw, 12px)',
-                    }}
-                  />
-                );
-              })}
+          <div className="game-content">
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: 0, fontSize: '1rem' }}>
+              {phase === 'show' ? 'Watch the sequence' : `Repeat sequence: ${inputIndex + 1} / ${sequence.length}`}
+            </p>
+
+            <div className="game-grid-container">
+              <div
+                className="game-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${GRID}, minmax(0, 1fr))`,
+                  gap: 'clamp(0.4rem, 2.5cqw, 0.8rem)',
+                }}
+              >
+                {Array.from({ length: GRID * GRID }, (_, index) => {
+                  const active = activeCell === index;
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      className="game-tile"
+                      onClick={() => handleClick(index)}
+                      style={{
+                        background: active
+                          ? 'var(--accent)'
+                          : 'var(--surface-raised)',
+                        boxShadow: active ? '0 0 20px color-mix(in srgb, var(--accent) 40%, transparent)' : 'none',
+                        cursor: phase === 'input' ? 'pointer' : 'default',
+                        borderRadius: 'clamp(8px, 2.5cqw, 16px)',
+                        borderWidth: '2px'
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
         </>

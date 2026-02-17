@@ -204,9 +204,9 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
       title={definition.name}
       subtitle={definition.description}
       sidebar={
-        <div style={{ display: 'grid', gap: '0.2rem', textAlign: 'right' }}>
-          <small style={{ color: 'var(--text-muted)' }}>Scored in</small>
-          <strong style={{ fontFamily: 'var(--font-mono)' }}>{definition.scoreUnit}</strong>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', opacity: 0.8 }}>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unit</span>
+          <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>{definition.scoreUnit}</strong>
         </div>
       }
     >

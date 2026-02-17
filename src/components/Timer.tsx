@@ -1,12 +1,6 @@
 import styles from './Timer.module.css';
 
-type TimerProps = {
-  label?: string;
-  milliseconds: number;
-  progress?: number;
-};
-
-function formatTime(milliseconds: number): string {
+export function formatTime(milliseconds: number): string {
   const total = Math.max(0, milliseconds);
   if (total >= 60_000) {
     const minutes = Math.floor(total / 60_000);
@@ -19,15 +13,15 @@ function formatTime(milliseconds: number): string {
   return `${seconds}.${String(centiseconds).padStart(2, '0')}`;
 }
 
-export default function Timer({ label = 'Time', milliseconds, progress }: TimerProps) {
+type TimerProps = {
+  progress: number;
+};
+
+export default function Timer({ progress }: TimerProps) {
   const pct = Math.max(0, Math.min(100, (progress ?? 0) * 100));
 
   return (
     <div className={styles.timer}>
-      <div className={styles.row}>
-        <span>{label}</span>
-        <strong>{formatTime(milliseconds)}</strong>
-      </div>
       <div className={styles.barTrack}>
         <div className={styles.bar} style={{ width: `${pct}%` }} />
       </div>

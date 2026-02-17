@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import TestStartScreen from '@/components/TestStartScreen';
+import Scoreboard from '@/components/Scoreboard';
+import ScoreDisplay from '@/components/ScoreDisplay';
 import { useFeedback } from '@/components/FeedbackContext';
 
 type Phase = 'idle' | 'wait' | 'go' | 'too-soon';
@@ -104,60 +106,77 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
   return (
     <div className="game-container">
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
-      ) : (
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={handleClick}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              handleClick();
-            }
-          }}
-          style={{
-            width: '100%',
-            flex: '1',
-            borderRadius: '14px',
-            background: color,
-            display: 'grid',
-            placeItems: 'center',
-            textAlign: 'center',
-            cursor: 'pointer',
-            transition: 'background 0ms ease',
-            minHeight: 0
-          }}
-        >
-          <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
-            <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 2.5rem)' }}>{message}</h2>
-            <p style={{ margin: 0, color: 'var(--phase-text)', opacity: 0.95, fontSize: 'clamp(0.9rem, 4vw, 1.1rem)' }}>
-              {attempts.length}/{TOTAL_ATTEMPTS} rounds complete
-            </p>
-          </div>
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
         </div>
+      ) : (
+        <>
+          <Scoreboard>
+            <ScoreDisplay label="Round" value={`${Math.min(TOTAL_ATTEMPTS, attempts.length + 1)} / ${TOTAL_ATTEMPTS}`} />
+            {attempts.length > 0 && (
+              <ScoreDisplay 
+                label="Last" 
+                value={`${Math.round(attempts[attempts.length - 1])} ms`} 
+                status="neutral" 
+              />
+            )}
+          </Scoreboard>
+
+          <div className="game-content" style={{ padding: 0 }}>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={handleClick}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleClick();
+                }
+              }}
+              style={{
+                width: '100%',
+                flex: '1',
+                borderRadius: '0 0 14px 14px',
+                background: color,
+                display: 'grid',
+                placeItems: 'center',
+                textAlign: 'center',
+                cursor: 'pointer',
+                transition: 'background 0ms ease',
+                minHeight: 0
+              }}
+            >
+              <div style={{ display: 'grid', gap: 'clamp(0.2rem, 2vh, 0.4rem)' }}>
+                <h2 style={{ margin: 0, color: 'var(--phase-text)', fontSize: 'clamp(1.5rem, 8vw, 3rem)', fontWeight: 700 }}>{message}</h2>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flexShrink: 0 }}>
-        {attempts.map((attempt, index) => (
-          <span
-            key={index}
-            style={{
-              fontFamily: 'var(--font-mono)',
-              border: '1px solid var(--border)',
-              borderRadius: '999px',
-              padding: '0.2rem 0.5rem',
-              fontSize: '0.8rem',
-              background: 'var(--surface-raised)'
-            }}
-          >
-            {Math.round(attempt)} ms
-          </span>
-        ))}
-      </div>
+      {started && (
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap', flexShrink: 0, padding: '1rem' }}>
+          {attempts.map((attempt, index) => (
+            <span
+              key={index}
+              style={{
+                fontFamily: 'var(--font-mono)',
+                border: '1px solid var(--border)',
+                borderRadius: '999px',
+                padding: '0.25rem 0.75rem',
+                fontSize: '0.8rem',
+                background: 'var(--surface-raised)',
+                fontWeight: 500
+              }}
+            >
+              {Math.round(attempt)} ms
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

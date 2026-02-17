@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
+import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 
@@ -149,63 +150,70 @@ export default function FaceMemoryTest({ definition, onComplete }: TestGameProps
 
   return (
     <div className="game-container">
-      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
-        <ScoreDisplay label="Level" value={level} status="neutral" />
-        <ScoreDisplay label="Correct" value={`${correct}/${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
-        {phase === 'study' && started ? <ScoreDisplay label="Study Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} /> : null}
-      </div>
-
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
+        </div>
       ) : (
         <>
-          {phase === 'study' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', flex: 1, minHeight: 0 }}>
-              <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>Study these faces, then identify them in the next phase.</p>
+          <Scoreboard>
+            <ScoreDisplay label="Level" value={level} status="neutral" />
+            <ScoreDisplay label="Correct" value={`${correct} / ${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
+            {phase === 'study' ? (
+              <ScoreDisplay label="Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} />
+            ) : (
+               <ScoreDisplay label="Progress" value={`${testIndex + 1} / ${levelState.testIds.length}`} />
+            )}
+          </Scoreboard>
+
+          <div className="game-content">
+            {phase === 'study' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minHeight: 0 }}>
+                <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>Study these faces carefully.</p>
+                <div 
+                  style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(90px, 20vw, 150px), 1fr))', 
+                    gap: 'clamp(0.5rem, 2vw, 1rem)', 
+                    overflowY: 'auto',
+                    flex: 1,
+                    paddingRight: '4px'
+                  }}
+                >
+                  {studyFaceUris.map(({ faceId, src }) => (
+                    <img
+                      key={faceId}
+                      src={src}
+                      alt="Study face"
+                      style={{ width: '100%', borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)' }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
               <div 
-                style={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(80px, 20vw, 140px), 1fr))', 
-                  gap: 'clamp(0.4rem, 2vw, 0.7rem)', 
-                  overflowY: 'auto',
-                  flex: 1,
-                  paddingRight: '4px'
-                }}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', flex: 1, justifyContent: 'center' }}
               >
-                {studyFaceUris.map(({ faceId, src }) => (
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1rem' }}>
+                  Have you seen this face before?
+                </p>
+                {currentFaceUri ? (
                   <img
-                    key={faceId}
-                    src={src}
-                    alt="Study face"
-                    style={{ width: '100%', borderRadius: '12px', border: '1px solid var(--border)' }}
+                    src={currentFaceUri}
+                    alt="Face memory test"
+                    style={{ width: 'min(240px, 60cqh, 60cqw)', height: 'auto', aspectRatio: '220/260', borderRadius: '16px', border: '4px solid var(--surface-raised)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}
                   />
-                ))}
+                ) : null}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(400px, 100%)', gap: '0.75rem' }}>
+                  <button className="button" type="button" onClick={() => handleAnswer(true)} style={{ padding: '0.75rem' }}>SEEN</button>
+                  <button className="button buttonGhost" type="button" onClick={() => handleAnswer(false)} style={{ padding: '0.75rem' }}>NEW</button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div 
-              className="game-grid-container"
-              style={{ flexDirection: 'column', gap: 'clamp(0.5rem, 4vh, 1rem)' }}
-            >
-              <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                Face {testIndex + 1}/{levelState.testIds.length}
-              </p>
-              {currentFaceUri ? (
-                <img
-                  src={currentFaceUri}
-                  alt="Face memory test"
-                  style={{ width: 'min(240px, 70cqh, 70cqw)', height: 'auto', aspectRatio: '220/260', borderRadius: '14px', border: '1px solid var(--border)' }}
-                />
-              ) : null}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(400px, 100%)', gap: '0.7rem' }}>
-                <button className="button" type="button" onClick={() => handleAnswer(true)}>SEEN</button>
-                <button className="button buttonGhost" type="button" onClick={() => handleAnswer(false)}>NEW</button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>

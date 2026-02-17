@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
+import Scoreboard from '@/components/Scoreboard';
+import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 import { useFeedback } from '@/components/FeedbackContext';
 
@@ -113,47 +115,52 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
 
   return (
     <div className="game-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {Math.min(level, MAX_LEVEL)}</strong>
-        <LivesDisplay lives={lives} maxLives={maxLives} />
-      </div>
-
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
+        </div>
       ) : (
         <>
-          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>{label}</p>
+          <Scoreboard>
+            <ScoreDisplay label="Level" value={Math.min(level, MAX_LEVEL)} />
+            <LivesDisplay lives={lives} maxLives={maxLives} />
+          </Scoreboard>
 
-          <div className="game-grid-container">
-            <div
-              className="game-grid"
-              style={{
-                gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-                gap: 'clamp(0.2rem, 1.5cqw, 0.55rem)',
-              }}
-            >
-              {cells.map((cell) => {
-                const showNumber = phase === 'show' || nextExpected > (cell.number ?? 999);
-                return (
-                  <button
-                    key={cell.id}
-                    type="button"
-                    className="game-tile"
-                    onClick={() => handleCellClick(cell)}
-                    style={{
-                      background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
-                      color: showNumber ? 'var(--tile-text)' : 'transparent',
-                      cursor: phase === 'hide' ? 'pointer' : 'default',
-                      fontSize: 'clamp(0.8rem, 4cqw, 1.2rem)',
-                    }}
-                  >
-                    {cell.number ?? ''}
-                  </button>
-                );
-              })}
+          <div className="game-content">
+            <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>{label}</p>
+
+            <div className="game-grid-container">
+              <div
+                className="game-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+                  gap: 'clamp(0.2rem, 1.5cqw, 0.6rem)',
+                }}
+              >
+                {cells.map((cell) => {
+                  const showNumber = phase === 'show' || nextExpected > (cell.number ?? 999);
+                  return (
+                    <button
+                      key={cell.id}
+                      type="button"
+                      className="game-tile"
+                      onClick={() => handleCellClick(cell)}
+                      style={{
+                        background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
+                        color: showNumber ? 'var(--tile-text)' : 'transparent',
+                        cursor: phase === 'hide' ? 'pointer' : 'default',
+                        fontSize: 'clamp(0.9rem, 4cqw, 1.4rem)',
+                        fontWeight: 600
+                      }}
+                    >
+                      {cell.number ?? ''}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </>

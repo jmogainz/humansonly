@@ -4,7 +4,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { randomInt, shuffle, generateRecentUnique } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
-import Timer from '@/components/Timer';
+import Timer, { formatTime } from '@/components/Timer';
+import Scoreboard from '@/components/Scoreboard';
 import { useTimer } from '@/hooks/useTimer';
 import TestStartScreen from '@/components/TestStartScreen';
 
@@ -105,48 +106,55 @@ export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameP
     setRound(makeRound());
   };
 
-  return (
-    <div className="game-container">
-      <Timer label="Remaining" milliseconds={timer.remainingMs} progress={1 - timer.progress} />
-
-      <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', flexShrink: 0 }}>
-        <ScoreDisplay label="Correct" value={correct} status="success" />
-        <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
-        <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
-      </div>
-
-      {!started ? (
-        <TestStartScreen
-          description="Pick the number furthest from the median. You have 2 minutes."
-          onStart={handleStart}
-        />
-      ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '2rem', minHeight: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>{round.question}</h2>
-
-          <div 
-            style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
-              gap: 'clamp(0.5rem, 2vw, 1rem)',
-              width: '100%',
-              maxWidth: '520px'
-            }}
-          >
-            {round.options.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className="game-tile"
-                style={{ fontSize: 'clamp(1.3rem, 6vw, 2rem)', padding: '1.2rem 0' }}
-                onClick={() => answer(value)}
-              >
-                {value}
-              </button>
-            ))}
+    return (
+      <div className="game-container">
+        {!started ? (
+          <div className="game-content">
+            <TestStartScreen
+              description="Pick the number furthest from the median. You have 2 minutes."
+              onStart={handleStart}
+            />
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
+        ) : (
+          <>
+                      {!finished && (
+                        <Scoreboard>
+                          <ScoreDisplay label="Time" value={formatTime(timer.remainingMs)} />
+                          <ScoreDisplay label="Correct" value={correct} status="success" />
+                          <ScoreDisplay label="Incorrect" value={incorrect} status="danger" />
+                          <ScoreDisplay label="Net" value={score.toFixed(2)} status={netStatus} />
+                        </Scoreboard>
+                      )}
+            
+                      <Timer progress={1 - timer.progress} />  
+            <div className="game-content">
+              <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 1.8rem)', textAlign: 'center' }}>{round.question}</h2>
+  
+              <div 
+                style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', 
+                  gap: 'clamp(0.6rem, 2vw, 1rem)',
+                  width: '100%',
+                  maxWidth: '520px',
+                  marginInline: 'auto'
+                }}
+              >
+                {round.options.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className="game-tile"
+                    style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)', padding: '1.5rem 0', borderRadius: '14px' }}
+                    onClick={() => answer(value)}
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  }

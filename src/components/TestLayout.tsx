@@ -21,17 +21,17 @@ function TestLayoutInner({ title, subtitle, sidebar, children }: TestLayoutProps
   return (
     <section className={styles.wrapper}>
       <div className={styles.header}>
-        <div>
+        <div className={styles.titleArea}>
           <Link className={styles.back} href="/">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.2rem' }}>
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.2rem' }}>
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Back to tests
+            Back
           </Link>
           <h1>{title}</h1>
           <p>{subtitle}</p>
         </div>
-        {sidebar ? <aside>{sidebar}</aside> : null}
+        {sidebar ? <div className={styles.sidebar}>{sidebar}</div> : null}
       </div>
       <div className={contentClassName}>{children}</div>
     </section>

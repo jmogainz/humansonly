@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
+import Scoreboard from '@/components/Scoreboard';
+import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 import { useFeedback } from '@/components/FeedbackContext';
 
@@ -90,52 +92,56 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', flexShrink: 0 }}>
-        <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
-        <LivesDisplay lives={lives} />
-      </div>
-
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
+        </div>
       ) : (
         <>
-          <p style={{ margin: 0, color: 'var(--text-muted)', flexShrink: 0 }}>
-            {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
-          </p>
+          <Scoreboard>
+            <ScoreDisplay label="Level" value={level} />
+            <LivesDisplay lives={lives} />
+          </Scoreboard>
 
-          <div className="game-grid-container">
-            <div
-              className="game-grid"
-              style={{
-                gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
-                gap: 'clamp(0.15rem, 1.2cqw, 0.45rem)',
-              }}
-            >
-              {Array.from({ length: total }, (_, index) => {
-                const isPattern = patternSet.has(index);
-                const wasSelected = selected.has(index);
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    className="game-tile"
-                    onClick={() => handleClick(index)}
-                    style={{
-                      background:
-                        phase === 'show' && isPattern
-                          ? 'var(--accent)'
-                          : wasSelected
-                            ? 'color-mix(in srgb, var(--accent) 45%, var(--surface-raised))'
-                            : 'var(--surface-raised)',
-                      cursor: phase === 'input' ? 'pointer' : 'default',
-                      borderRadius: 'clamp(4px, 1.5cqw, 10px)',
-                    }}
-                  />
-                );
-              })}
+          <div className="game-content">
+            <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>
+              {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
+            </p>
+
+            <div className="game-grid-container">
+              <div
+                className="game-grid"
+                style={{
+                  gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
+                  gap: 'clamp(0.2rem, 1.5cqw, 0.6rem)',
+                }}
+              >
+                {Array.from({ length: total }, (_, index) => {
+                  const isPattern = patternSet.has(index);
+                  const wasSelected = selected.has(index);
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      className="game-tile"
+                      onClick={() => handleClick(index)}
+                      style={{
+                        background:
+                          phase === 'show' && isPattern
+                            ? 'var(--accent)'
+                            : wasSelected
+                              ? 'color-mix(in srgb, var(--accent) 40%, var(--surface-raised))'
+                              : 'var(--surface-raised)',
+                        cursor: phase === 'input' ? 'pointer' : 'default',
+                        borderRadius: 'clamp(4px, 1.5cqw, 12px)',
+                      }}
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
         </>

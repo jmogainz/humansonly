@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
+import Scoreboard from '@/components/Scoreboard';
+import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 
 type Circle = {
@@ -294,71 +296,77 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
 
   return (
     <div className="game-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', flexShrink: 0 }}>
-        <strong style={{ fontFamily: 'var(--font-mono)' }}>Level {level}</strong>
-      </div>
-
       {!started ? (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
+        </div>
       ) : (
         <>
-          <small style={{ color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>
-            {phase === 'highlight'
-              ? `Memorize ${targetCount} targets`
-              : phase === 'moving'
-                ? 'Track while circles move'
-                : `Select ${targetCount} targets, then submit`}
-          </small>
+          <Scoreboard>
+            <ScoreDisplay label="Level" value={level} />
+            {phase === 'select' ? (
+               <ScoreDisplay label="Selected" value={`${selected.size} / ${targetCount}`} status={selected.size === targetCount ? 'success' : 'neutral'} />
+            ) : (
+               <ScoreDisplay label="Targets" value={targetCount} />
+            )}
+          </Scoreboard>
 
-          <div className="game-grid-container">
-            <canvas
-              ref={canvasRef}
-              width={arena.width}
-              height={arena.height}
-              onPointerDown={handleCanvasPointerDown}
-              style={{
-                width: '100%',
-                height: '100%',
-                maxWidth: `${MAX_WIDTH}px`,
-                maxHeight: `${MAX_HEIGHT}px`,
-                margin: '0 auto',
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
-                cursor: phase === 'select' ? 'pointer' : 'default',
-                background: 'var(--surface-raised)',
-                touchAction: 'manipulation',
-              }}
-            />
-          </div>
-          {phase === 'select' ? (
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
-              <small style={{ color: 'var(--text-muted)' }}>
-                Selected {selected.size}/{targetCount}
-              </small>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button
-                  type="button"
-                  className="button buttonGhost"
-                  onClick={() => setSelected(new Set())}
-                  style={{ padding: '0.5rem 1rem' }}
-                >
-                  Clear
-                </button>
-                <button
-                  type="button"
-                  className="button"
-                  disabled={selected.size !== targetCount}
-                  onClick={() => evaluateSelection(selected)}
-                  style={{ padding: '0.5rem 1.5rem' }}
-                >
-                  Submit
-                </button>
-              </div>
+          <div className="game-content">
+            <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: 0, fontSize: '1rem' }}>
+              {phase === 'highlight'
+                ? `Memorize ${targetCount} targets`
+                : phase === 'moving'
+                  ? 'Track while circles move'
+                  : `Select ${targetCount} targets, then submit`}
+            </p>
+
+            <div className="game-grid-container" style={{ flex: 1 }}>
+              <canvas
+                ref={canvasRef}
+                width={arena.width}
+                height={arena.height}
+                onPointerDown={handleCanvasPointerDown}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  maxWidth: `${MAX_WIDTH}px`,
+                  maxHeight: `${MAX_HEIGHT}px`,
+                  margin: '0 auto',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border)',
+                  cursor: phase === 'select' ? 'pointer' : 'default',
+                  background: 'var(--surface-raised)',
+                  touchAction: 'manipulation',
+                }}
+              />
             </div>
-          ) : null}
+            {phase === 'select' && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className="button buttonGhost"
+                    onClick={() => setSelected(new Set())}
+                    style={{ padding: '0.5rem 1rem' }}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    className="button"
+                    disabled={selected.size !== targetCount}
+                    onClick={() => evaluateSelection(selected)}
+                    style={{ padding: '0.5rem 1.5rem' }}
+                  >
+                    Submit
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

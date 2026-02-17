@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import LivesDisplay from '@/components/LivesDisplay';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import Scoreboard from '@/components/Scoreboard';
 import TestStartScreen from '@/components/TestStartScreen';
 
 const WORDS = Array.from(new Set([
@@ -92,37 +93,42 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
 
   return (
     <div className="game-container">
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 'clamp(0.5rem, 2vw, 1.5rem)', flexWrap: 'wrap' }}>
-          <ScoreDisplay label="Score" value={score} status="success" />
-          <ScoreDisplay label="Round" value={round} status="neutral" />
+      {!started ? (
+        <div className="game-content">
+          <TestStartScreen
+            description={definition.description}
+            onStart={() => setStarted(true)}
+          />
         </div>
-        <LivesDisplay lives={lives} />
-      </div>
-
-      {started ? (
+      ) : (
         <>
-          <div
-            className="game-grid-container"
-            style={{
-              border: '1px solid var(--border)',
-              borderRadius: '14px',
-              background: 'var(--surface-raised)',
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 'clamp(1.8rem, 8vw, 3.5rem)', fontFamily: 'var(--font-mono)', textAlign: 'center' }}>{word}</h2>
-          </div>
+          <Scoreboard>
+            <ScoreDisplay label="Score" value={score} status="success" />
+            <ScoreDisplay label="Round" value={round} status="neutral" />
+            <LivesDisplay lives={lives} />
+          </Scoreboard>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.8rem', flexShrink: 0 }}>
-            <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
-            <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
+          <div className="game-content">
+            <div
+              style={{
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+                background: 'var(--surface-raised)',
+                width: '100%',
+                maxWidth: '500px',
+                padding: 'clamp(2rem, 8vh, 4rem) 1rem',
+                marginInline: 'auto'
+              }}
+            >
+              <h2 style={{ margin: 0, fontSize: 'clamp(1.8rem, 8vw, 3rem)', fontFamily: 'var(--font-mono)', textAlign: 'center', fontWeight: 600 }}>{word}</h2>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', maxWidth: '400px', width: '100%', marginInline: 'auto' }}>
+              <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
+              <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
+            </div>
           </div>
         </>
-      ) : (
-        <TestStartScreen
-          description={definition.description}
-          onStart={() => setStarted(true)}
-        />
       )}
     </div>
   );
