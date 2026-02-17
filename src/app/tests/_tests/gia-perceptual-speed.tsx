@@ -36,8 +36,8 @@ function makeRoundRaw(): Round {
   for (let i = 0; i < numSame; i += 1) {
     const letter = matchingLetters[i];
     columns.push({
-      top: letter.toLowerCase(),
-      bottom: letter.toUpperCase(),
+      top: Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase(),
+      bottom: Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase(),
       same: true,
     });
   }
@@ -45,8 +45,8 @@ function makeRoundRaw(): Round {
   while (columns.length < COLUMN_COUNT) {
     const [a, b] = pickUniqueLetters(2);
     columns.push({
-      top: a.toLowerCase(),
-      bottom: b.toUpperCase(),
+      top: Math.random() < 0.5 ? a.toLowerCase() : a.toUpperCase(),
+      bottom: Math.random() < 0.5 ? b.toLowerCase() : b.toUpperCase(),
       same: false,
     });
   }
@@ -153,29 +153,23 @@ export default function GiaPerceptualSpeedTest({ definition, onComplete }: TestG
                 style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
-                  gap: 'clamp(0.6rem, 2vw, 1rem)',
-                  width: '100%',
-                  maxWidth: '600px'
+                  gap: '1.73rem',
+                  width: 'fit-content'
                 }}
               >
                 {round.columns.map((column, index) => (
                   <div
                     key={index}
                     style={{
-                      border: '1px solid var(--border)',
-                      borderRadius: '12px',
-                      padding: 'clamp(1rem, 4vw, 2rem) 0',
                       textAlign: 'center',
                       fontFamily: 'var(--font-mono)',
                       fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
                       fontWeight: 600,
                       display: 'grid',
-                      gap: '0.5rem',
-                      background: 'var(--surface-raised)',
+                      gap: '1.125rem',
                     }}
                   >
                     <span>{column.top}</span>
-                    <div style={{ height: '1px', background: 'var(--border)', width: '40%', marginInline: 'auto', opacity: 0.5 }} />
                     <span>{column.bottom}</span>
                   </div>
                 ))}

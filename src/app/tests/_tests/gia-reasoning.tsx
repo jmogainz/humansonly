@@ -11,26 +11,9 @@ import TestStartScreen from '@/components/TestStartScreen';
 import { BASE_SYNONYM_BY_BASE } from './reasoningSynonyms';
 
 const NAMES = [
-  'Alex', 'Noah', 'Maya', 'Leah', 'Jamal', 'Priya', 'Owen', 'Ava', 'Dylan', 'Sofia',
-  'Ethan', 'Lena', 'Mateo', 'Iris', 'Jonah', 'Nina', 'Leo', 'Nora', 'Milo', 'Ruby',
-  'Zane', 'Aria', 'Kian', 'Sara', 'Ravi', 'Elena', 'Kai', 'Jade', 'Aiden', 'Mina',
-  'Yara', 'Hugo', 'Layla', 'Isaac', 'Tara', 'Zoya', 'Rohan', 'Liam', 'Cleo', 'Eli',
-  'Amara', 'Caleb', 'Elias', 'Hana', 'Jude', 'Kira', 'Luka', 'Mira', 'Nico', 'Sasha',
-  'Arjun', 'Beatrice', 'Chen', 'Dante', 'Esme', 'Finn', 'Gia', 'Hiro', 'Ines', 'Jasper',
-  'Kenza', 'Lior', 'Malik', 'Noa', 'Oscar', 'Paloma', 'Quinn', 'Remy', 'Soren', 'Talia',
-  'Uma', 'Vigo', 'Wren', 'Xander', 'Yuna', 'Zayd', 'Alba', 'Bodhi', 'Cora', 'Dax',
-  'Elodie', 'Felix', 'Gwen', 'Ida', 'Jace', 'Kaia', 'Lenz', 'Maia', 'Noel', 'Opal',
-  'Pax', 'Rumi', 'Silas', 'Thea', 'Uri', 'Veda', 'Wolf', 'Xena', 'Zion', 'Amos',
-  'Anya', 'Bohan', 'Celia', 'Dion', 'Elowen', 'Farrah', 'Gideon', 'Hester', 'Ilya', 'Juno',
-  'Kael', 'Lyra', 'Mael', 'Naya', 'Orion', 'Petra', 'Quell', 'Rhys', 'Sia', 'Titus',
-  'Uriah', 'Vey', 'Wyatt', 'Xyla', 'Yara', 'Zeno', 'Ansel', 'Bria', 'Cian', 'Della',
-  'Enzo', 'Flora', 'Gavin', 'Halle', 'Isla', 'Jett', 'Kaya', 'Lachlan', 'Maive', 'Nash',
-  'Oona', 'Pierce', 'Quinn', 'Reed', 'Selene', 'Teagan', 'Ulysses', 'Vania', 'Wells', 'Xion',
-  'Yvaine', 'Zora', 'Archer', 'Blaire', 'Callum', 'Daphne', 'Ewan', 'Faye', 'Grant', 'Hazel',
-  'Ivan', 'Jade', 'Knox', 'Lumi', 'Miro', 'Nell', 'Otto', 'Pippa', 'Quincy', 'Ria',
-  'Stellan', 'Tessa', 'Usher', 'Vesper', 'Willa', 'Xavi', 'Yosef', 'Zosia', 'Abner', 'Blythe',
-  'Cassian', 'Dora', 'Emrys', 'Fleur', 'Gaius', 'Hope', 'Ivor', 'Joy', 'Kit', 'Lark',
-  'Magnus', 'Nellis', 'Odin', 'Pearl', 'Quill', 'Reeve', 'Saffron', 'Thane', 'Ursa', 'Valen',
+  // Easter eggs + cool names.
+  'Bob', 'Maurice', 'Parker', 'Jacob', 'Drake', 'Braden',
+  'Xion', 'Jade', 'Darrow', 'Pax', 'Orion', 'Virginia', 'Cassius', 'Sevro',
 ];
 const NAME_POOL = Array.from(new Set(NAMES));
 

@@ -283,8 +283,8 @@ function sanitizeWordGroups(rawGroups: string[][]): string[][] {
       for (const word of group) {
         const normalized = normalizeWord(word);
         if (!normalized) continue;
-        // Keep simple alphabetic tokens (plus spaces/hyphens/apostrophes) for consistency.
-        if (!/^[a-z][a-z' -]*$/.test(normalized)) continue;
+        // Keep simple single-word alphabetic tokens (allowing apostrophes/hyphens).
+        if (!/^[a-z][a-z'-]*$/.test(normalized)) continue;
         if (UNCOMMON_WORD_MEANING_WORDS.has(normalized)) continue;
         if (seen.has(normalized)) continue;
         seen.add(normalized);
@@ -621,10 +621,10 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(1, minmax(0, 1fr))',
-                gap: 'clamp(0.6rem, 2vw, 1rem)',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gap: 'clamp(0.4rem, 2vw, 0.75rem)',
                 width: '100%',
-                maxWidth: '400px',
+                maxWidth: '560px',
                 marginInline: 'auto'
               }}
             >
@@ -636,9 +636,13 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
                   onClick={() => answer(word)}
                   style={{
                     textTransform: 'capitalize',
-                    padding: '1.25rem',
-                    fontSize: 'clamp(1.1rem, 5vw, 1.4rem)',
-                    borderRadius: '12px'
+                    padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(0.25rem, 1.5vw, 0.75rem)',
+                    fontSize: 'clamp(0.8rem, 3.5vw, 1.2rem)',
+                    borderRadius: '12px',
+                    wordBreak: 'break-word',
+                    hyphens: 'auto',
+                    textAlign: 'center',
+                    lineHeight: 1.2,
                   }}
                 >
                   {word}
