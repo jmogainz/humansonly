@@ -2,7 +2,7 @@
 
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, generateRecentUnique, shuffle } from '@/lib/utils';
+import { randomInt, generateRecentUnique, generateSessionUnique, shuffle } from '@/lib/utils';
 import Timer, { formatTime } from '@/components/Timer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Scoreboard from '@/components/Scoreboard';
@@ -640,11 +640,16 @@ function makeRoundRaw(): Round {
   };
 }
 
-function makeRound(): Round {
-  return generateRecentUnique(
-    'gia-reasoning',
-    15,
-    makeRoundRaw,
+function makeRound(seenSignatures: Set<string>): Round {
+  return generateSessionUnique(
+    seenSignatures,
+    () =>
+      generateRecentUnique(
+        'gia-reasoning',
+        15,
+        makeRoundRaw,
+        (r) => r.signature
+      ),
     (r) => r.signature
   );
 }
@@ -677,7 +682,7 @@ function FitText({ text, sizeText }: { text: string; sizeText: string }) {
     const ro = new ResizeObserver(fit);
     ro.observe(parent);
     return () => ro.disconnect();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
@@ -707,7 +712,8 @@ function FitText({ text, sizeText }: { text: string; sizeText: string }) {
 }
 
 export default function GiaReasoningTest({ definition, onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeRound());
+  const seenRoundSignaturesRef = useRef<Set<string>>(new Set());
+  const [round, setRound] = useState<Round>(() => makeRound(seenRoundSignaturesRef.current));
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [netStatus, setNetStatus] = useState<'success' | 'danger' | 'neutral'>('neutral');
@@ -764,7 +770,7 @@ export default function GiaReasoningTest({ definition, onComplete }: TestGamePro
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
-    setRound(makeRound());
+    setRound(makeRound(seenRoundSignaturesRef.current));
     setPhase('statement');
   };
 

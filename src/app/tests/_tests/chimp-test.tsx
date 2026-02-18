@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { shuffle } from '@/lib/utils';
+import { shuffle, generateSessionUnique } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
 import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
@@ -17,7 +17,7 @@ type Cell = {
 const GRID_SIZE = 5;
 const MAX_LEVEL = GRID_SIZE * GRID_SIZE;
 
-function makeLevel(level: number): Cell[] {
+function makeLevelRaw(level: number): Cell[] {
   const total = GRID_SIZE * GRID_SIZE;
   const count = Math.min(level, total);
   const numbers = shuffle(Array.from({ length: total }, (_, index) => index)).slice(0, count);
@@ -30,11 +30,24 @@ function makeLevel(level: number): Cell[] {
   }));
 }
 
+function levelSignature(cells: Cell[]): string {
+  return cells.map((cell) => (cell.number === null ? '_' : String(cell.number))).join('|');
+}
+
+function makeLevel(level: number, seenSignatures: Set<string>): Cell[] {
+  return generateSessionUnique(
+    seenSignatures,
+    () => makeLevelRaw(level),
+    levelSignature
+  );
+}
+
 export default function ChimpTest({ definition, onComplete }: TestGameProps) {
+  const seenLevelSignaturesRef = useRef<Set<string>>(new Set());
   const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(4);
   const [strikes, setStrikes] = useState(0);
-  const [cells, setCells] = useState<Cell[]>(() => makeLevel(4));
+  const [cells, setCells] = useState<Cell[]>(() => makeLevel(4, seenLevelSignaturesRef.current));
   const [phase, setPhase] = useState<'show' | 'hide'>('show');
   const [nextExpected, setNextExpected] = useState(1);
   const [submitted, setSubmitted] = useState(false);
@@ -97,7 +110,7 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
 
         const nextLevel = level + 1;
         setLevel(nextLevel);
-        setCells(makeLevel(nextLevel));
+        setCells(makeLevel(nextLevel, seenLevelSignaturesRef.current));
         setNextExpected(1);
         return;
       }
@@ -108,7 +121,7 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
     const nextStrikes = strikes + 1;
     setStrikes(nextStrikes);
     if (nextStrikes < maxLives) {
-      setCells(makeLevel(level));
+      setCells(makeLevel(level, seenLevelSignaturesRef.current));
       setNextExpected(1);
     }
   };

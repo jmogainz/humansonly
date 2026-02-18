@@ -125,6 +125,34 @@ export function generateRecentUnique<T>(
   return chosen;
 }
 
+export function generateSessionUnique<T>(
+  seenSignatures: Set<string>,
+  factory: () => T,
+  signatureOf: (value: T) => string,
+  maxAttempts = 512
+): T {
+  let chosen = factory();
+  let signature = signatureOf(chosen);
+
+  if (!seenSignatures.has(signature)) {
+    seenSignatures.add(signature);
+    return chosen;
+  }
+
+  for (let attempt = 1; attempt < maxAttempts; attempt += 1) {
+    const candidate = factory();
+    const candidateSignature = signatureOf(candidate);
+    chosen = candidate;
+    signature = candidateSignature;
+    if (!seenSignatures.has(candidateSignature)) {
+      break;
+    }
+  }
+
+  seenSignatures.add(signature);
+  return chosen;
+}
+
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }

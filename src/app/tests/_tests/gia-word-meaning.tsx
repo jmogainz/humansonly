@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, shuffle, generateRecentUnique } from '@/lib/utils';
+import { randomInt, shuffle, generateRecentUnique, generateSessionUnique } from '@/lib/utils';
 import Timer, { formatTime } from '@/components/Timer';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Scoreboard from '@/components/Scoreboard';
@@ -531,17 +531,23 @@ function makeRoundRaw(): Round {
   };
 }
 
-function makeRound(): Round {
-  return generateRecentUnique(
-    'gia-word-meaning',
-    15,
-    makeRoundRaw,
+function makeRound(seenSignatures: Set<string>): Round {
+  return generateSessionUnique(
+    seenSignatures,
+    () =>
+      generateRecentUnique(
+        'gia-word-meaning',
+        15,
+        makeRoundRaw,
+        (r) => r.signature
+      ),
     (r) => r.signature
   );
 }
 
 export default function GiaWordMeaningTest({ definition, onComplete }: TestGameProps) {
-  const [round, setRound] = useState<Round>(() => makeRound());
+  const seenRoundSignaturesRef = useRef<Set<string>>(new Set());
+  const [round, setRound] = useState<Round>(() => makeRound(seenRoundSignaturesRef.current));
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [netStatus, setNetStatus] = useState<'success' | 'danger' | 'neutral'>('neutral');
@@ -594,7 +600,7 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
-    setRound(makeRound());
+    setRound(makeRound(seenRoundSignaturesRef.current));
   };
 
   return (

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { randomInt, shuffle } from '@/lib/utils';
+import { randomInt, shuffle, generateSessionUnique } from '@/lib/utils';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import Timer, { formatTime } from '@/components/Timer';
 import Scoreboard from '@/components/Scoreboard';
@@ -15,9 +15,10 @@ type Round = {
   target: string;
   row: string[];
   answer: boolean;
+  signature: string;
 };
 
-function makeRound(): Round {
+function makeRoundRaw(): Round {
   const target = SYMBOLS[randomInt(0, SYMBOLS.length - 1)];
   const include = Math.random() >= 0.5;
   const row = shuffle(Array.from({ length: 8 }, () => SYMBOLS[randomInt(0, SYMBOLS.length - 1)]));
@@ -30,14 +31,28 @@ function makeRound(): Round {
       }
     }
   }
-  return { target, row, answer: include };
+  return {
+    target,
+    row,
+    answer: include,
+    signature: `${target}|${include ? '1' : '0'}|${row.join('')}`,
+  };
+}
+
+function makeRound(seenSignatures: Set<string>): Round {
+  return generateSessionUnique(
+    seenSignatures,
+    makeRoundRaw,
+    (round) => round.signature
+  );
 }
 
 export default function SymbolSearchTest({ definition, onComplete }: TestGameProps) {
   const [started, setStarted] = useState(false);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
-  const [round, setRound] = useState<Round>(() => makeRound());
+  const seenRoundSignaturesRef = useRef<Set<string>>(new Set());
+  const [round, setRound] = useState<Round>(() => makeRound(seenRoundSignaturesRef.current));
   const [finished, setFinished] = useState(false);
   const submittedRef = useRef(false);
   const statsRef = useRef({ score: 0, attempts: 0 });
@@ -96,7 +111,7 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
     }
     setAttempts(nextAttempts);
     setScore(nextScore);
-    setRound(makeRound());
+    setRound(makeRound(seenRoundSignaturesRef.current));
   };
 
   const incorrect = attempts - score;

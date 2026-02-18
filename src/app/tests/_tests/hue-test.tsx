@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
-import { randomInt } from '@/lib/utils';
+import { randomInt, generateSessionUnique } from '@/lib/utils';
 import TestStartScreen from '@/components/TestStartScreen';
 
 type Round = {
@@ -12,9 +12,10 @@ type Round = {
   hue: number;
   oddHue: number;
   oddIndex: number;
+  signature: string;
 };
 
-function makeRound(level: number): Round {
+function makeRoundRaw(level: number): Round {
   const grid = Math.min(6, 2 + Math.floor((level - 1) / 2));
   const total = grid * grid;
   const hue = randomInt(0, 359);
@@ -27,13 +28,23 @@ function makeRound(level: number): Round {
     hue,
     oddHue,
     oddIndex,
+    signature: `${grid}|${hue}|${delta.toFixed(4)}|${oddIndex}`,
   };
 }
 
+function makeRound(level: number, seenSignatures: Set<string>): Round {
+  return generateSessionUnique(
+    seenSignatures,
+    () => makeRoundRaw(level),
+    (round) => round.signature
+  );
+}
+
 export default function HueTest({ definition, onComplete }: TestGameProps) {
+  const seenRoundSignaturesRef = useRef<Set<string>>(new Set());
   const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(1);
-  const [round, setRound] = useState<Round>(() => makeRound(1));
+  const [round, setRound] = useState<Round>(() => makeRound(1, seenRoundSignaturesRef.current));
 
   const total = round.grid * round.grid;
 
@@ -46,7 +57,7 @@ export default function HueTest({ definition, onComplete }: TestGameProps) {
     if (index === round.oddIndex) {
       const nextLevel = level + 1;
       setLevel(nextLevel);
-      setRound(makeRound(nextLevel));
+      setRound(makeRound(nextLevel, seenRoundSignaturesRef.current));
       return;
     }
 

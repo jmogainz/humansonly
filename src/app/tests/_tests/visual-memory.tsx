@@ -1,30 +1,53 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
-import { shuffle } from '@/lib/utils';
+import { shuffle, generateSessionUnique } from '@/lib/utils';
 import LivesDisplay from '@/components/LivesDisplay';
 import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
 import { useFeedback } from '@/components/FeedbackContext';
 
-function roundConfig(level: number) {
+type RoundConfig = {
+  size: number;
+  pattern: number[];
+  signature: string;
+};
+
+function roundConfigRaw(level: number): RoundConfig {
   const size = Math.min(7, 3 + Math.floor((level - 1) / 3));
   const total = size * size;
   const flashCount = Math.min(total - 1, 2 + level);
   const pattern = shuffle(Array.from({ length: total }, (_, index) => index)).slice(0, flashCount);
-  return { size, pattern };
+  return {
+    size,
+    pattern,
+    signature: `${size}|${[...pattern].sort((a, b) => a - b).join(',')}`,
+  };
+}
+
+function roundConfig(level: number, seenSignatures: Set<string>): RoundConfig {
+  return generateSessionUnique(
+    seenSignatures,
+    () => roundConfigRaw(level),
+    (round) => round.signature
+  );
 }
 
 export default function VisualMemoryTest({ definition, onComplete }: TestGameProps) {
+  const seenRoundSignaturesRef = useRef<Set<string>>(new Set());
+  const initialRoundRef = useRef<RoundConfig | null>(null);
+  if (!initialRoundRef.current) {
+    initialRoundRef.current = roundConfig(1, seenRoundSignaturesRef.current);
+  }
   const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(1);
   const [lives, setLives] = useState(3);
   const [phase, setPhase] = useState<'show' | 'input'>('show');
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [pattern, setPattern] = useState<number[]>(() => roundConfig(1).pattern);
-  const [gridSize, setGridSize] = useState(roundConfig(1).size);
+  const [pattern, setPattern] = useState<number[]>(() => initialRoundRef.current?.pattern ?? []);
+  const [gridSize, setGridSize] = useState(initialRoundRef.current?.size ?? 3);
   const [submitted, setSubmitted] = useState(false);
   const { triggerFeedback } = useFeedback();
 
@@ -50,7 +73,7 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
   const patternSet = useMemo(() => new Set(pattern), [pattern]);
 
   const nextRound = (nextLevel: number) => {
-    const next = roundConfig(nextLevel);
+    const next = roundConfig(nextLevel, seenRoundSignaturesRef.current);
     setGridSize(next.size);
     setPattern(next.pattern);
     setSelected(new Set());
