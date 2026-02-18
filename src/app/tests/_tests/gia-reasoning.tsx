@@ -13,7 +13,10 @@ import { BASE_SYNONYM_BY_BASE } from './reasoningSynonyms';
 const NAMES = [
   // Easter eggs + cool names.
   'Bob', 'Maurice', 'Parker', 'Jacob', 'Drake', 'Braden',
-  'Xion', 'Jade', 'Darrow', 'Pax', 'Orion', 'Virginia', 'Cassius', 'Sevro',
+  'Xion', 'Jade', 'Darrow', 'Pax', 'Orion', 'Mustang', 'Cassius', 'Sevro',
+  'Ragnar', 'Victra', 'Roque', 'Lyria', 'Kavax', 'Aja', 'Holiday', 'Atlas',
+  'Kaladin', 'Adolin', 'Shallan', 'Jasnah', 'Renarin', 'Navani', 'Szeth', 'Teft', 'Lopen', 'Lift',
+  'Paul', 'Chani', 'Stilgar', 'Duncan', 'Gurney', 'Irulan', 'Leto', 'Alia', 'Jamis', 'Thufir', 'Feyd',
 ];
 const NAME_POOL = Array.from(new Set(NAMES));
 
@@ -280,9 +283,9 @@ const QUALITY_ADJECTIVE_PAIRS: [string, string, string][] = (() => {
   return output;
 })();
 
-type ReasoningDifficulty = 'easy' | 'medium' | 'hard' | 'tricky';
+type ReasoningDifficulty = 'easy' | 'hard';
 
-const REASONING_DIFFICULTIES: ReasoningDifficulty[] = ['easy', 'medium', 'hard', 'tricky'];
+const REASONING_DIFFICULTIES: ReasoningDifficulty[] = ['easy', 'hard'];
 
 const ADVANCED_REASONING_BASES = new Set([
   'treacherous',
@@ -418,9 +421,7 @@ type BaseVariant = {
 
 function synonymProbabilityForDifficulty(difficulty: ReasoningDifficulty): number {
   if (difficulty === 'easy') return 0.35;
-  if (difficulty === 'medium') return 0.55;
-  if (difficulty === 'hard') return 0.75;
-  return 0.88;
+  return 0.8;
 }
 
 function getBaseVariants(base: string): string[] {
@@ -487,43 +488,26 @@ function pairComplexityScore([base, comparative, opposite]: [string, string, str
 
 function classifyPairDifficulty(pair: [string, string, string]): ReasoningDifficulty {
   const score = pairComplexityScore(pair);
-  if (score <= 1) return 'easy';
-  if (score === 2) return 'medium';
-  if (score === 3) return 'hard';
-  return 'tricky';
+  if (score <= 2) return 'easy';
+  return 'hard';
 }
 
 const PAIRS_BY_DIFFICULTY: Record<ReasoningDifficulty, [string, string, string][]> = {
   easy: [],
-  medium: [],
   hard: [],
-  tricky: [],
 };
 
 for (const pair of QUALITY_ADJECTIVE_PAIRS) {
   PAIRS_BY_DIFFICULTY[classifyPairDifficulty(pair)].push(pair);
 }
 
-function pickReasoningDifficulty(): ReasoningDifficulty {
-  return generateRecentUnique(
-    'gia-reasoning-difficulty',
-    3,
-    () => REASONING_DIFFICULTIES[randomInt(0, REASONING_DIFFICULTIES.length - 1)],
-    (d) => d
-  );
-}
-
 function statementFormsForDifficulty(difficulty: ReasoningDifficulty): number[] {
   if (difficulty === 'easy') return [0];
-  if (difficulty === 'medium') return [0, 1];
-  if (difficulty === 'hard') return [1, 2];
   return [1, 2];
 }
 
 function questionFormsForDifficulty(difficulty: ReasoningDifficulty): number[] {
   if (difficulty === 'easy') return [0, 1];
-  if (difficulty === 'medium') return [0, 1];
-  if (difficulty === 'hard') return [0, 1, 2];
   return [1, 2];
 }
 
@@ -536,7 +520,7 @@ type Round = {
   signature: string;
 };
 
-function makeRoundRaw(): Round {
+function makeRoundRaw(difficulty: ReasoningDifficulty): Round {
   const nameA = generateRecentUnique(
     'gia-reasoning-names',
     20,
@@ -547,11 +531,14 @@ function makeRoundRaw(): Round {
   while (nameB === nameA) {
     nameB = NAME_POOL[randomInt(0, NAME_POOL.length - 1)];
   }
-  const difficulty = pickReasoningDifficulty();
   const difficultyPool = PAIRS_BY_DIFFICULTY[difficulty];
-  const fallbackPool =
-    PAIRS_BY_DIFFICULTY.medium.length > 0 ? PAIRS_BY_DIFFICULTY.medium : QUALITY_ADJECTIVE_PAIRS;
-  const pairPool = difficultyPool.length > 0 ? difficultyPool : fallbackPool;
+  const fallbackPool = difficulty === 'easy' ? PAIRS_BY_DIFFICULTY.hard : PAIRS_BY_DIFFICULTY.easy;
+  const pairPool =
+    difficultyPool.length > 0
+      ? difficultyPool
+      : fallbackPool.length > 0
+        ? fallbackPool
+        : QUALITY_ADJECTIVE_PAIRS;
   const [base, comparative, oppositeComp] = pickFrom(pairPool);
 
   // Statement forms:
@@ -603,15 +590,13 @@ function makeRoundRaw(): Round {
       base,
       comparative,
       difficulty,
-      difficulty === 'hard' || difficulty === 'tricky'
+      difficulty === 'hard'
     );
     questionAdj = descriptor.text;
     questionKey = `q0:${descriptor.key}`;
     answer = superior;
   } else if (questionForm === 1) {
-    const useSynonymInversePrompt =
-      difficulty !== 'easy' &&
-      Math.random() < (difficulty === 'medium' ? 0.45 : difficulty === 'hard' ? 0.68 : 0.82);
+    const useSynonymInversePrompt = difficulty === 'hard' && Math.random() < 0.72;
     if (useSynonymInversePrompt) {
       const descriptor = buildBaseDescriptor('less', base, difficulty, true);
       questionAdj = descriptor.text;
@@ -640,14 +625,28 @@ function makeRoundRaw(): Round {
   };
 }
 
-function makeRound(seenSignatures: Set<string>): Round {
+type ReasoningDifficultyCounts = Record<ReasoningDifficulty, number>;
+
+function pickBalancedReasoningDifficulty(counts: ReasoningDifficultyCounts): ReasoningDifficulty {
+  if (counts.easy < counts.hard) return 'easy';
+  if (counts.hard < counts.easy) return 'hard';
+  return REASONING_DIFFICULTIES[randomInt(0, REASONING_DIFFICULTIES.length - 1)];
+}
+
+function reserveNextReasoningDifficulty(counts: ReasoningDifficultyCounts): ReasoningDifficulty {
+  const next = pickBalancedReasoningDifficulty(counts);
+  counts[next] += 1;
+  return next;
+}
+
+function makeRound(seenSignatures: Set<string>, difficulty: ReasoningDifficulty): Round {
   return generateSessionUnique(
     seenSignatures,
     () =>
       generateRecentUnique(
         'gia-reasoning',
         15,
-        makeRoundRaw,
+        () => makeRoundRaw(difficulty),
         (r) => r.signature
       ),
     (r) => r.signature
@@ -713,7 +712,11 @@ function FitText({ text, sizeText }: { text: string; sizeText: string }) {
 
 export default function GiaReasoningTest({ definition, onComplete }: TestGameProps) {
   const seenRoundSignaturesRef = useRef<Set<string>>(new Set());
-  const [round, setRound] = useState<Round>(() => makeRound(seenRoundSignaturesRef.current));
+  const difficultyCountsRef = useRef<ReasoningDifficultyCounts>({ easy: 0, hard: 0 });
+  const [round, setRound] = useState<Round>(() => {
+    const initialDifficulty = reserveNextReasoningDifficulty(difficultyCountsRef.current);
+    return makeRound(seenRoundSignaturesRef.current, initialDifficulty);
+  });
   const [correct, setCorrect] = useState(0);
   const [incorrect, setIncorrect] = useState(0);
   const [netStatus, setNetStatus] = useState<'success' | 'danger' | 'neutral'>('neutral');
@@ -770,7 +773,8 @@ export default function GiaReasoningTest({ definition, onComplete }: TestGamePro
     }
     setCorrect(statsRef.current.correct);
     setIncorrect(statsRef.current.incorrect);
-    setRound(makeRound(seenRoundSignaturesRef.current));
+    const nextDifficulty = reserveNextReasoningDifficulty(difficultyCountsRef.current);
+    setRound(makeRound(seenRoundSignaturesRef.current, nextDifficulty));
     setPhase('statement');
   };
 
