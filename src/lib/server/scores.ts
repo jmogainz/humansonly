@@ -60,6 +60,17 @@ type ScoreStatsRow = {
   stddev_score: number | null;
 };
 
+type ClaimableGuestScoreRow = {
+  id: string;
+  test_slug: string;
+  score_value: number;
+};
+
+type BestScoreRow = {
+  test_slug: string;
+  best_score: number;
+};
+
 function scheduleGuestScoreCleanup(intervalMs: number): void {
   nextGuestScoreCleanupAt = Date.now() + intervalMs;
 }
@@ -431,23 +442,97 @@ export async function claimGuestScores(guestId: string, userId: string): Promise
 
   await ensureDbSchema();
   const pool = getDbPool();
+  const client = await pool.connect();
+  const movedBestByTest = new Map<string, number>();
+  const existingBestByTest = new Map<string, number>();
+  let claimedCount = 0;
 
-  const result = await pool.query(
-    `with moved as (
-       insert into scores (user_id, test_slug, score_value, score_unit, metadata, created_at)
-       select $2, test_slug, score_value, score_unit, metadata, created_at
+  try {
+    await client.query('BEGIN');
+
+    const claimable = await client.query<ClaimableGuestScoreRow>(
+      `select id, test_slug, score_value::float8 as score_value
        from guest_scores
        where guest_id=$1 and claimed_by is null
-       returning 1
-     )
-     update guest_scores
-     set claimed_by=$2
-     where guest_id=$1 and claimed_by is null
-     returning 1`,
-    [guestId, userId]
-  );
+       for update`,
+      [guestId]
+    );
 
-  return result.rowCount ?? 0;
+    if (!claimable.rowCount) {
+      await client.query('COMMIT');
+      return 0;
+    }
+
+    const claimableIds = claimable.rows.map((row) => row.id);
+
+    for (const row of claimable.rows) {
+      const test = getTestBySlug(row.test_slug);
+      if (!test) continue;
+      const currentBest = movedBestByTest.get(row.test_slug);
+      if (currentBest === undefined || isPersonalBest(test.direction, currentBest, row.score_value)) {
+        movedBestByTest.set(row.test_slug, row.score_value);
+      }
+    }
+
+    const impactedTestSlugs = [...movedBestByTest.keys()];
+    if (impactedTestSlugs.length > 0) {
+      const existing = await client.query<BestScoreRow>(
+        `select s.test_slug,
+                case t.direction
+                  when 'higher' then max(s.score_value)
+                  else min(s.score_value)
+                end::float8 as best_score
+         from scores s
+         join test_definitions t on t.slug = s.test_slug
+         where s.user_id=$1 and s.test_slug = any($2::text[])
+         group by s.test_slug, t.direction`,
+        [userId, impactedTestSlugs]
+      );
+      for (const row of existing.rows) {
+        existingBestByTest.set(row.test_slug, row.best_score);
+      }
+    }
+
+    await client.query(
+      `insert into scores (user_id, test_slug, score_value, score_unit, metadata, created_at)
+       select $2, test_slug, score_value, score_unit, metadata, created_at
+       from guest_scores
+       where id = any($1::uuid[])`,
+      [claimableIds, userId]
+    );
+
+    const claimed = await client.query(
+      `update guest_scores
+       set claimed_by=$2
+       where id = any($1::uuid[])`,
+      [claimableIds, userId]
+    );
+    claimedCount = claimed.rowCount ?? 0;
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  const redis = getLeaderboardRedis();
+  if (!redis || claimedCount === 0) {
+    return claimedCount;
+  }
+
+  for (const [testSlug, movedBest] of movedBestByTest) {
+    const test = getTestBySlug(testSlug);
+    if (!test?.leaderboardEnabled) continue;
+
+    const existingBest = existingBestByTest.get(testSlug) ?? null;
+    if (!isPersonalBest(test.direction, existingBest, movedBest)) continue;
+
+    await updateLeaderboardBest(redis, testSlug, userId, movedBest, test.direction);
+  }
+
+  return claimedCount;
 }
 
 export async function getBestScoresForUser(userId: string): Promise<Array<{ testSlug: string; bestScore: number; scoreUnit: string }>> {
