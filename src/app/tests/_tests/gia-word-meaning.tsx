@@ -78,7 +78,7 @@ const WORD_GROUPS: string[][] = [
   ['toad', 'frog', 'newt', 'salamander', 'caecilian'],
   ['willow', 'elm', 'ash', 'poplar', 'beech'],
   ['cactus', 'succulent', 'aloe', 'agave', 'yucca'],
-  ['fern', 'moss', 'lichen', 'fungus', 'mold'],
+  ['fern', 'moss', 'mushroom', 'fungus', 'mildew'],
   ['galaxy', 'nebula', 'star', 'planet', 'comet'],
   ['asteroid', 'meteor', 'quasar', 'pulsar', 'black hole'],
   ['volcano', 'geyser', 'vent', 'crater', 'caldera'],
