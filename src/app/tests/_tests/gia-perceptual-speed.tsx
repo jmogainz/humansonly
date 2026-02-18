@@ -168,7 +168,7 @@ export default function GiaPerceptualSpeedTest({ definition, onComplete }: TestG
                     key={index}
                     style={{
                       textAlign: 'center',
-                      fontFamily: 'var(--font-mono)',
+                      fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                       fontSize: 'clamp(1.5rem, 6vw, 2.5rem)',
                       fontWeight: 600,
                       display: 'grid',

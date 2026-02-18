@@ -87,7 +87,7 @@ function LetterView({ value }: { value: LetterInstance }) {
     <span
       style={{
         display: 'inline-block',
-        fontFamily: 'var(--font-mono)',
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         fontSize: 'clamp(1.2rem, 8cqh, 2rem)',
         transform: `rotate(${value.rotation * 90}deg) scaleX(${value.mirrored ? -1 : 1})`,
       }}

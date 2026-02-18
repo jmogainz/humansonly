@@ -627,10 +627,10 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gridTemplateColumns: 'repeat(3, minmax(max-content, 1fr))',
                 gap: 'clamp(0.4rem, 2vw, 0.75rem)',
                 width: '100%',
-                maxWidth: '560px',
+                maxWidth: '640px',
                 marginInline: 'auto'
               }}
             >
@@ -642,13 +642,13 @@ export default function GiaWordMeaningTest({ definition, onComplete }: TestGameP
                   onClick={() => answer(word)}
                   style={{
                     textTransform: 'capitalize',
-                    padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(0.25rem, 1.5vw, 0.75rem)',
-                    fontSize: 'clamp(0.8rem, 3.5vw, 1.2rem)',
+                    padding: 'clamp(0.75rem, 3vw, 1.25rem) clamp(0.5rem, 2vw, 1rem)',
+                    fontSize: 'clamp(0.75rem, 3vw, 1.1rem)',
                     borderRadius: '12px',
-                    wordBreak: 'break-word',
-                    hyphens: 'auto',
+                    whiteSpace: 'nowrap',
                     textAlign: 'center',
-                    lineHeight: 1.2,
+                    lineHeight: 1.4,
+                    fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
                   }}
                 >
                   {word}

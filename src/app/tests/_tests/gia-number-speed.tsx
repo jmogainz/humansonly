@@ -148,7 +148,7 @@ export default function GiaNumberSpeedTest({ definition, onComplete }: TestGameP
                   key={value}
                   type="button"
                   className="game-tile"
-                  style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)', padding: '1.5rem 0', borderRadius: '14px' }}
+                  style={{ fontSize: 'clamp(1.5rem, 6vw, 2.25rem)', padding: '1.5rem 0', borderRadius: '14px', fontFamily: "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" }}
                   onClick={() => answer(value)}
                 >
                   {value}
