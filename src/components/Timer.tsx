@@ -7,10 +7,12 @@ export function formatTime(milliseconds: number): string {
     const seconds = Math.floor((total % 60_000) / 1000);
     return `${minutes}:${String(seconds).padStart(2, '0')}`;
   }
-
+  if (total >= 10_000) {
+    return String(Math.floor(total / 1000));
+  }
   const seconds = Math.floor(total / 1000);
-  const centiseconds = Math.floor((total % 1000) / 10);
-  return `${seconds}.${String(centiseconds).padStart(2, '0')}`;
+  const tenths = Math.floor((total % 1000) / 100);
+  return `${seconds}.${tenths}`;
 }
 
 type TimerProps = {

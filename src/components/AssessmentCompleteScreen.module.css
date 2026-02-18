@@ -1,0 +1,179 @@
+.complete {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  overflow-y: auto;
+  height: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 3rem;
+  animation: scaleIn 0.15s ease both;
+}
+
+.kicker {
+  margin: 0;
+  color: var(--accent);
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.completionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.checkBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.modulesBadge {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.combinedSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.combinedLabel {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.combinedScore {
+  margin: 0;
+  font-size: clamp(2.5rem, 7vw, 3.5rem);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.combinedScore small {
+  font-size: 0.32em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.pbBadge {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--border));
+  color: var(--warning);
+  border-radius: 999px;
+  padding: 0.3rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.subtestRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+  gap: 1rem;
+}
+
+.subtestRow:last-child {
+  border-bottom: none;
+}
+
+.subtestIndex {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+  width: 1rem;
+  flex-shrink: 0;
+}
+
+.subtestName {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+}
+
+.subtestScore {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.subtestScore small {
+  font-size: 0.75em;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.positive {
+  color: var(--accent);
+}
+
+.negative {
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.actions > * {
+  flex: 1;
+  min-width: 130px;
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (max-width: 640px) {
+  .complete {
+    padding: 1.25rem 1rem 2.5rem;
+    gap: 1.25rem;
+  }
+}

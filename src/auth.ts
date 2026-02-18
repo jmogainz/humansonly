@@ -18,6 +18,7 @@ if (envUrl && !process.env.NEXTAUTH_URL) {
 
 const APPLE_AUDIENCE = 'https://appleid.apple.com';
 const APPLE_CLIENT_SECRET_TTL_SECONDS = 60 * 60 * 24 * 180;
+const SESSION_MAX_AGE_SECONDS = 365 * 24 * 60 * 60;
 
 function base64UrlEncode(value: string | Buffer): string {
   return Buffer.from(value)
@@ -104,8 +105,11 @@ export const authOptions: NextAuthOptions = {
   secret: envSecret,
   session: {
     strategy: 'jwt',
-    maxAge: 10 * 24 * 60 * 60,
+    maxAge: SESSION_MAX_AGE_SECONDS,
     updateAge: 24 * 60 * 60,
+  },
+  jwt: {
+    maxAge: SESSION_MAX_AGE_SECONDS,
   },
   pages: {
     signIn: '/',

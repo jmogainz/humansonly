@@ -71,7 +71,7 @@ export default function AuthButton() {
                 setAuthError(null);
                 setPendingProvider('google');
                 try {
-                  await auth.signIn('google', { callbackUrl: '/' });
+                  await auth.signIn('google', { callbackUrl: '/profile' });
                 } catch {
                   setAuthError('Google sign-in failed.');
                   setPendingProvider(null);
@@ -124,7 +124,7 @@ export default function AuthButton() {
                 setAuthError(null);
                 setPendingProvider('apple');
                 try {
-                  await auth.signIn('apple', { callbackUrl: '/' });
+                  await auth.signIn('apple', { callbackUrl: '/profile' });
                 } catch {
                   setAuthError('Apple sign-in failed.');
                   setPendingProvider(null);

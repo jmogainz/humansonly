@@ -135,7 +135,7 @@ function MoreMenuModal({
     setAuthError(null);
     setPendingProvider(provider);
     try {
-      await auth.signIn(provider, { callbackUrl: '/' });
+      await auth.signIn(provider, { callbackUrl: '/profile' });
     } catch {
       setAuthError(`${provider.charAt(0).toUpperCase() + provider.slice(1)} sign-in failed.`);
       setPendingProvider(null);

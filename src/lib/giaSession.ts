@@ -124,4 +124,9 @@ export function startGiaAssessmentSession(): void {
   writeSession(session);
 }
 
+export function cancelGiaAssessmentSession(): void {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(STORAGE_KEY);
+}
+
 export const GIA_COMBINED_TEST_SLUG = GIA_COMBINED_SLUG;

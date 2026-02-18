@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import type { TestDefinition } from '@/lib/tests/types';
 import TestLayout from '@/components/TestLayout';
 import ResultScreen from '@/components/ResultScreen';
+import AssessmentCompleteScreen from '@/components/AssessmentCompleteScreen';
 import { useScore } from '@/hooks/useScore';
+import { useAuth } from '@/hooks/useAuth';
 import type { TestCompletePayload } from './types';
 import { TEST_COMPONENTS } from '../_tests';
 import { Spinner } from '@/components/Spinner';
@@ -13,10 +15,12 @@ import { GIA_SLUGS } from '@/constants';
 import { TEST_REGISTRY_BY_SLUG } from '@/lib/tests/registry';
 import {
   GIA_COMBINED_TEST_SLUG,
+  cancelGiaAssessmentSession,
   markGiaCombinedSubmitted,
   recordGiaSubtestScore,
   startGiaAssessmentSession,
 } from '@/lib/giaSession';
+import { formatNumber } from '@/lib/utils';
 
 type TestPageClientProps = {
   definition: TestDefinition;
@@ -27,18 +31,26 @@ type TestPageClientProps = {
 type FlowTransitionState = {
   completedCount: number;
   nextSlug: (typeof GIA_SLUGS)[number];
+  completedScore: number;
+};
+
+type AssessmentCompleteState = {
+  total: number;
+  breakdown: Record<string, number>;
+  combinedPersonalBest: boolean;
 };
 
 export default function TestPageClient({ definition, flowParam, startParam }: TestPageClientProps) {
   const Game = TEST_COMPONENTS[definition.slug];
   const router = useRouter();
+  const { user } = useAuth();
   const completionLockRef = useRef(false);
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [runId, setRunId] = useState(0);
-  const [combinedNotice, setCombinedNotice] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<TestCompletePayload | null>(null);
   const [flowTransition, setFlowTransition] = useState<FlowTransitionState | null>(null);
+  const [assessmentComplete, setAssessmentComplete] = useState<AssessmentCompleteState | null>(null);
   const [result, setResult] = useState<{
     score: number;
     label: string;
@@ -57,23 +69,22 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
 
   useEffect(() => {
     return () => {
-      if (transitionTimerRef.current) {
-        clearTimeout(transitionTimerRef.current);
-      }
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     };
   }, []);
+
+  const handleQuit = () => {
+    if (window.confirm('Quit the GIA Assessment? Your scores so far will still be saved.')) {
+      cancelGiaAssessmentSession();
+      router.push('/');
+    }
+  };
 
   const handleComplete = async (payload: TestCompletePayload) => {
     setPendingPayload(payload);
     setSubmitError(null);
-    setCombinedNotice(null);
     setFlowTransition(null);
-    setResult({
-      score: payload.score,
-      label: payload.label ?? `${payload.score} ${payload.unit}`,
-      percentile: null,
-      personalBest: false,
-    });
+    setAssessmentComplete(null);
 
     try {
       const response = await submitScore(
@@ -83,12 +94,24 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
         payload.metadata
       );
 
-      let shouldAdvanceFlow = false;
       if (isGiaFlow) {
         const combined = recordGiaSubtestScore(definition.slug, payload.score);
+
         if (!combined.accepted) {
-          setCombinedNotice('Combined GIA requires running all five modules in order from Start Assessment.');
-        } else if (combined.ready) {
+          // Out-of-order or session expired — fall through to regular result
+          setResult({
+            score: payload.score,
+            label: payload.label ?? `${payload.score} ${payload.unit}`,
+            percentile: response.percentile,
+            personalBest: response.personalBest,
+          });
+          setPendingPayload(null);
+          return;
+        }
+
+        if (combined.ready) {
+          // Last test — submit combined and show the complete screen
+          let combinedPersonalBest = false;
           try {
             const combinedResponse = await submitScore(
               GIA_COMBINED_TEST_SLUG,
@@ -97,49 +120,54 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
               { breakdown: combined.breakdown }
             );
             markGiaCombinedSubmitted();
-            setCombinedNotice(
-              `GIA Combined submitted: ${combined.total.toFixed(2)} net (${combinedResponse.personalBest ? 'new PB' : 'recorded'})`
-            );
+            combinedPersonalBest = combinedResponse.personalBest;
           } catch {
-            setCombinedNotice('GIA Combined could not sync this run. Your subtest score was saved.');
+            // Combined submission failed but we still show results
+            markGiaCombinedSubmitted();
           }
-        } else {
-          setCombinedNotice(null);
+          setAssessmentComplete({
+            total: combined.total,
+            breakdown: combined.breakdown,
+            combinedPersonalBest,
+          });
+          setPendingPayload(null);
+          return;
         }
-        shouldAdvanceFlow = combined.accepted;
-      } else {
-        setCombinedNotice(null);
-      }
 
-      if (shouldAdvanceFlow) {
+        // Intermediate test — show transition then advance
         const currentIndex = GIA_SLUGS.indexOf(definition.slug as (typeof GIA_SLUGS)[number]);
-        const nextSlug = currentIndex >= 0 ? GIA_SLUGS[currentIndex + 1] : undefined;
+        const nextSlug = GIA_SLUGS[currentIndex + 1];
         if (nextSlug) {
           setFlowTransition({
             completedCount: currentIndex + 1,
             nextSlug,
+            completedScore: payload.score,
           });
-          if (transitionTimerRef.current) {
-            clearTimeout(transitionTimerRef.current);
-          }
+          if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
           transitionTimerRef.current = setTimeout(() => {
             router.push(`/tests/${nextSlug}?flow=gia`);
-          }, 850);
+          }, 5000);
           return;
         }
       }
 
-      setResult((prev) => ({
-        score: prev?.score ?? payload.score,
-        label: prev?.label ?? payload.label ?? `${payload.score} ${payload.unit}`,
+      // Standard (non-flow) result
+      setResult({
+        score: payload.score,
+        label: payload.label ?? `${payload.score} ${payload.unit}`,
         percentile: response.percentile,
         personalBest: response.personalBest,
-      }));
+      });
       setPendingPayload(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to submit score';
-      setCombinedNotice(null);
       setSubmitError(`${message}. Your local result is shown below.`);
+      setResult({
+        score: payload.score,
+        label: payload.label ?? `${payload.score} ${payload.unit}`,
+        percentile: null,
+        personalBest: false,
+      });
     }
   };
 
@@ -151,34 +179,153 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
     );
   }
 
-  if (flowTransition) {
-    const nextTestName = TEST_REGISTRY_BY_SLUG.get(flowTransition.nextSlug)?.name.replace('GIA ', '') ?? flowTransition.nextSlug;
+  // ── Assessment complete screen ──────────────────────────────────────────
+  if (assessmentComplete) {
     return (
-      <TestLayout title={definition.name} subtitle={definition.description}>
-        <div className="animate-in" style={{ display: 'grid', gap: '0.9rem' }}>
+      <TestLayout title="GIA Assessment" subtitle="Cognitive Battery · 5/5 Complete">
+        <AssessmentCompleteScreen
+          breakdown={assessmentComplete.breakdown}
+          total={assessmentComplete.total}
+          combinedPersonalBest={assessmentComplete.combinedPersonalBest}
+          displayName={user?.name ?? null}
+        />
+      </TestLayout>
+    );
+  }
+
+  // ── Between-test transition ─────────────────────────────────────────────
+  if (flowTransition) {
+    const nextTestName =
+      TEST_REGISTRY_BY_SLUG.get(flowTransition.nextSlug)?.name.replace('GIA ', '') ??
+      flowTransition.nextSlug;
+    const completedTestName =
+      definition.name.replace('GIA ', '');
+    const scoreDisplay = flowTransition.completedScore;
+
+    return (
+      <TestLayout
+        title={definition.name}
+        subtitle={definition.description}
+        onQuit={handleQuit}
+      >
+        <div
+          className="animate-in"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.1rem',
+            padding: '1.75rem',
+            height: '100%',
+          }}
+        >
+          {/* Kicker */}
           <p
             style={{
               margin: 0,
               color: 'var(--accent)',
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.1em',
               fontFamily: 'var(--font-mono)',
-              fontSize: '0.72rem',
+              fontSize: '0.7rem',
+              fontWeight: 600,
             }}
           >
             Assessment in Progress
           </p>
-          <h2 style={{ margin: 0 }}>Module {flowTransition.completedCount} complete</h2>
-          <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-            Next module: {nextTestName}
-          </p>
+
+          {/* Completed test + score */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 24,
+                  height: 24,
+                  borderRadius: '50%',
+                  background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+                  border: '1.5px solid color-mix(in srgb, var(--accent) 50%, var(--border))',
+                  color: 'var(--accent)',
+                  flexShrink: 0,
+                }}
+              >
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+              </div>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
+                {completedTestName} complete
+              </h2>
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'clamp(1.8rem, 5vw, 2.4rem)',
+                fontWeight: 700,
+                color: scoreDisplay >= 0 ? 'var(--accent)' : 'var(--text-muted)',
+                lineHeight: 1,
+                paddingLeft: '2rem',
+              }}
+            >
+              {scoreDisplay > 0 ? '+' : ''}
+              {formatNumber(scoreDisplay, 2)}
+              <small
+                style={{ fontSize: '0.35em', color: 'var(--text-muted)', fontWeight: 500 }}
+              >
+                {' '}net
+              </small>
+            </p>
+          </div>
+
+          {/* Progress dots */}
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', paddingLeft: '0.1rem' }}>
+            {GIA_SLUGS.map((slug, i) => (
+              <div
+                key={slug}
+                style={{
+                  width: i < flowTransition.completedCount ? 10 : 8,
+                  height: i < flowTransition.completedCount ? 10 : 8,
+                  borderRadius: '50%',
+                  background:
+                    i < flowTransition.completedCount
+                      ? 'var(--accent)'
+                      : 'var(--border)',
+                  transition: 'all 200ms ease',
+                  flexShrink: 0,
+                }}
+              />
+            ))}
+            <span
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.72rem',
+                color: 'var(--text-muted)',
+                marginLeft: '0.3rem',
+              }}
+            >
+              {flowTransition.completedCount} / {GIA_SLUGS.length}
+            </span>
+          </div>
+
+          {/* Progress bar */}
           <div
             aria-hidden
             style={{
               border: '1px solid var(--border)',
               background: 'var(--surface-raised)',
               borderRadius: '999px',
-              height: '10px',
+              height: 8,
               overflow: 'hidden',
             }}
           >
@@ -187,11 +334,27 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
                 width: `${(flowTransition.completedCount / GIA_SLUGS.length) * 100}%`,
                 height: '100%',
                 background: 'var(--accent)',
-                transition: 'width 250ms ease',
+                transition: 'width 400ms cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             />
           </div>
-          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+
+          {/* Next up */}
+          <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+            Next up:{' '}
+            <strong style={{ color: 'var(--text)', fontWeight: 600 }}>{nextTestName}</strong>
+          </p>
+
+          {/* Loading pulse */}
+          <p
+            style={{
+              margin: 0,
+              color: 'var(--text-muted)',
+              fontSize: '0.78rem',
+              fontFamily: 'var(--font-mono)',
+              opacity: 0.6,
+            }}
+          >
             Loading next module...
           </p>
         </div>
@@ -199,15 +362,48 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
     );
   }
 
+  // ── Playing or showing individual result ────────────────────────────────
   return (
     <TestLayout
       title={definition.name}
       subtitle={definition.description}
+      onQuit={isGiaFlow ? handleQuit : undefined}
       sidebar={
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', opacity: 0.8 }}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unit</span>
-          <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>{definition.scoreUnit}</strong>
-        </div>
+        isGiaFlow ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              gap: '0.15rem',
+            }}
+          >
+            <span
+              style={{
+                color: 'var(--text-muted)',
+                fontSize: '0.65rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              Module
+            </span>
+            <strong
+              style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.9rem',
+                color: 'var(--accent)',
+              }}
+            >
+              {GIA_SLUGS.indexOf(definition.slug as (typeof GIA_SLUGS)[number]) + 1} / {GIA_SLUGS.length}
+            </strong>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', opacity: 0.8 }}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Unit</span>
+            <strong style={{ fontFamily: 'var(--font-mono)', fontSize: '0.9rem' }}>{definition.scoreUnit}</strong>
+          </div>
+        )
       }
     >
       {result ? (
@@ -221,7 +417,9 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
           statusNode={
             <>
               {submitting && !submitError ? (
-                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>Saving score...</p>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                  Saving score...
+                </p>
               ) : null}
               {submitError ? (
                 <div
@@ -234,7 +432,9 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
                     gap: '0.5rem',
                   }}
                 >
-                  <p style={{ margin: 0, color: 'var(--danger)', fontSize: '0.9rem' }}>{submitError}</p>
+                  <p style={{ margin: 0, color: 'var(--danger)', fontSize: '0.9rem' }}>
+                    {submitError}
+                  </p>
                   {pendingPayload ? (
                     <div>
                       <button
@@ -253,28 +453,12 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
                   ) : null}
                 </div>
               ) : null}
-              {combinedNotice ? (
-                <p
-                  style={{
-                    margin: 0,
-                    border: '1px solid color-mix(in srgb, var(--accent) 45%, var(--border))',
-                    borderRadius: '10px',
-                    padding: '0.65rem 0.8rem',
-                    fontFamily: 'var(--font-mono)',
-                    color: 'var(--text-muted)',
-                    fontSize: '0.8rem',
-                  }}
-                >
-                  {combinedNotice}
-                </p>
-              ) : null}
             </>
           }
           onPlayAgain={() => {
             completionLockRef.current = false;
             setResult(null);
             setRunId((prev) => prev + 1);
-            setCombinedNotice(null);
             setSubmitError(null);
             setPendingPayload(null);
             setFlowTransition(null);

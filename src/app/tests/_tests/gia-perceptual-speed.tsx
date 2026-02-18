@@ -36,8 +36,8 @@ function makeRoundRaw(): Round {
   for (let i = 0; i < numSame; i += 1) {
     const letter = matchingLetters[i];
     columns.push({
-      top: Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase(),
-      bottom: Math.random() < 0.5 ? letter.toLowerCase() : letter.toUpperCase(),
+      top: letter.toLowerCase(),
+      bottom: letter.toUpperCase(),
       same: true,
     });
   }
@@ -45,8 +45,8 @@ function makeRoundRaw(): Round {
   while (columns.length < COLUMN_COUNT) {
     const [a, b] = pickUniqueLetters(2);
     columns.push({
-      top: Math.random() < 0.5 ? a.toLowerCase() : a.toUpperCase(),
-      bottom: Math.random() < 0.5 ? b.toLowerCase() : b.toUpperCase(),
+      top: a.toLowerCase(),
+      bottom: b.toUpperCase(),
       same: false,
     });
   }

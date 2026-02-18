@@ -6,7 +6,7 @@ import GuestScoreClaimer from './GuestScoreClaimer';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <SessionProvider>
+    <SessionProvider refetchInterval={60 * 60} refetchOnWindowFocus refetchWhenOffline={false}>
       <GuestScoreClaimer />
       {children}
     </SessionProvider>
