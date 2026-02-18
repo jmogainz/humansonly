@@ -15,7 +15,7 @@ export default function HomePage() {
         <h1>Measure Your<br /><span>Cognitive Edge</span></h1>
         <p>
           18 precision tests across reasoning, perception, memory, and speed.<br />
-          Track your performance. Compete globally.
+          Track your performance. <strong>Compete globally.</strong>
         </p>
         <div className={styles.cta}>
           <HeroCTA />
