@@ -25,6 +25,91 @@ export type SubmitScoreInput = {
   metadata?: Record<string, unknown>;
 };
 
+const GUEST_SCORE_CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
+const GUEST_SCORE_CLEANUP_RETRY_INTERVAL_MS = 60 * 1000;
+const GUEST_SCORE_CLEANUP_BATCH_SIZE = 2000;
+const CLAIMED_GUEST_SCORE_RETENTION_DAYS = 30;
+const UNCLAIMED_GUEST_SCORE_RETENTION_DAYS = 180;
+
+let nextGuestScoreCleanupAt = 0;
+let guestScoreCleanupInFlight: Promise<void> | null = null;
+
+type GuestScoreCleanupRow = {
+  claimed_deleted: number;
+  unclaimed_deleted: number;
+};
+
+function scheduleGuestScoreCleanup(intervalMs: number): void {
+  nextGuestScoreCleanupAt = Date.now() + intervalMs;
+}
+
+async function runGuestScoreCleanup(): Promise<void> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+  const result = await pool.query<GuestScoreCleanupRow>(
+    `with claimed_deleted as (
+       delete from guest_scores
+       where id in (
+         select id
+         from guest_scores
+         where claimed_by is not null
+           and created_at < now() - ($1::int * interval '1 day')
+         order by created_at asc
+         limit $2
+       )
+       returning 1
+     ),
+     unclaimed_deleted as (
+       delete from guest_scores
+       where id in (
+         select id
+         from guest_scores
+         where claimed_by is null
+           and created_at < now() - ($3::int * interval '1 day')
+         order by created_at asc
+         limit $2
+       )
+       returning 1
+     )
+     select
+       (select count(*) from claimed_deleted)::int as claimed_deleted,
+       (select count(*) from unclaimed_deleted)::int as unclaimed_deleted`,
+    [
+      CLAIMED_GUEST_SCORE_RETENTION_DAYS,
+      GUEST_SCORE_CLEANUP_BATCH_SIZE,
+      UNCLAIMED_GUEST_SCORE_RETENTION_DAYS,
+    ]
+  );
+
+  const row = result.rows[0];
+  const claimedDeleted = row?.claimed_deleted ?? 0;
+  const unclaimedDeleted = row?.unclaimed_deleted ?? 0;
+  if (claimedDeleted > 0 || unclaimedDeleted > 0) {
+    console.info(
+      `[guest_scores] cleanup pruned claimed=${claimedDeleted} unclaimed=${unclaimedDeleted}`
+    );
+  }
+}
+
+function triggerGuestScoreCleanup(): void {
+  const now = Date.now();
+  if (now < nextGuestScoreCleanupAt) return;
+  if (guestScoreCleanupInFlight) return;
+
+  guestScoreCleanupInFlight = runGuestScoreCleanup()
+    .then(() => {
+      scheduleGuestScoreCleanup(GUEST_SCORE_CLEANUP_INTERVAL_MS);
+    })
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      console.warn(`[guest_scores] cleanup failed: ${message}`);
+      scheduleGuestScoreCleanup(GUEST_SCORE_CLEANUP_RETRY_INTERVAL_MS);
+    })
+    .finally(() => {
+      guestScoreCleanupInFlight = null;
+    });
+}
+
 function isPersonalBest(direction: 'higher' | 'lower', bestScore: number | null, nextScore: number): boolean {
   if (bestScore === null) return true;
   if (direction === 'higher') return nextScore > bestScore;
@@ -50,6 +135,8 @@ async function fetchGuestBestScore(guestId: string, testSlug: string, direction:
 }
 
 export async function submitScoreForUser(userId: string, input: SubmitScoreInput): Promise<SubmitScoreResult> {
+  triggerGuestScoreCleanup();
+
   const test = getTestBySlug(input.testSlug);
   if (!test) {
     throw new Error('Unknown test slug');
@@ -86,6 +173,8 @@ export async function submitScoreForUser(userId: string, input: SubmitScoreInput
 }
 
 export async function submitScoreForGuest(guestId: string, input: SubmitScoreInput): Promise<SubmitScoreResult> {
+  triggerGuestScoreCleanup();
+
   const test = getTestBySlug(input.testSlug);
   if (!test) {
     throw new Error('Unknown test slug');
@@ -173,6 +262,8 @@ export async function getScoreHistoryForGuest(guestId: string, testSlug: string,
 }
 
 export async function claimGuestScores(guestId: string, userId: string): Promise<number> {
+  triggerGuestScoreCleanup();
+
   await ensureDbSchema();
   const pool = getDbPool();
 

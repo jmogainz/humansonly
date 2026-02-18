@@ -4,18 +4,7 @@ import { useCallback, useState } from 'react';
 import { apiPost } from '@/lib/api';
 import type { SubmitScoreRequest, SubmitScoreResponse } from '@/lib/api/types';
 import type { ScoreUnit } from '@/lib/tests/types';
-import { makeGuestId } from '@/lib/utils';
-
-const GUEST_STORAGE_KEY = 'humansonly_guest_id';
-
-function getOrCreateGuestId(): string {
-  if (typeof window === 'undefined') return makeGuestId();
-  const existing = window.localStorage.getItem(GUEST_STORAGE_KEY);
-  if (existing) return existing;
-  const guestId = makeGuestId();
-  window.localStorage.setItem(GUEST_STORAGE_KEY, guestId);
-  return guestId;
-}
+import { getOrCreateGuestId } from '@/lib/guestId';
 
 export function useScore() {
   const [submitting, setSubmitting] = useState(false);

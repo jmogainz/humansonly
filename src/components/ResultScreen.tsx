@@ -10,6 +10,7 @@ import type { ScoreUnit } from '@/lib/tests/types';
 import { formatNumber } from '@/lib/utils';
 import ShareCard from './ShareCard';
 import { Spinner } from './Spinner';
+import { getTestBySlug } from '@/lib/tests/registry';
 
 type ResultScreenProps = {
   testSlug: string;
@@ -93,7 +94,10 @@ export default function ResultScreen({
           {isNavigating ? <Spinner size={16} /> : null}
           {isNavigating ? 'Loading...' : 'View Leaderboard'}
         </button>
-        <ShareCard title="HumansOnly Result" scoreText={`${scoreLabel}: ${scoreValue.toFixed(2)} ${scoreUnit}`} />
+        <ShareCard
+          title={`I just took the ${getTestBySlug(testSlug)?.name ?? 'HumansOnly'} test and got ${formatNumber(scoreValue, scoreValue % 1 === 0 ? 0 : 2)} ${scoreUnit}!`}
+          scoreText="See how you stack up →"
+        />
       </div>
 
       <div>

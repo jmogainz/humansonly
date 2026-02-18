@@ -7,7 +7,7 @@ import { Pencil, Check, X } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 import type { ProfileResponse, CategoryHistoryResponse } from '@/lib/api/types';
 import { TEST_REGISTRY_BY_SLUG } from '@/lib/tests/registry';
-import { formatNumber } from '@/lib/utils';
+import { getStoredGuestId } from '@/lib/guestId';
 import BestScoresList from '@/components/BestScoresList';
 import PerformanceDashboard from '@/components/PerformanceDashboard';
 import { Spinner } from '@/components/Spinner';
@@ -31,34 +31,45 @@ export default function ProfilePage() {
   useEffect(() => {
     let mounted = true;
 
-    Promise.allSettled([
-      apiGet<ProfileResponse>('/api/profile'),
-      apiGet<CategoryHistoryResponse>('/api/scores/history'),
-    ])
-      .then(([profileResult, historyResult]) => {
-        if (!mounted) return;
-
-        if (profileResult.status === 'fulfilled') {
-          setProfile(profileResult.value);
-          setNewName(profileResult.value.user.displayName);
-        } else {
-          const message = profileResult.reason instanceof Error ? profileResult.reason.message : 'Failed to load profile';
-          setError(message);
+    const loadProfile = async () => {
+      const guestId = getStoredGuestId();
+      if (guestId) {
+        try {
+          await apiPost<{ guestId: string }, { claimed: number }>('/api/profile', { guestId });
+        } catch {
+          // Best effort. We still try to render profile/history below.
         }
+      }
 
-        if (historyResult.status === 'fulfilled') {
-          setHistory(historyResult.value);
-          setHistoryError(null);
-        } else {
-          const message = historyResult.reason instanceof Error ? historyResult.reason.message : 'Failed to load history';
-          setHistoryError(message);
-          setHistory(null);
-        }
-      })
-      .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
-      });
+      const [profileResult, historyResult] = await Promise.allSettled([
+        apiGet<ProfileResponse>('/api/profile'),
+        apiGet<CategoryHistoryResponse>('/api/scores/history'),
+      ]);
+
+      if (!mounted) return;
+
+      if (profileResult.status === 'fulfilled') {
+        setProfile(profileResult.value);
+        setNewName(profileResult.value.user.displayName);
+      } else {
+        const message = profileResult.reason instanceof Error ? profileResult.reason.message : 'Failed to load profile';
+        setError(message);
+      }
+
+      if (historyResult.status === 'fulfilled') {
+        setHistory(historyResult.value);
+        setHistoryError(null);
+      } else {
+        const message = historyResult.reason instanceof Error ? historyResult.reason.message : 'Failed to load history';
+        setHistoryError(message);
+        setHistory(null);
+      }
+    };
+
+    void loadProfile().finally(() => {
+      if (!mounted) return;
+      setLoading(false);
+    });
 
     return () => {
       mounted = false;
