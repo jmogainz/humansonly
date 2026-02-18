@@ -1,5 +1,6 @@
 import TestList from '@/components/TestList';
 import HeroCTA from '@/components/HeroCTA';
+import ScrollArrow from '@/components/ScrollArrow';
 import { listPlayableTestsByCategory } from '@/lib/tests/registry';
 import styles from './page.module.css';
 
@@ -21,11 +22,7 @@ export default function HomePage() {
           <HeroCTA />
         </div>
         <AsciiPyramid />
-        <a href="#gia" className={styles.scrollArrow} aria-label="Scroll to tests">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </a>
+        <ScrollArrow />
       </header>
 
       <section className={styles.section} id="gia">

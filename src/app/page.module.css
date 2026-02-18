@@ -67,27 +67,6 @@
   font-family: var(--font-body);
 }
 
-
-.scrollArrow {
-  position: absolute;
-  bottom: 1.75rem;
-  left: 50%;
-  transform: translateX(-50%);
-  color: var(--accent);
-  animation: arrowBob 2.2s ease-in-out infinite;
-  z-index: 1;
-  line-height: 0;
-}
-
-.scrollArrow:hover {
-  opacity: 1;
-}
-
-@keyframes arrowBob {
-  0%, 100% { transform: translateX(-50%) translateY(0);   opacity: 0.35; }
-  50%       { transform: translateX(-50%) translateY(6px); opacity: 0.85; }
-}
-
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -97,4 +76,3 @@
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
