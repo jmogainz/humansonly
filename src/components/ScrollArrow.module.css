@@ -1,0 +1,21 @@
+.scrollArrow {
+  position: absolute;
+  bottom: 1.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--accent);
+  animation: arrowBob 2.2s ease-in-out infinite;
+  z-index: 1;
+  line-height: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.scrollArrow:hover {
+  opacity: 1;
+}
+
+@keyframes arrowBob {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(6px); }
+}
