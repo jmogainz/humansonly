@@ -48,6 +48,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
   const transitionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [runId, setRunId] = useState(0);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<TestCompletePayload | null>(null);
   const [flowTransition, setFlowTransition] = useState<FlowTransitionState | null>(null);
   const [assessmentComplete, setAssessmentComplete] = useState<AssessmentCompleteState | null>(null);
@@ -83,6 +84,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
   const handleComplete = async (payload: TestCompletePayload) => {
     setPendingPayload(payload);
     setSubmitError(null);
+    setSubmitNotice(null);
     setFlowTransition(null);
     setAssessmentComplete(null);
 
@@ -93,6 +95,17 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
         payload.unit,
         payload.metadata
       );
+      if (response.saved === false) {
+        setSubmitNotice(response.discardReason ?? 'This run was not saved.');
+        setResult({
+          score: payload.score,
+          label: payload.label ?? `${payload.score} ${payload.unit}`,
+          percentile: null,
+          personalBest: false,
+        });
+        setPendingPayload(null);
+        return;
+      }
 
       if (isGiaFlow) {
         const combined = recordGiaSubtestScore(definition.slug, payload.score);
@@ -453,6 +466,21 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
                   ) : null}
                 </div>
               ) : null}
+              {submitNotice && !submitError ? (
+                <div
+                  style={{
+                    margin: 0,
+                    border: '1px solid color-mix(in srgb, var(--warning) 40%, var(--border))',
+                    borderRadius: '10px',
+                    padding: '0.7rem 0.8rem',
+                    background: 'color-mix(in srgb, var(--warning) 8%, transparent)',
+                  }}
+                >
+                  <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                    {submitNotice}
+                  </p>
+                </div>
+              ) : null}
             </>
           }
           onPlayAgain={() => {
@@ -460,6 +488,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
             setResult(null);
             setRunId((prev) => prev + 1);
             setSubmitError(null);
+            setSubmitNotice(null);
             setPendingPayload(null);
             setFlowTransition(null);
           }}

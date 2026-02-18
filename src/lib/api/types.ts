@@ -17,6 +17,8 @@ export type SubmitScoreResponse = {
   scoreId: string;
   personalBest: boolean;
   percentile: number | null;
+  saved?: boolean;
+  discardReason?: string;
 };
 
 export type ScoreHistoryResponse = {

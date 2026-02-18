@@ -77,6 +77,19 @@
   margin-top: 0.8rem;
   height: 220px;
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.activityChart *,
+.miniChartFrame *,
+.detailedChartFrame * {
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .matrixSection {
@@ -224,6 +237,10 @@
   padding: 0.25rem;
   touch-action: none;
   pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .detailedChartFrame {
@@ -236,6 +253,10 @@
   padding: 1rem 0.5rem;
   touch-action: none;
   pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .granularLegend {

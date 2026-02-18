@@ -16,6 +16,8 @@ export type SubmitScoreResult = {
   scoreId: string;
   personalBest: boolean;
   percentile: number | null;
+  saved?: boolean;
+  discardReason?: string;
 };
 
 export type SubmitScoreInput = {
@@ -30,6 +32,13 @@ const GUEST_SCORE_CLEANUP_RETRY_INTERVAL_MS = 60 * 1000;
 const GUEST_SCORE_CLEANUP_BATCH_SIZE = 2000;
 const CLAIMED_GUEST_SCORE_RETENTION_DAYS = 30;
 const UNCLAIMED_GUEST_SCORE_RETENTION_DAYS = 180;
+const OUTLIER_HISTORY_MIN_SAMPLES = 1;
+const OUTLIER_HISTORY_WINDOW = 30;
+const OUTLIER_Z_THRESHOLD = 2.5;
+const OUTLIER_HIGHER_MEAN_RATIO = 0.4;
+const OUTLIER_HIGHER_BEST_RATIO = 0.35;
+const OUTLIER_LOWER_MEAN_RATIO = 1.8;
+const OUTLIER_LOWER_BEST_RATIO = 1.9;
 
 let nextGuestScoreCleanupAt = 0;
 let guestScoreCleanupInFlight: Promise<void> | null = null;
@@ -37,6 +46,18 @@ let guestScoreCleanupInFlight: Promise<void> | null = null;
 type GuestScoreCleanupRow = {
   claimed_deleted: number;
   unclaimed_deleted: number;
+};
+
+type ScoreStats = {
+  sampleCount: number;
+  meanScore: number | null;
+  stddevScore: number | null;
+};
+
+type ScoreStatsRow = {
+  sample_count: number;
+  mean_score: number | null;
+  stddev_score: number | null;
 };
 
 function scheduleGuestScoreCleanup(intervalMs: number): void {
@@ -116,6 +137,84 @@ function isPersonalBest(direction: 'higher' | 'lower', bestScore: number | null,
   return nextScore < bestScore;
 }
 
+function asFiniteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function inferAttemptCount(metadata?: Record<string, unknown>): number | null {
+  if (!metadata) return null;
+
+  const attempts = asFiniteNumber(metadata.attempts);
+  if (attempts !== null) {
+    return Math.max(0, Math.floor(attempts));
+  }
+
+  const correct = asFiniteNumber(metadata.correct);
+  const incorrect = asFiniteNumber(metadata.incorrect);
+  if (correct !== null && incorrect !== null) {
+    return Math.max(0, Math.floor(correct + incorrect));
+  }
+
+  return null;
+}
+
+function shouldDiscardIdleTimedRun(
+  test: { timeLimitSeconds?: number },
+  input: SubmitScoreInput
+): boolean {
+  if (!test.timeLimitSeconds) return false;
+  const attempts = inferAttemptCount(input.metadata);
+  return attempts === 0;
+}
+
+function discardedIdleRunResult(): SubmitScoreResult {
+  return {
+    scoreId: 'discarded-idle-run',
+    personalBest: false,
+    percentile: null,
+    saved: false,
+    discardReason: 'Run was not saved because no attempts were detected.',
+  };
+}
+
+function discardedOutlierRunResult(): SubmitScoreResult {
+  return {
+    scoreId: 'discarded-outlier-run',
+    personalBest: false,
+    percentile: null,
+    saved: false,
+    discardReason: 'Run was not saved because it was an extreme outlier versus your recent history.',
+  };
+}
+
+function standardDeviationFloor(meanScore: number): number {
+  return Math.max(1, Math.abs(meanScore) * 0.08);
+}
+
+function shouldDiscardHistoricalOutlier(
+  direction: 'higher' | 'lower',
+  previousBest: number | null,
+  stats: ScoreStats,
+  nextScore: number
+): boolean {
+  if (stats.sampleCount < OUTLIER_HISTORY_MIN_SAMPLES) return false;
+  if (stats.meanScore === null) return false;
+
+  const effectiveStddev = Math.max(stats.stddevScore ?? 0, standardDeviationFloor(stats.meanScore));
+  if (!Number.isFinite(effectiveStddev) || effectiveStddev <= 0) return false;
+
+  const z = (nextScore - stats.meanScore) / effectiveStddev;
+  if (direction === 'higher') {
+    const severeDropVsMean = nextScore <= stats.meanScore * OUTLIER_HIGHER_MEAN_RATIO;
+    const severeDropVsBest = previousBest !== null && nextScore <= previousBest * OUTLIER_HIGHER_BEST_RATIO;
+    return z <= -OUTLIER_Z_THRESHOLD && (severeDropVsMean || severeDropVsBest);
+  }
+
+  const severeRiseVsMean = nextScore >= stats.meanScore * OUTLIER_LOWER_MEAN_RATIO;
+  const severeRiseVsBest = previousBest !== null && nextScore >= previousBest * OUTLIER_LOWER_BEST_RATIO;
+  return z >= OUTLIER_Z_THRESHOLD && (severeRiseVsMean || severeRiseVsBest);
+}
+
 async function fetchBestScore(userId: string, testSlug: string, direction: 'higher' | 'lower'): Promise<number | null> {
   await ensureDbSchema();
   const pool = getDbPool();
@@ -134,6 +233,56 @@ async function fetchGuestBestScore(guestId: string, testSlug: string, direction:
   return result.rows[0]?.best ?? null;
 }
 
+async function fetchRecentUserScoreStats(userId: string, testSlug: string): Promise<ScoreStats> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+  const result = await pool.query<ScoreStatsRow>(
+    `select
+       count(*)::int as sample_count,
+       avg(score_value)::float8 as mean_score,
+       stddev_samp(score_value)::float8 as stddev_score
+     from (
+       select score_value
+       from scores
+       where user_id=$1 and test_slug=$2
+       order by created_at desc
+       limit $3
+     ) recent`,
+    [userId, testSlug, OUTLIER_HISTORY_WINDOW]
+  );
+  const row = result.rows[0];
+  return {
+    sampleCount: row?.sample_count ?? 0,
+    meanScore: row?.mean_score ?? null,
+    stddevScore: row?.stddev_score ?? null,
+  };
+}
+
+async function fetchRecentGuestScoreStats(guestId: string, testSlug: string): Promise<ScoreStats> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+  const result = await pool.query<ScoreStatsRow>(
+    `select
+       count(*)::int as sample_count,
+       avg(score_value)::float8 as mean_score,
+       stddev_samp(score_value)::float8 as stddev_score
+     from (
+       select score_value
+       from guest_scores
+       where guest_id=$1 and test_slug=$2
+       order by created_at desc
+       limit $3
+     ) recent`,
+    [guestId, testSlug, OUTLIER_HISTORY_WINDOW]
+  );
+  const row = result.rows[0];
+  return {
+    sampleCount: row?.sample_count ?? 0,
+    meanScore: row?.mean_score ?? null,
+    stddevScore: row?.stddev_score ?? null,
+  };
+}
+
 export async function submitScoreForUser(userId: string, input: SubmitScoreInput): Promise<SubmitScoreResult> {
   triggerGuestScoreCleanup();
 
@@ -144,10 +293,17 @@ export async function submitScoreForUser(userId: string, input: SubmitScoreInput
   if (test.scoreUnit !== input.scoreUnit) {
     throw new Error('Score unit mismatch for test');
   }
+  if (shouldDiscardIdleTimedRun(test, input)) {
+    return discardedIdleRunResult();
+  }
 
   await ensureDbSchema();
   const pool = getDbPool();
   const previousBest = await fetchBestScore(userId, input.testSlug, test.direction);
+  const stats = await fetchRecentUserScoreStats(userId, input.testSlug);
+  if (shouldDiscardHistoricalOutlier(test.direction, previousBest, stats, input.scoreValue)) {
+    return discardedOutlierRunResult();
+  }
 
   const inserted = await pool.query<{ id: string }>(
     `insert into scores (user_id, test_slug, score_value, score_unit, metadata)
@@ -169,6 +325,7 @@ export async function submitScoreForUser(userId: string, input: SubmitScoreInput
     scoreId: inserted.rows[0].id,
     personalBest,
     percentile,
+    saved: true,
   };
 }
 
@@ -182,10 +339,17 @@ export async function submitScoreForGuest(guestId: string, input: SubmitScoreInp
   if (test.scoreUnit !== input.scoreUnit) {
     throw new Error('Score unit mismatch for test');
   }
+  if (shouldDiscardIdleTimedRun(test, input)) {
+    return discardedIdleRunResult();
+  }
 
   await ensureDbSchema();
   const pool = getDbPool();
   const previousBest = await fetchGuestBestScore(guestId, input.testSlug, test.direction);
+  const stats = await fetchRecentGuestScoreStats(guestId, input.testSlug);
+  if (shouldDiscardHistoricalOutlier(test.direction, previousBest, stats, input.scoreValue)) {
+    return discardedOutlierRunResult();
+  }
 
   const inserted = await pool.query<{ id: string }>(
     `insert into guest_scores (guest_id, test_slug, score_value, score_unit, metadata)
@@ -198,6 +362,7 @@ export async function submitScoreForGuest(guestId: string, input: SubmitScoreInp
     scoreId: inserted.rows[0].id,
     personalBest: isPersonalBest(test.direction, previousBest, input.scoreValue),
     percentile: null,
+    saved: true,
   };
 }
 
