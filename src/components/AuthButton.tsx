@@ -187,7 +187,7 @@ export default function AuthButton() {
         }}
       >
         {isNavigatingProfile ? <Spinner size={16} /> : null}
-        {auth.user?.name?.slice(0, 16) || 'Profile'}
+        {auth.user?.name?.slice(0, 16) || 'Dashboard'}
       </button>
       <button
         className="button buttonGhost"
@@ -195,7 +195,7 @@ export default function AuthButton() {
         disabled={isSigningOut}
         onClick={async () => {
           setIsSigningOut(true);
-          await auth.signOut({ callbackUrl: '/' });
+          await auth.signOut({ callbackUrl: '/?signedOut=1' });
         }}
       >
         {isSigningOut ? <Spinner size={16} /> : null}

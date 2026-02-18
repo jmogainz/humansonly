@@ -12,15 +12,20 @@ export default function HomePage() {
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
-        <h1>Measure Your <span>Cognitive Edge</span></h1>
+        <h1>Measure Your<br /><span>Cognitive Edge</span></h1>
         <p>
-          18 precision tests across reasoning, perception, memory, and speed.
+          18 precision tests across reasoning, perception, memory, and speed.<br />
           Track your performance. Compete globally.
         </p>
         <div className={styles.cta}>
           <HeroCTA />
         </div>
         <AsciiPyramid />
+        <a href="#gia" className={styles.scrollArrow} aria-label="Scroll to tests">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </a>
       </header>
 
       <section className={styles.section} id="gia">

@@ -114,7 +114,7 @@ export default function AssessmentCompleteScreen({
       <div className={styles.actions}>
         <StatsShareCard displayName={displayName ?? 'Anonymous'} bests={bests} />
         <Link href="/profile" className="button buttonGhost">
-          View Profile
+          View Dashboard
         </Link>
         <Link href="/" className="button buttonGhost">
           All Tests

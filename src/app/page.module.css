@@ -21,22 +21,23 @@
 }
 
 .hero h1 {
-  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-size: clamp(2.25rem, 7vw, 5rem);
   font-weight: 800;
   margin-bottom: 2rem;
   color: var(--text-primary);
-  line-height: 0.9;
-  letter-spacing: -0.05em;
+  line-height: 1;
+  letter-spacing: -0.04em;
   position: relative;
   z-index: 1;
+  text-align: center;
 }
 
 .hero p {
-  font-size: 1.35rem;
+  font-size: clamp(0.95rem, 2.5vw, 1.25rem);
   color: var(--text-muted);
-  max-width: 700px;
+  max-width: 520px;
   margin: 0 0 4rem 0;
-  line-height: 1.5;
+  line-height: 1.55;
   position: relative;
   z-index: 1;
   font-weight: 400;
@@ -67,6 +68,26 @@
 }
 
 
+.scrollArrow {
+  position: absolute;
+  bottom: 1.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--accent);
+  animation: arrowBob 2.2s ease-in-out infinite;
+  z-index: 1;
+  line-height: 0;
+}
+
+.scrollArrow:hover {
+  opacity: 1;
+}
+
+@keyframes arrowBob {
+  0%, 100% { transform: translateX(-50%) translateY(0);   opacity: 0.35; }
+  50%       { transform: translateX(-50%) translateY(6px); opacity: 0.85; }
+}
+
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -77,8 +98,3 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 768px) {
-  .hero h1 {
-    font-size: 2rem;
-  }
-}

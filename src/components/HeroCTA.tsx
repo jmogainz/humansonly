@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Spinner } from './Spinner';
+import styles from './HeroCTA.module.css';
 
 export default function HeroCTA() {
   const router = useRouter();
@@ -21,26 +22,23 @@ export default function HeroCTA() {
       const headerOffset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
+      window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
     }
   };
 
   return (
-    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-      <button 
-        onClick={handleStart} 
-        className="button" 
+    <div className={styles.actions}>
+      <button
+        onClick={handleStart}
+        className="button"
         disabled={isStarting}
         style={{ minWidth: '180px' }}
       >
         {isStarting ? <Spinner size={18} /> : null}
         {isStarting ? 'Loading...' : 'Start Assessment'}
       </button>
-      <button onClick={handleBrowse} className="button buttonGhost">
+
+      <button onClick={handleBrowse} className={styles.scrollCue}>
         Browse Tests
       </button>
     </div>

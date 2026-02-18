@@ -74,6 +74,10 @@
   -webkit-touch-callout: none;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html,
 body {
   padding: 0;

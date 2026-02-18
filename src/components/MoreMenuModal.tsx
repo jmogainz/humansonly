@@ -127,7 +127,7 @@ function MoreMenuModal({
 
   const handleSignOut = async () => {
     setIsSigningOut(true);
-    await auth.signOut({ callbackUrl: '/' });
+    await auth.signOut({ callbackUrl: '/?signedOut=1' });
     onClose();
   };
 
@@ -206,7 +206,7 @@ function MoreMenuModal({
               disabled={isNavigatingProfile}
               role="menuitem"
             >
-              <span>{isNavigatingProfile ? 'Loading...' : 'Profile'}</span>
+              <span>{isNavigatingProfile ? 'Loading...' : 'Dashboard'}</span>
               {isNavigatingProfile ? (
                 <Spinner size={18} />
               ) : (

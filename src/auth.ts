@@ -116,8 +116,8 @@ export const authOptions: NextAuthOptions = {
     error: '/',
   },
   cookies: {
-    pkceCodeVerifier: {
-      name: '__Secure-next-auth.pkce.code_verifier',
+    callbackUrl: {
+      name: '__Secure-next-auth.callback-url',
       options: {
         httpOnly: true,
         sameSite: 'none',
@@ -125,8 +125,28 @@ export const authOptions: NextAuthOptions = {
         secure: true,
       },
     },
+    pkceCodeVerifier: {
+      name: '__Secure-next-auth.pkce.code_verifier',
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        maxAge: 60 * 15,
+      },
+    },
     state: {
       name: '__Secure-next-auth.state',
+      options: {
+        httpOnly: true,
+        sameSite: 'none',
+        path: '/',
+        secure: true,
+        maxAge: 60 * 15,
+      },
+    },
+    nonce: {
+      name: '__Secure-next-auth.nonce',
       options: {
         httpOnly: true,
         sameSite: 'none',
@@ -171,6 +191,48 @@ export const authOptions: NextAuthOptions = {
         }
       }
       return session;
+    },
+    redirect: async ({ url, baseUrl }) => {
+      // Keep relative callback URLs working (e.g. "/profile").
+      if (url.startsWith('/')) {
+        const resolved = `${baseUrl}${url}`;
+        const resolvedUrl = new URL(resolved);
+        const isRoot = resolvedUrl.pathname === '/' && !resolvedUrl.search && !resolvedUrl.hash;
+        if (isRoot) {
+          return `${baseUrl}/profile`;
+        }
+        return resolved;
+      }
+
+      try {
+        const target = new URL(url);
+        const base = new URL(baseUrl);
+
+        // Default safe case: same origin.
+        if (target.origin === base.origin) {
+          return url;
+        }
+
+        // Treat apex and www hosts as equivalent and preserve path/query/hash.
+        const normalizeHost = (host: string) => host.replace(/^www\./, '');
+        if (
+          target.protocol === base.protocol &&
+          normalizeHost(target.hostname) === normalizeHost(base.hostname)
+        ) {
+          const sameSiteTarget = `${base.origin}${target.pathname}${target.search}${target.hash}`;
+          const targetUrl = new URL(sameSiteTarget);
+          const isRoot = targetUrl.pathname === '/' && !targetUrl.search && !targetUrl.hash;
+          if (isRoot) {
+            return `${base.origin}/profile`;
+          }
+          return sameSiteTarget;
+        }
+      } catch {
+        // Fall through to safe default.
+      }
+
+      // If callbackUrl is invalid/mismatched, prefer profile over homepage.
+      return `${baseUrl}/profile`;
     },
   },
 };
