@@ -17,7 +17,16 @@ type Circle = {
   r: number;
   target: boolean;
   selected: boolean;
-  correct?: boolean; // Used for feedback phase
+};
+
+type Phase = 'memorize' | 'moving' | 'select' | 'feedback';
+
+type LevelConfig = {
+  totalObjects: number;
+  targets: number;
+  moveSpeed: number;
+  moveDuration: number;
+  memorizeTime: number;
 };
 
 const MAX_WIDTH = 820;
@@ -40,15 +49,24 @@ function nextArena(parentWidth: number): { width: number; height: number } {
   return { width, height };
 }
 
+function levelConfig(level: number): LevelConfig {
+  const totalObjects = Math.min(4 + (level - 1), 12);
+  return {
+    totalObjects,
+    targets: Math.min(Math.min(2 + Math.floor((level - 1) / 3), 5), totalObjects - 1),
+    moveSpeed: Math.min(1.5 + (level - 1) * 0.15, 4),
+    moveDuration: Math.max(5000 - (level - 1) * 100, 3000),
+    memorizeTime: Math.max(2500 - (level - 1) * 50, 1500),
+  };
+}
+
 function buildCircles(level: number, width: number, height: number): Circle[] {
-  const count = Math.min(18, 6 + Math.floor(level / 2));
-  const targetCount = Math.min(6, 2 + Math.floor(level / 4));
-  
+  const config = levelConfig(level);
   const circles: Circle[] = [];
   const r = circleRadius(width);
   const padding = r + 10;
 
-  for (let i = 0; i < count; i += 1) {
+  for (let i = 0; i < config.totalObjects; i += 1) {
     let x = 0;
     let y = 0;
     let attempts = 0;
@@ -62,22 +80,30 @@ function buildCircles(level: number, width: number, height: number): Circle[] {
       circles.some((circle) => Math.hypot(circle.x - x, circle.y - y) < circle.r + r + 12)
     );
 
-    const speed = 1.6 + level * 0.12;
     const angle = Math.random() * Math.PI * 2;
 
     circles.push({
       id: i,
       x,
       y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
+      vx: Math.cos(angle) * config.moveSpeed,
+      vy: Math.sin(angle) * config.moveSpeed,
       r,
-      target: i < targetCount,
+      target: false,
       selected: false,
     });
   }
 
-  return circles.sort(() => Math.random() - 0.5);
+  const shuffledIds = [...Array(config.totalObjects).keys()];
+  for (let i = shuffledIds.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledIds[i], shuffledIds[j]] = [shuffledIds[j], shuffledIds[i]];
+  }
+  for (const id of shuffledIds.slice(0, config.targets)) {
+    circles[id].target = true;
+  }
+
+  return circles;
 }
 
 function resolveCollisions(circles: Circle[], width: number, height: number): void {
@@ -120,33 +146,74 @@ function resolveCollisions(circles: Circle[], width: number, height: number): vo
         b.vy += impulse * ny;
       }
     }
-    
-    // Boundary checks after collision resolution
+
     const c = circles[i];
-    if (c.x < c.r) { c.x = c.r; c.vx = Math.abs(c.vx); }
-    if (c.x > width - c.r) { c.x = width - c.r; c.vx = -Math.abs(c.vx); }
-    if (c.y < c.r) { c.y = c.r; c.vy = Math.abs(c.vy); }
-    if (c.y > height - c.r) { c.y = height - c.r; c.vy = -Math.abs(c.vy); }
+    if (c.x < c.r) {
+      c.x = c.r;
+      c.vx = Math.abs(c.vx);
+    }
+    if (c.x > width - c.r) {
+      c.x = width - c.r;
+      c.vx = -Math.abs(c.vx);
+    }
+    if (c.y < c.r) {
+      c.y = c.r;
+      c.vy = Math.abs(c.vy);
+    }
+    if (c.y > height - c.r) {
+      c.y = height - c.r;
+      c.vy = -Math.abs(c.vy);
+    }
   }
 }
 
 export default function ObjectTrackingTest({ definition, onComplete }: TestGameProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const circlesRef = useRef<Circle[]>([]);
+  const phaseRef = useRef<Phase>('memorize');
+  const rafRef = useRef<number | null>(null);
+  const memorizeTimerRef = useRef<number | null>(null);
+  const moveTimerRef = useRef<number | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
   const { triggerFeedback } = useFeedback();
-  
+
   const [started, setStarted] = useState(false);
-  const [arena, setArena] = useState<{ width: number; height: number }>({ width: MAX_WIDTH, height: MAX_HEIGHT });
+  const [arena, setArena] = useState<{ width: number; height: number }>({
+    width: MAX_WIDTH,
+    height: MAX_HEIGHT,
+  });
   const [level, setLevel] = useState(1);
-  const [lives, setLives] = useState(3);
-  const [phase, setPhase] = useState<'memorize' | 'moving' | 'select' | 'feedback'>('memorize');
+  const [lives, setLives] = useState(1);
+  const [phase, setPhase] = useState<Phase>('memorize');
+  const [targetCount, setTargetCount] = useState(0);
   const [selectedCount, setSelectedCount] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
-
-  const targetCount = circlesRef.current.filter(c => c.target).length;
-
   const [colors, setColors] = useState<Record<string, string>>({});
+
+  const updatePhase = useCallback((next: Phase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  }, []);
+
+  const clearRoundSchedulers = useCallback(() => {
+    if (rafRef.current) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    if (memorizeTimerRef.current) {
+      window.clearTimeout(memorizeTimerRef.current);
+      memorizeTimerRef.current = null;
+    }
+    if (moveTimerRef.current) {
+      window.clearTimeout(moveTimerRef.current);
+      moveTimerRef.current = null;
+    }
+    if (feedbackTimerRef.current) {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     const rootStyles = getComputedStyle(document.documentElement);
@@ -170,31 +237,31 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
     ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, arena.width, arena.height);
 
+    const currentPhase = phaseRef.current;
+
     for (const circle of circlesRef.current) {
       ctx.save();
-      
+
       let fill = colors.text;
       let stroke: string | null = null;
       let glow: string | null = null;
 
-      if (phase === 'memorize' && circle.target) {
+      if (currentPhase === 'memorize' && circle.target) {
         fill = colors.warning;
         glow = colors.warning;
-      } else if (phase === 'select' && circle.selected) {
+      } else if (currentPhase === 'select' && circle.selected) {
         stroke = colors.accent;
         glow = colors.accent;
-      } else if (phase === 'feedback') {
-        if (circle.target) {
-           fill = colors.success;
-           glow = colors.success;
-        }
-        if (circle.selected && !circle.target) {
-           stroke = colors.danger;
-           glow = colors.danger;
+      } else if (currentPhase === 'feedback') {
+        if (circle.target && circle.selected) {
+          fill = colors.success;
+          glow = colors.success;
+        } else if ((circle.target && !circle.selected) || (!circle.target && circle.selected)) {
+          fill = colors.danger;
+          glow = colors.danger;
         }
       }
 
-      // Draw shadow/glow
       if (glow) {
         ctx.shadowBlur = 15;
         ctx.shadowColor = glow;
@@ -213,56 +280,29 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
 
       ctx.restore();
     }
-  }, [arena, phase, colors]);
+  }, [arena.height, arena.width, colors]);
 
-  // Initial build and resize handling
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !canvas.parentElement) return;
+  const startLevelRound = useCallback(() => {
+    if (!started || submitted) return;
 
-    const updateArena = () => {
-      const parentWidth = canvas.parentElement?.getBoundingClientRect().width ?? MAX_WIDTH;
-      const next = nextArena(parentWidth);
-      setArena(next);
-    };
+    clearRoundSchedulers();
 
-    updateArena();
-    const observer = new ResizeObserver(updateArena);
-    observer.observe(canvas.parentElement);
-    return () => observer.disconnect();
-  }, []);
-
-  // Initialize circles when level or started changes
-  useEffect(() => {
-    if (!started) return;
+    const config = levelConfig(level);
     circlesRef.current = buildCircles(level, arena.width, arena.height);
+    setTargetCount(config.targets);
     setSelectedCount(0);
     setIsCorrect(null);
-    setPhase('memorize');
+    updatePhase('memorize');
     draw();
-  }, [started, level, arena.width, arena.height, draw]);
 
-  // Phase transitions
-  useEffect(() => {
-    if (!started) return;
+    memorizeTimerRef.current = window.setTimeout(() => {
+      updatePhase('moving');
 
-    if (phase === 'memorize') {
-      const id = window.setTimeout(() => setPhase('moving'), 2000);
-      return () => window.clearTimeout(id);
-    }
-
-    if (phase === 'moving') {
-      let raf = 0;
-      const start = performance.now();
-      const duration = 5000 + Math.min(3000, level * 200);
-
-      const tick = (time: number) => {
-        const elapsed = time - start;
-        
+      const tick = () => {
         for (const c of circlesRef.current) {
           c.x += c.vx;
           c.y += c.vy;
-          
+
           if (c.x < c.r || c.x > arena.width - c.r) {
             c.vx *= -1;
             c.x = clamp(c.x, c.r, arena.width - c.r);
@@ -272,100 +312,130 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
             c.y = clamp(c.y, c.r, arena.height - c.r);
           }
         }
-        
+
         resolveCollisions(circlesRef.current, arena.width, arena.height);
         draw();
-
-        if (elapsed < duration) {
-          raf = requestAnimationFrame(tick);
-        } else {
-          setPhase('select');
-        }
+        rafRef.current = window.requestAnimationFrame(tick);
       };
-      
-      raf = requestAnimationFrame(tick);
-      return () => cancelAnimationFrame(raf);
-    }
 
-    if (phase === 'feedback') {
-      const id = window.setTimeout(() => {
-        const targetIds = circlesRef.current.filter(c => c.target).map(c => c.id);
-        const selectedIds = circlesRef.current.filter(c => c.selected).map(c => c.id);
-        const correct = targetIds.length === selectedIds.length && targetIds.every(id => selectedIds.includes(id));
-
-        if (correct) {
-          setLevel(l => l + 1);
-        } else {
-          setLives(l => {
-            const next = l - 1;
-            if (next <= 0) {
-              setSubmitted(true);
-            }
-            return next;
-          });
-          // Re-trigger current level if still have lives
-          if (lives > 1) {
-            circlesRef.current = buildCircles(level, arena.width, arena.height);
-            setSelectedCount(0);
-            setPhase('memorize');
-          }
+      rafRef.current = window.requestAnimationFrame(tick);
+      moveTimerRef.current = window.setTimeout(() => {
+        if (rafRef.current) {
+          window.cancelAnimationFrame(rafRef.current);
+          rafRef.current = null;
         }
-      }, 1500);
-      return () => window.clearTimeout(id);
-    }
-  }, [started, phase, arena, draw, level, lives]);
+        updatePhase('select');
+        draw();
+      }, config.moveDuration);
+    }, config.memorizeTime);
+  }, [
+    started,
+    submitted,
+    clearRoundSchedulers,
+    level,
+    arena.width,
+    arena.height,
+    updatePhase,
+    draw,
+  ]);
 
-  // Submission
-  useEffect(() => {
-    if (submitted) {
-      onComplete({
-        score: level - 1,
-        unit: 'level',
-        metadata: { level: level - 1 },
-        label: `Level ${level - 1}`,
+  const evaluateSelection = useCallback(() => {
+    if (phaseRef.current !== 'select') return;
+
+    const selected = circlesRef.current.filter((c) => c.selected);
+    const correct =
+      selected.length === targetCount && selected.every((circle) => circle.target);
+
+    setIsCorrect(correct);
+    updatePhase('feedback');
+    draw();
+    triggerFeedback(correct ? 'success' : 'danger');
+
+    feedbackTimerRef.current = window.setTimeout(() => {
+      if (correct) {
+        setLevel((current) => current + 1);
+        return;
+      }
+
+      setLives((current) => {
+        const next = current - 1;
+        if (next <= 0) {
+          setSubmitted(true);
+        }
+        return next;
       });
-    }
+    }, 1000);
+  }, [draw, targetCount, triggerFeedback, updatePhase]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !canvas.parentElement) return;
+
+    const updateArena = () => {
+      const parentWidth = canvas.parentElement?.getBoundingClientRect().width ?? MAX_WIDTH;
+      const next = nextArena(parentWidth);
+      setArena((current) =>
+        current.width === next.width && current.height === next.height ? current : next
+      );
+    };
+
+    updateArena();
+    const observer = new ResizeObserver(updateArena);
+    observer.observe(canvas.parentElement);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!started || submitted || lives <= 0) return;
+    startLevelRound();
+  }, [started, submitted, lives, level, arena.width, arena.height, startLevelRound]);
+
+  useEffect(() => {
+    if (!started) return;
+    draw();
+  }, [started, phase, arena.width, arena.height, colors, draw]);
+
+  useEffect(() => {
+    return () => {
+      clearRoundSchedulers();
+    };
+  }, [clearRoundSchedulers]);
+
+  useEffect(() => {
+    if (!submitted) return;
+    const finalLevel = Math.max(0, level - 1);
+    onComplete({
+      score: finalLevel,
+      unit: 'level',
+      metadata: { level: finalLevel },
+      label: `Level ${finalLevel}`,
+    });
   }, [submitted, level, onComplete]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
-    if (phase !== 'select') return;
-    
+    if (phaseRef.current !== 'select') return;
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const scaleX = arena.width / rect.width;
     const scaleY = arena.height / rect.height;
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    const hit = circlesRef.current.find(c => Math.hypot(c.x - x, c.y - y) < c.r + 10);
-    if (hit) {
-      if (hit.selected) {
-        hit.selected = false;
-        setSelectedCount(s => s - 1);
-      } else if (selectedCount < targetCount) {
-        hit.selected = true;
-        setSelectedCount(s => s + 1);
-      }
-      draw();
-    }
-  };
+    const hit = circlesRef.current.find(
+      (c) => !c.selected && Math.hypot(c.x - x, c.y - y) < c.r + 10
+    );
+    if (!hit) return;
 
-  const handleSubmit = () => {
-    if (selectedCount !== targetCount) return;
-    
-    const targetIds = circlesRef.current.filter(c => c.target).map(c => c.id);
-    const selectedIds = circlesRef.current.filter(c => c.selected).map(c => c.id);
-    const correct = targetIds.length === selectedIds.length && targetIds.every(id => selectedIds.includes(id));
-    
-    setIsCorrect(correct);
-    if (correct) {
-      triggerFeedback('success');
-    }
-    // 'danger' feedback is handled by LivesDisplay when lives decrement
-    
-    setPhase('feedback');
+    hit.selected = true;
+    const nextSelectedCount = circlesRef.current.filter((c) => c.selected).length;
+    setSelectedCount(nextSelectedCount);
     draw();
+
+    if (nextSelectedCount >= targetCount) {
+      evaluateSelection();
+    }
   };
 
   return (
@@ -377,14 +447,24 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
 
       <div className="game-content">
         {!started ? (
-          <TestStartScreen
-            description={definition.description}
-            onStart={() => setStarted(true)}
-          />
+          <TestStartScreen description={definition.description} onStart={() => setStarted(true)} />
         ) : (
           <>
             <div style={{ textAlign: 'center', minHeight: '1.5rem', marginBottom: '0.5rem' }}>
-              <p className="animate-in" style={{ margin: 0, color: phase === 'feedback' ? (isCorrect ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: phase === 'feedback' ? 600 : 400 }}>
+              <p
+                className="animate-in"
+                style={{
+                  margin: 0,
+                  color:
+                    phase === 'feedback'
+                      ? isCorrect
+                        ? 'var(--success)'
+                        : 'var(--danger)'
+                      : 'var(--text-muted)',
+                  fontSize: '1.1rem',
+                  fontWeight: phase === 'feedback' ? 600 : 400,
+                }}
+              >
                 {phase === 'memorize' && `Memorize the ${targetCount} highlighted targets`}
                 {phase === 'moving' && 'Keep your eyes on them...'}
                 {phase === 'select' && `Select the ${targetCount} targets you tracked`}
@@ -392,7 +472,10 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
               </p>
             </div>
 
-            <div className="game-grid-container" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div
+              className="game-grid-container"
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
               <canvas
                 ref={canvasRef}
                 width={arena.width}
@@ -413,21 +496,19 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
               />
             </div>
 
-            <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1rem' }}>
+            <div
+              style={{
+                height: '60px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: '1rem',
+              }}
+            >
               {phase === 'select' && (
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                    {selectedCount} / {targetCount} selected
-                  </span>
-                  <button
-                    className="button"
-                    onClick={handleSubmit}
-                    disabled={selectedCount !== targetCount}
-                    style={{ minWidth: '120px' }}
-                  >
-                    Submit
-                  </button>
-                </div>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                  {selectedCount} / {targetCount} selected
+                </span>
               )}
             </div>
           </>
