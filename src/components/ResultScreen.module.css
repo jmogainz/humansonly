@@ -66,6 +66,55 @@
   animation: pulse-glow-badge 0.8s ease-in-out 3;
 }
 
+.breakdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  width: fit-content;
+}
+
+.breakdownCorrect {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--success);
+  font-weight: 600;
+}
+
+.breakdownIncorrect {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.breakdownNet {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.breakdownIcon {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.breakdownSep {
+  display: inline-block;
+  width: 1px;
+  height: 0.9em;
+  background: var(--border);
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;

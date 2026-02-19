@@ -198,6 +198,17 @@ export const TEST_REGISTRY: TestDefinition[] = [
     leaderboardEnabled: true,
     playable: false,
   },
+  {
+    slug: 'gia-superscore',
+    name: 'GIA Superscore',
+    description: 'Sum of your all-time personal bests across all 5 GIA subtests.',
+    category: 'gia',
+    icon: 'gia-superscore',
+    scoreUnit: 'net',
+    direction: 'higher',
+    leaderboardEnabled: true,
+    playable: false,
+  },
 ];
 
 export const TEST_REGISTRY_BY_SLUG = new Map(TEST_REGISTRY.map((test) => [test.slug, test]));

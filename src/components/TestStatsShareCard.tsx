@@ -13,6 +13,7 @@ type TestStatsShareCardProps = {
     best: number | null;
     avg: number | null;
     trend: number | null;
+    bestRate?: number | null;
   };
   className?: string;
 };

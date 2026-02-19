@@ -1,5 +1,6 @@
 export const APP_NAME = 'HumansOnly';
 export const GIA_COMBINED_SLUG = 'gia-combined';
+export const GIA_SUPERSCORE_SLUG = 'gia-superscore';
 export const GIA_SLUGS = [
   'gia-reasoning',
   'gia-perceptual-speed',

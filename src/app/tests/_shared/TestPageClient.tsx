@@ -57,6 +57,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
     label: string;
     percentile: number | null;
     personalBest: boolean;
+    breakdown?: { correct: number; incorrect: number; penalty?: number };
   } | null>(null);
   const { submitScore, submitting } = useScore();
   const isGiaSubtest = definition.category === 'gia' && definition.slug !== GIA_COMBINED_TEST_SLUG;
@@ -81,6 +82,15 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
     }
   };
 
+  const extractBreakdown = (metadata?: Record<string, unknown>) => {
+    if (!metadata) return undefined;
+    const correct = typeof metadata.correct === 'number' ? metadata.correct : undefined;
+    const incorrect = typeof metadata.incorrect === 'number' ? metadata.incorrect : undefined;
+    if (correct === undefined || incorrect === undefined) return undefined;
+    const penalty = typeof metadata.penalty === 'number' ? metadata.penalty : undefined;
+    return { correct, incorrect, penalty };
+  };
+
   const handleComplete = async (payload: TestCompletePayload) => {
     setPendingPayload(payload);
     setSubmitError(null);
@@ -102,6 +112,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
           label: payload.label ?? `${payload.score} ${payload.unit}`,
           percentile: null,
           personalBest: false,
+          breakdown: extractBreakdown(payload.metadata),
         });
         setPendingPayload(null);
         return;
@@ -117,6 +128,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
             label: payload.label ?? `${payload.score} ${payload.unit}`,
             percentile: response.percentile,
             personalBest: response.personalBest,
+            breakdown: extractBreakdown(payload.metadata),
           });
           setPendingPayload(null);
           return;
@@ -170,6 +182,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
         label: payload.label ?? `${payload.score} ${payload.unit}`,
         percentile: response.percentile,
         personalBest: response.personalBest,
+        breakdown: extractBreakdown(payload.metadata),
       });
       setPendingPayload(null);
     } catch (error) {
@@ -180,6 +193,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
         label: payload.label ?? `${payload.score} ${payload.unit}`,
         percentile: null,
         personalBest: false,
+        breakdown: extractBreakdown(payload.metadata),
       });
     }
   };
@@ -427,6 +441,7 @@ export default function TestPageClient({ definition, flowParam, startParam }: Te
           scoreUnit={definition.scoreUnit}
           percentile={result.percentile}
           personalBest={result.personalBest}
+          breakdown={result.breakdown}
           statusNode={
             <>
               {submitting && !submitError ? (

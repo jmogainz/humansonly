@@ -13,9 +13,12 @@ import {
 import { TEST_REGISTRY } from '@/lib/tests/registry';
 import type { ScoreDirection, TestDefinition } from '@/lib/tests/types';
 import { formatNumber } from '@/lib/utils';
+import { GIA_SLUGS, GIA_SUPERSCORE_SLUG } from '@/constants';
 import styles from './PerformanceDashboard.module.css';
 import StatsShareCard from './StatsShareCard';
 import TestStatsShareCard from './TestStatsShareCard';
+
+const SUPERSCORE_COLOR = '#f59e0b';
 
 type PerformanceDashboardProps = {
   displayName: string;
@@ -59,6 +62,19 @@ function getBest(points: ScorePoint[], direction: ScoreDirection): number | null
   return direction === 'higher'
     ? Math.max(...points.map((point) => point.score))
     : Math.min(...points.map((point) => point.score));
+}
+
+function getBestRate(points: Array<ScorePoint & { metadata: any }>, timeLimitSeconds: number): number | null {
+  let best: number | null = null;
+  for (const p of points) {
+    const correct = Number(p.metadata?.correct ?? 0);
+    const incorrect = Number(p.metadata?.incorrect ?? 0);
+    const total = correct + incorrect;
+    if (total <= 0) continue;
+    const rate = timeLimitSeconds / total;
+    if (best === null || rate < best) best = rate;
+  }
+  return best;
 }
 
 function getCategoryLabel(test: TestDefinition): string {
@@ -127,6 +143,43 @@ export default function PerformanceDashboard({
       }
     });
     return bests;
+  }, [scoreDataByTest]);
+
+  const superscoreTimeline = useMemo(() => {
+    const runningBests = new Map<string, number>();
+    const allGiaScores: Array<ScorePoint & { slug: string }> = [];
+
+    GIA_SLUGS.forEach((slug) => {
+      const pts = scoreDataByTest.get(slug) ?? [];
+      pts.forEach((p) => allGiaScores.push({ ...p, slug }));
+    });
+
+    allGiaScores.sort((a, b) => a.timestamp - b.timestamp);
+
+    const timeline: Array<{ dateLabel: string; timestamp: number; score: number; run: number }> = [];
+    let prevSuperscore: number | null = null;
+
+    for (const entry of allGiaScores) {
+      const current = runningBests.get(entry.slug);
+      if (current === undefined || entry.score > current) {
+        runningBests.set(entry.slug, entry.score);
+      }
+
+      if (runningBests.size === GIA_SLUGS.length) {
+        const superscore = Array.from(runningBests.values()).reduce((a, b) => a + b, 0);
+        if (superscore !== prevSuperscore) {
+          timeline.push({
+            dateLabel: entry.dateLabel,
+            timestamp: entry.timestamp,
+            score: superscore,
+            run: timeline.length + 1,
+          });
+          prevSuperscore = superscore;
+        }
+      }
+    }
+
+    return timeline;
   }, [scoreDataByTest]);
 
   const activityData = useMemo(() => {
@@ -269,10 +322,140 @@ export default function PerformanceDashboard({
         <section key={section.id} className={styles.matrixSection}>
           <div className={styles.sectionHeading}>
             <h3>{section.title}</h3>
-            <p>{section.tests.length} tracked tests</p>
+            <p>{section.tests.filter(t => t.slug !== GIA_SUPERSCORE_SLUG).length} tracked tests</p>
           </div>
+
+          {section.id === 'gia' && (
+            <div className={styles.aggregateRow}>
+              {/* GIA Combined (session) */}
+              <div className={styles.aggregatePanel}>
+                <div className={styles.aggregatePanelHeader}>
+                  <div>
+                    <p className={styles.eyebrow} style={{ color: 'var(--accent)' }}>GIA · Session</p>
+                    <h4 className={styles.aggregatePanelTitle}>GIA Combined</h4>
+                  </div>
+                  <p className={styles.aggregatePanelSubtitle}>Sum from single 5-test run</p>
+                </div>
+                <div className={styles.aggregateChartFrame}>
+                  {(scoreDataByTest.get('gia-combined') ?? []).length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={scoreDataByTest.get('gia-combined') ?? []}
+                        margin={{ top: 10, right: 12, left: -12, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="giaCombinedGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="run" axisLine={false} tickLine={false} stroke="var(--text-muted)" fontSize={11} />
+                        <YAxis axisLine={false} tickLine={false} stroke="var(--text-muted)" fontSize={11} width={36} />
+                        <Tooltip
+                          labelFormatter={(v) => `Run ${v}`}
+                          formatter={(v) => [formatScore(Number(v)), 'Net']}
+                          contentStyle={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '12px' }}
+                          cursor={{ stroke: 'var(--accent)', strokeWidth: 1.5, strokeDasharray: '4 4' }}
+                        />
+                        <Area type="monotone" dataKey="score" stroke="var(--accent)" strokeWidth={2.5} fill="url(#giaCombinedGrad)" isAnimationActive animationDuration={800} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className={styles.emptyChart}>Complete a full GIA run</div>
+                  )}
+                </div>
+                <div className={styles.aggregateStats}>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Best</span>
+                    <span className={styles.statValue}>
+                      {getBest(scoreDataByTest.get('gia-combined') ?? [], 'higher') !== null
+                        ? `${formatScore(getBest(scoreDataByTest.get('gia-combined') ?? [], 'higher')!)} net`
+                        : 'NA'}
+                    </span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Runs</span>
+                    <span className={styles.statValue}>{(scoreDataByTest.get('gia-combined') ?? []).length}</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Latest</span>
+                    <span className={styles.statValue}>
+                      {(() => { const pts = scoreDataByTest.get('gia-combined') ?? []; const l = pts[pts.length - 1]; return l ? `${formatScore(l.score)} net` : 'NA'; })()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* GIA Superscore (career bests) */}
+              <div className={`${styles.aggregatePanel} ${styles.aggregatePanelSuperscore}`}>
+                <div className={styles.aggregatePanelHeader}>
+                  <div>
+                    <p className={styles.eyebrow} style={{ color: SUPERSCORE_COLOR }}>GIA · Career Bests</p>
+                    <h4 className={styles.aggregatePanelTitle} style={{ color: SUPERSCORE_COLOR }}>GIA Superscore</h4>
+                  </div>
+                  <p className={styles.aggregatePanelSubtitle}>Sum of personal bests across all 5 modules</p>
+                </div>
+                <div className={styles.aggregateChartFrame}>
+                  {superscoreTimeline.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={superscoreTimeline} margin={{ top: 10, right: 12, left: -12, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="superscoreGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={SUPERSCORE_COLOR} stopOpacity={0.18} />
+                            <stop offset="100%" stopColor={SUPERSCORE_COLOR} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="run" axisLine={false} tickLine={false} stroke="var(--text-muted)" fontSize={11} />
+                        <YAxis axisLine={false} tickLine={false} stroke="var(--text-muted)" fontSize={11} width={36} />
+                        <Tooltip
+                          labelFormatter={(_, p) => {
+                            const item = p?.[0]?.payload;
+                            return item ? item.dateLabel : '';
+                          }}
+                          formatter={(v) => [formatScore(Number(v)), 'Superscore']}
+                          contentStyle={{ background: 'var(--surface)', border: `1px solid ${SUPERSCORE_COLOR}40`, borderRadius: '8px', fontSize: '12px' }}
+                          cursor={{ stroke: SUPERSCORE_COLOR, strokeWidth: 1.5, strokeDasharray: '4 4' }}
+                        />
+                        <Area type="stepAfter" dataKey="score" stroke={SUPERSCORE_COLOR} strokeWidth={2.5} fill="url(#superscoreGrad)" isAnimationActive animationDuration={800} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className={styles.emptyChart}>Complete all 5 GIA modules</div>
+                  )}
+                </div>
+                <div className={styles.aggregateStats}>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Current</span>
+                    <span className={styles.statValue} style={{ color: SUPERSCORE_COLOR }}>
+                      {superscoreTimeline.length > 0
+                        ? `${formatScore(superscoreTimeline[superscoreTimeline.length - 1].score)} net`
+                        : 'NA'}
+                    </span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Improvements</span>
+                    <span className={styles.statValue}>{superscoreTimeline.length}</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <span className={styles.statLabel}>Modules</span>
+                    <span className={styles.statValue}>{Math.min(
+                      (() => {
+                        let count = 0;
+                        GIA_SLUGS.forEach(s => { if ((scoreDataByTest.get(s) ?? []).length > 0) count++; });
+                        return count;
+                      })(),
+                      GIA_SLUGS.length
+                    )} / {GIA_SLUGS.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.grid}>
-            {section.tests.map((test) => {
+            {section.tests.filter(t => t.slug !== GIA_SUPERSCORE_SLUG).map((test) => {
               const points = scoreDataByTest.get(test.slug) ?? [];
               const latest = points.length > 0 ? points[points.length - 1] : null;
               const best = getBest(points, test.direction);
@@ -293,6 +476,9 @@ export default function PerformanceDashboard({
 
               const isExpanded = expandedSlug === test.slug;
               const hasGranularData = points.some(p => p.metadata?.correct !== undefined || p.metadata?.incorrect !== undefined);
+              const bestRate = (test.timeLimitSeconds && hasGranularData)
+                ? getBestRate(points, test.timeLimitSeconds)
+                : null;
 
               const expandedStats = isExpanded ? {
                 avg: points.reduce((acc, p) => acc + p.score, 0) / points.length,
@@ -323,6 +509,7 @@ export default function PerformanceDashboard({
                             best: best,
                             avg: points.reduce((acc, p) => acc + p.score, 0) / points.length,
                             trend: trend,
+                            bestRate: bestRate,
                           }}
                           className={styles.shareButton}
                         />
@@ -458,7 +645,7 @@ export default function PerformanceDashboard({
                     </div>
                   )}
 
-                  <div className={`${styles.stats} ${isExpanded ? styles.statsExpanded : ''}`}>
+                  <div className={`${styles.stats} ${isExpanded ? styles.statsExpanded : (!isExpanded && bestRate !== null ? styles.statsWithRate : '')}`}>
                     <div className={styles.statItem}>
                       <span className={styles.statLabel}>Latest</span>
                       <span className={styles.statValue}>
@@ -477,6 +664,14 @@ export default function PerformanceDashboard({
                         {trendLabel}
                       </span>
                     </div>
+                    {bestRate !== null && (
+                      <div className={styles.statItem}>
+                        <span className={styles.statLabel}>Best Rate</span>
+                        <span className={styles.statValue} style={{ color: 'var(--accent)' }}>
+                          {bestRate.toFixed(2)} s/q
+                        </span>
+                      </div>
+                    )}
                     {isExpanded && expandedStats && (
                       <>
                         <div className={styles.statItem}>

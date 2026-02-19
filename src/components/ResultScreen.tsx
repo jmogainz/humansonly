@@ -10,10 +10,7 @@ import { formatNumber } from '@/lib/utils';
 import { Spinner } from './Spinner';
 import { getTestBySlug } from '@/lib/tests/registry';
 import { useSession, signIn } from 'next-auth/react';
-import { apiGet } from '@/lib/api';
-import type { ScoreHistoryResponse } from '@/lib/api/types';
-import { getStoredGuestId } from '@/lib/guestId';
-import { shareTestStatsCard } from '@/lib/share/testStatsShare';
+import { shareRunResultCard } from '@/lib/share/testStatsShare';
 
 type ResultScreenProps = {
   testSlug: string;
@@ -24,6 +21,7 @@ type ResultScreenProps = {
   personalBest: boolean;
   onPlayAgain: () => void;
   statusNode?: React.ReactNode;
+  breakdown?: { correct: number; incorrect: number; penalty?: number };
 };
 
 export default function ResultScreen({
@@ -35,6 +33,7 @@ export default function ResultScreen({
   personalBest,
   onPlayAgain,
   statusNode,
+  breakdown,
 }: ResultScreenProps) {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
@@ -70,54 +69,12 @@ export default function ResultScreen({
 
     setIsSharing(true);
     try {
-      let values: number[] = [];
-      try {
-        const params = new URLSearchParams({ testSlug, limit: '5000' });
-        if (!session?.user?.id) {
-          const guestId = getStoredGuestId();
-          if (guestId) {
-            params.set('guestId', guestId);
-          }
-        }
-
-        const history = await apiGet<ScoreHistoryResponse>(`/api/scores/history/test?${params.toString()}`);
-        const chronological = [...history.scores].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        values = chronological.map((entry) => entry.scoreValue).filter((entry) => Number.isFinite(entry));
-      } catch {
-        // Best effort fallback: still share current result as a one-run card.
-        values = [scoreValue];
-      }
-
-      if (values.length === 0) {
-        values = [scoreValue];
-      }
-
-      const runs = values.length;
-      const sum = values.reduce((acc, value) => acc + value, 0);
-      const avg = runs > 0 ? sum / runs : null;
-      const best =
-        test.direction === 'higher'
-          ? Math.max(...values)
-          : Math.min(...values);
-      const trend =
-        runs < 2
-          ? null
-          : test.direction === 'higher'
-            ? values[runs - 1] - values[0]
-            : values[0] - values[runs - 1];
       const displayName = session?.user?.name?.trim() || 'Human';
-
-      await shareTestStatsCard({
+      await shareRunResultCard({
         displayName,
         test,
-        stats: {
-          runs,
-          best,
-          avg,
-          trend,
-        },
+        scoreValue,
+        breakdown,
       });
     } catch (error) {
       console.error('Share failed:', error);
@@ -137,6 +94,28 @@ export default function ResultScreen({
       </p>
 
       {personalBest ? <p className={styles.badge}>New Personal Best</p> : null}
+
+      {breakdown && (
+        <div className={styles.breakdown}>
+          <span className={styles.breakdownCorrect}>
+            <span className={styles.breakdownIcon}>✓</span>
+            {breakdown.correct} correct
+          </span>
+          <span className={styles.breakdownSep} aria-hidden="true" />
+          <span className={styles.breakdownIncorrect}>
+            <span className={styles.breakdownIcon}>✗</span>
+            {breakdown.incorrect} incorrect
+          </span>
+          {breakdown.penalty !== undefined && (
+            <>
+              <span className={styles.breakdownSep} aria-hidden="true" />
+              <span className={styles.breakdownNet}>
+                = {formatNumber(scoreValue, scoreValue % 1 === 0 ? 0 : 2)} net
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       <PercentileBar percentile={percentile} />
 
