@@ -8,7 +8,7 @@ type PercentileBarProps = {
 
 export default function PercentileBar({ percentile }: PercentileBarProps) {
   if (percentile === null) {
-    return <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sign in to see how you rank against other players.</p>;
+    return null;
   }
 
   const clamped = Math.max(0, Math.min(100, percentile));

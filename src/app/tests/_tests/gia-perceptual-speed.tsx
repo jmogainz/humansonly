@@ -160,7 +160,11 @@ export default function GiaPerceptualSpeedTest({ definition, onComplete }: TestG
                   display: 'grid',
                   gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                   gap: '1.73rem',
-                  width: 'fit-content'
+                  padding: 'clamp(0.8rem, 4vw, 1.5rem)',
+                  border: '1px solid var(--border)',
+                  borderRadius: '12px',
+                  background: 'var(--surface-raised)',
+                  width: 'fit-content',
                 }}
               >
                 {round.columns.map((column, index) => (

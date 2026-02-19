@@ -87,43 +87,39 @@ export default function ResultScreen({
     <section className={styles.result}>
       {statusNode}
       <p className={styles.kicker}>Result</p>
-      <h2>{scoreLabel}</h2>
-      <p className={styles.mainScore}>
-        {formatNumber(display, scoreValue % 1 === 0 ? 0 : 2)}
-        <small> {scoreUnit}</small>
-      </p>
-
-      {personalBest ? <p className={styles.badge}>New Personal Best</p> : null}
-
-      {breakdown && (
-        <div className={styles.breakdown}>
-          <span className={styles.breakdownCorrect}>
-            <span className={styles.breakdownIcon}>✓</span>
-            {breakdown.correct} correct
-          </span>
-          <span className={styles.breakdownSep} aria-hidden="true" />
-          <span className={styles.breakdownIncorrect}>
-            <span className={styles.breakdownIcon}>✗</span>
-            {breakdown.incorrect} incorrect
-          </span>
-          {breakdown.penalty !== undefined && (
-            <>
-              <span className={styles.breakdownSep} aria-hidden="true" />
-              <span className={styles.breakdownNet}>
-                = {formatNumber(scoreValue, scoreValue % 1 === 0 ? 0 : 2)} net
-              </span>
-            </>
-          )}
+      <div className={styles.scoreRow}>
+        <div className={styles.scoreLeft}>
+          <p className={styles.mainScore}>
+            {formatNumber(display, scoreValue % 1 === 0 ? 0 : 2)}
+            <small> {scoreUnit}</small>
+          </p>
+          {personalBest ? <p className={styles.badge}>New Personal Best</p> : null}
         </div>
-      )}
+
+        {breakdown && (
+          <div className={styles.breakdown}>
+            <div className={styles.breakdownStat}>
+              <span className={styles.breakdownCorrectValue}>{breakdown.correct}</span>
+              <span className={styles.breakdownTileLabel}>Correct</span>
+            </div>
+            <div className={styles.breakdownStat}>
+              <span className={styles.breakdownIncorrectValue}>{breakdown.incorrect}</span>
+              <span className={styles.breakdownTileLabel}>Incorrect</span>
+            </div>
+          </div>
+        )}
+      </div>
 
       <PercentileBar percentile={percentile} />
 
       {isGuest && (
         <div className={styles.guestCta}>
           <div className={styles.guestCtaText}>
-            <strong>Save your score &amp; unlock your dashboard</strong>
-            <span>Sign in to track detailed stats, visualize your progress over time, and compete on global leaderboards.</span>
+            <strong>Sign in to save your score</strong>
+            <ul className={styles.guestCtaPerks}>
+              <li>Dashboard stats</li>
+              <li>Global leaderboards</li>
+            </ul>
           </div>
           <div className={styles.guestCtaActions}>
             <button
@@ -199,7 +195,13 @@ export default function ResultScreen({
             void handleShare();
           }}
         >
-          {isSharing ? <Spinner size={16} /> : null}
+          {isSharing ? <Spinner size={16} /> : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 16, height: 16 }}>
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+              <polyline points="16 6 12 2 8 6" />
+              <line x1="12" y1="2" x2="12" y2="15" />
+            </svg>
+          )}
           {isSharing ? 'Generating...' : 'Share'}
         </button>
       </div>

@@ -47,12 +47,13 @@ export default function ScoreDisplay({ label = 'Score', value, status = 'neutral
       }}>
         {label}
       </span>
-      <span style={{ 
+      <span style={{
         display: 'block',
         minWidth: '4.5rem',
         textAlign: 'center',
         fontSize: '1.25rem',
         fontWeight: 600,
+        fontFamily: 'var(--font-mono)',
         color: isPulsing ? color : 'var(--text-primary)',
         transition: 'color 0.2s ease',
         lineHeight: 1,

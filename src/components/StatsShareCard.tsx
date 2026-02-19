@@ -8,9 +8,10 @@ import { Spinner } from './Spinner';
 type StatsShareCardProps = {
   displayName: string;
   bests: Array<{ testSlug: string; bestScore: number; scoreUnit: string }>;
+  label?: string;
 };
 
-export default function StatsShareCard({ displayName, bests }: StatsShareCardProps) {
+export default function StatsShareCard({ displayName, bests, label = 'Share Atlas' }: StatsShareCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const giaBests = bests.filter(b => {
@@ -230,7 +231,7 @@ export default function StatsShareCard({ displayName, bests }: StatsShareCardPro
           <line x1="12" y1="2" x2="12" y2="15" />
         </svg>
       )}
-      {isGenerating ? 'Generating...' : 'Share Atlas'}
+      {isGenerating ? 'Generating...' : label}
     </button>
   );
 }

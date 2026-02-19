@@ -15,10 +15,15 @@ export default function Header() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const pathname = usePathname();
 
-  // Close menu when navigating
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const handler = () => setIsMenuOpen(true);
+    document.addEventListener('humansonly:open-menu', handler);
+    return () => document.removeEventListener('humansonly:open-menu', handler);
+  }, []);
 
   return (
     <>

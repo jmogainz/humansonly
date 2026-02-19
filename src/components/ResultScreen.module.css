@@ -66,53 +66,55 @@
   animation: pulse-glow-badge 0.8s ease-in-out 3;
 }
 
+.scoreRow {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.scoreLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .breakdown {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  padding: 0.65rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-raised);
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  width: fit-content;
-}
-
-.breakdownCorrect {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  color: var(--success);
-  font-weight: 600;
-}
-
-.breakdownIncorrect {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  color: var(--danger);
-  font-weight: 600;
-}
-
-.breakdownNet {
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.breakdownIcon {
-  font-size: 0.75rem;
-  line-height: 1;
-}
-
-.breakdownSep {
-  display: inline-block;
-  width: 1px;
-  height: 0.9em;
-  background: var(--border);
+  gap: 1.5rem;
   flex-shrink: 0;
-  align-self: center;
+}
+
+.breakdownStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.breakdownCorrectValue {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--success);
+}
+
+.breakdownIncorrectValue {
+  font-family: var(--font-mono);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--danger);
+}
+
+.breakdownTileLabel {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
 }
 
 .actions {
@@ -138,7 +140,8 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.25rem;
+  padding: 0.6rem 0.9rem;
+  width: fit-content;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--accent) 6%, var(--surface));
@@ -154,21 +157,30 @@
 }
 
 .guestCtaText {
-  display: grid;
-  gap: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
   flex: 1;
   min-width: 0;
 }
 
 .guestCtaText strong {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   color: var(--text-primary);
 }
 
-.guestCtaText span {
-  font-size: 0.8rem;
+.guestCtaPerks {
+  margin: 0;
+  padding: 0 0 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  list-style: disc;
+}
+
+.guestCtaPerks li {
+  font-size: 0.78rem;
   color: var(--text-muted);
-  line-height: 1.4;
 }
 
 .guestCtaActions {

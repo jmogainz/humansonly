@@ -24,7 +24,7 @@ export async function shareRunResultCard(options: RunResultShareOptions): Promis
     });
 
   canvas.width = 800;
-  canvas.height = 860;
+  canvas.height = 1000;
 
   const isDark = document.documentElement.dataset.theme === 'dark';
   const accentColor = isDark ? '#22d3ee' : '#06b6d4';
@@ -67,115 +67,63 @@ export async function shareRunResultCard(options: RunResultShareOptions): Promis
   ctx.textAlign = 'left';
   ctx.fillText('HumansOnly', logoImg ? 115 : 60, 102);
 
-  // "Run Result" kicker
-  ctx.fillStyle = accentColor;
-  ctx.font = '600 20px Outfit, sans-serif';
-  ctx.fillText('Run Result', logoImg ? 115 : 60, 134);
-
   // Test name
-  ctx.fillStyle = textColor;
   ctx.font = 'bold 52px Outfit, sans-serif';
-  ctx.fillText(test.name.replace('GIA ', ''), 60, 200);
+  ctx.fillText(test.name.replace('GIA ', ''), 60, 180);
 
   ctx.fillStyle = mutedTextColor;
   ctx.font = '28px Outfit, sans-serif';
-  ctx.fillText(displayName, 60, 248);
+  ctx.fillText(`Run Result for ${displayName}`, 60, 235);
 
   // Divider
   ctx.strokeStyle = isDark ? '#2a2a32' : '#e5e7eb';
   ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(60, 284); ctx.lineTo(740, 284); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(60, 280); ctx.lineTo(740, 280); ctx.stroke();
 
-  // Big net score block
+  // Build rows — same structure as shareTestStatsCard
   const hasBreakdown = breakdown != null;
-  ctx.textAlign = 'left';
-  ctx.fillStyle = mutedTextColor;
-  ctx.font = '500 24px Outfit, sans-serif';
-  ctx.fillText(hasBreakdown ? 'NET SCORE' : test.scoreUnit.toUpperCase(), 60, 340);
-
-  ctx.fillStyle = accentColor;
-  ctx.font = `bold 110px JetBrains Mono, monospace`;
-  ctx.textBaseline = 'alphabetic';
   const scoreStr = Number.isInteger(scoreValue)
     ? formatNumber(scoreValue, 0)
     : formatNumber(scoreValue, 2);
-  ctx.fillText(scoreStr, 60, 460);
 
-  // Breakdown chips (only if breakdown data present)
+  type Row = { label: string; value: string; valueColor: string };
+  const rows: Row[] = [
+    { label: hasBreakdown ? 'Net Score' : test.scoreUnit, value: scoreStr, valueColor: textColor },
+  ];
+
   if (hasBreakdown) {
-    const chipY = 510;
-    const chipH = 80;
-    const chipGap = 20;
-    const halfW = (720 - chipGap) / 2;
-
-    // Correct chip
-    ctx.fillStyle = isDark ? 'rgba(74, 222, 128, 0.08)' : 'rgba(22, 163, 74, 0.07)';
-    ctx.beginPath();
-    ctx.roundRect(40, chipY, halfW, chipH, 14);
-    ctx.fill();
-    ctx.strokeStyle = isDark ? 'rgba(74, 222, 128, 0.25)' : 'rgba(22, 163, 74, 0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(40, chipY, halfW, chipH, 14);
-    ctx.stroke();
-
-    ctx.fillStyle = successColor;
-    ctx.font = 'bold 36px JetBrains Mono, monospace';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'left';
-    ctx.fillText(`+${breakdown!.correct}`, 68, chipY + chipH / 2);
-    ctx.fillStyle = mutedTextColor;
-    ctx.font = '500 22px Outfit, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('correct', 40 + halfW - 20, chipY + chipH / 2);
-
-    // Incorrect chip
-    const chip2X = 40 + halfW + chipGap;
-    ctx.fillStyle = isDark ? 'rgba(248, 113, 113, 0.08)' : 'rgba(220, 38, 38, 0.07)';
-    ctx.beginPath();
-    ctx.roundRect(chip2X, chipY, halfW, chipH, 14);
-    ctx.fill();
-    ctx.strokeStyle = isDark ? 'rgba(248, 113, 113, 0.25)' : 'rgba(220, 38, 38, 0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(chip2X, chipY, halfW, chipH, 14);
-    ctx.stroke();
-
-    ctx.fillStyle = dangerColor;
-    ctx.font = 'bold 36px JetBrains Mono, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`-${breakdown!.incorrect}`, chip2X + 28, chipY + chipH / 2);
-    ctx.fillStyle = mutedTextColor;
-    ctx.font = '500 22px Outfit, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('incorrect', chip2X + halfW - 20, chipY + chipH / 2);
-
-    // Rate row (only for timed tests)
+    rows.push({ label: 'Correct',   value: `+${breakdown!.correct}`,   valueColor: successColor });
+    rows.push({ label: 'Incorrect', value: `-${breakdown!.incorrect}`, valueColor: dangerColor });
     if (test.timeLimitSeconds) {
       const total = breakdown!.correct + breakdown!.incorrect;
       const rate = total > 0 ? test.timeLimitSeconds / total : null;
       if (rate !== null) {
-        const rateY = chipY + chipH + chipGap;
-        ctx.fillStyle = isDark ? 'rgba(34, 211, 238, 0.06)' : 'rgba(6, 182, 212, 0.06)';
-        ctx.beginPath();
-        ctx.roundRect(40, rateY, 720, chipH, 14);
-        ctx.fill();
-        ctx.strokeStyle = isDark ? 'rgba(34, 211, 238, 0.2)' : 'rgba(6, 182, 212, 0.2)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.roundRect(40, rateY, 720, chipH, 14);
-        ctx.stroke();
-
-        ctx.fillStyle = accentColor;
-        ctx.font = 'bold 36px JetBrains Mono, monospace';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${rate.toFixed(2)} s/q`, 68, rateY + chipH / 2);
-        ctx.fillStyle = mutedTextColor;
-        ctx.font = '500 22px Outfit, sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText('sec / question', 760, rateY + chipH / 2);
+        rows.push({ label: 'Rate', value: `${rate.toFixed(2)} s/q`, valueColor: accentColor });
       }
     }
+  }
+
+  const baseY = rows.length <= 4 ? 380 : 350;
+  const rowSpacing = rows.length <= 4 ? 130 : 118;
+  let y = baseY;
+  for (const row of rows) {
+    ctx.fillStyle = isDark ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.02)';
+    ctx.beginPath();
+    ctx.roundRect(40, y - 50, 720, 100, 16);
+    ctx.fill();
+
+    ctx.fillStyle = mutedTextColor;
+    ctx.font = '500 28px Outfit, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText(row.label, 80, y);
+
+    ctx.fillStyle = row.valueColor;
+    ctx.font = 'bold 38px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(row.value, 720, y);
+
+    y += rowSpacing;
   }
 
   // Footer
@@ -183,7 +131,7 @@ export async function shareRunResultCard(options: RunResultShareOptions): Promis
   ctx.textAlign = 'center';
   ctx.font = '24px Outfit, sans-serif';
   ctx.textBaseline = 'middle';
-  ctx.fillText('tryhumansonly.com', canvas.width / 2, 820);
+  ctx.fillText('tryhumansonly.com', canvas.width / 2, 940);
 
   await new Promise((resolve) => setTimeout(resolve, 100));
 
