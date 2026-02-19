@@ -1,5 +1,6 @@
 .wrapper {
-  width: min(1000px, calc(100vw - 2rem));
+  width: 100%;
+  max-width: 1000px;
   margin: 0 auto;
   animation: fadeIn 0.1s ease both;
   display: flex;
@@ -130,7 +131,7 @@
 
 @media (max-width: 640px) {
   .wrapper {
-    width: calc(100vw - 1rem);
+    width: 100%;
     height: calc(var(--app-vh) - 60px - 1rem);
     padding-bottom: 0.5rem;
   }

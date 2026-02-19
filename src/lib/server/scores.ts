@@ -1,8 +1,8 @@
 import { ensureDbSchema, getDbPool } from './db';
 import { getLeaderboardRedis } from './redis';
-import { computePercentile, updateLeaderboardBest, userBestsKey } from './leaderboard';
+import { computePercentile, updateLeaderboardBest } from './leaderboard';
 import { getTestBySlug } from '@/lib/tests/registry';
-import { GIA_SLUGS, GIA_SUPERSCORE_SLUG } from '@/constants';
+import { GIA_COMBINED_SLUG, GIA_SLUGS, GIA_SUPERSCORE_SLUG } from '@/constants';
 import type { Redis } from '@upstash/redis';
 
 export type StoredScore = {
@@ -231,11 +231,27 @@ function shouldDiscardHistoricalOutlier(
 const GIA_SUBTEST_SET = new Set<string>(GIA_SLUGS);
 
 async function computeAndUpdateGiaSuperscore(redis: Redis, userId: string): Promise<void> {
-  const raw = await redis.hmget(userBestsKey(userId), ...GIA_SLUGS);
-  const vals = raw as unknown as (number | null)[];
-  if (!vals || vals.some((v) => v === null || v === undefined)) return;
-  const superscore = (vals as number[]).reduce((sum, v) => sum + v, 0);
+  const superscore = await computeGiaSuperscoreFromDb(userId);
+  if (superscore === null) return;
   await updateLeaderboardBest(redis, GIA_SUPERSCORE_SLUG, userId, superscore, 'higher');
+}
+
+async function computeGiaSuperscoreFromDb(userId: string): Promise<number | null> {
+  await ensureDbSchema();
+  const pool = getDbPool();
+  const result = await pool.query<BestScoreRow>(
+    `select test_slug, max(score_value)::float8 as best_score
+     from scores
+     where user_id=$1 and test_slug = any($2::text[])
+     group by test_slug`,
+    [userId, GIA_SLUGS]
+  );
+
+  if (!result.rows.length) return null;
+  const bestByTest = new Map(result.rows.map((row) => [row.test_slug, row.best_score]));
+  if (!GIA_SLUGS.every((slug) => bestByTest.has(slug))) return null;
+
+  return GIA_SLUGS.reduce((sum, slug) => sum + (bestByTest.get(slug) ?? 0), 0);
 }
 
 async function fetchBestScore(userId: string, testSlug: string, direction: 'higher' | 'lower'): Promise<number | null> {
@@ -343,7 +359,7 @@ export async function submitScoreForUser(userId: string, input: SubmitScoreInput
     await updateLeaderboardBest(redis, input.testSlug, userId, input.scoreValue, test.direction);
     percentile = await computePercentile(redis, input.testSlug, input.scoreValue, test.direction);
 
-    if (personalBest && GIA_SUBTEST_SET.has(input.testSlug)) {
+    if (GIA_SUBTEST_SET.has(input.testSlug) || input.testSlug === GIA_COMBINED_SLUG) {
       await computeAndUpdateGiaSuperscore(redis, userId);
     }
   }
@@ -538,10 +554,12 @@ export async function claimGuestScores(guestId: string, userId: string): Promise
     return claimedCount;
   }
 
+  let claimedAnyGiaSubtest = false;
   let giaSubtestClaimed = false;
   for (const [testSlug, movedBest] of movedBestByTest) {
     const test = getTestBySlug(testSlug);
     if (!test?.leaderboardEnabled) continue;
+    if (GIA_SUBTEST_SET.has(testSlug)) claimedAnyGiaSubtest = true;
 
     const existingBest = existingBestByTest.get(testSlug) ?? null;
     if (!isPersonalBest(test.direction, existingBest, movedBest)) continue;
@@ -550,7 +568,7 @@ export async function claimGuestScores(guestId: string, userId: string): Promise
     if (GIA_SUBTEST_SET.has(testSlug)) giaSubtestClaimed = true;
   }
 
-  if (giaSubtestClaimed) {
+  if (giaSubtestClaimed || claimedAnyGiaSubtest) {
     await computeAndUpdateGiaSuperscore(redis, userId);
   }
 

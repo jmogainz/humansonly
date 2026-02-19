@@ -1,5 +1,6 @@
 .page {
-  width: min(1100px, calc(100vw - 2rem));
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto 2rem;
   display: grid;
   gap: 1rem;

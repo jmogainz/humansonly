@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
 import { apiGet } from '@/lib/api';
 import type { AroundMeResponse, LeaderboardResponse } from '@/lib/api/types';
@@ -22,8 +22,12 @@ export default function LeaderboardViewClient({ tests, initialSlug }: Leaderboar
   const [entries, setEntries] = useState<LeaderboardResponse['entries']>([]);
   const [around, setAround] = useState<AroundMeResponse['entries']>([]);
   const [rank, setRank] = useState<number | null>(null);
+  const [aroundLoaded, setAroundLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const topCacheRef = useRef<Record<string, LeaderboardResponse['entries']>>({});
+  const aroundCacheRef = useRef<Record<string, { entries: AroundMeResponse['entries']; rank: number | null }>>({});
 
   const activeTest = useMemo(() => tests.find((test) => test.slug === activeSlug) ?? null, [tests, activeSlug]);
 
@@ -37,34 +41,80 @@ export default function LeaderboardViewClient({ tests, initialSlug }: Leaderboar
 
     setLoading(true);
     setError(null);
+    const cachedTop = topCacheRef.current[activeSlug];
+    if (cachedTop) {
+      setEntries(cachedTop);
+      setHasLoaded(true);
+    }
 
-    Promise.all([
-      apiGet<LeaderboardResponse>(`/api/leaderboard/top?testSlug=${encodeURIComponent(activeSlug)}&limit=100`),
-      apiGet<AroundMeResponse>(`/api/leaderboard/around?testSlug=${encodeURIComponent(activeSlug)}`).catch(() => ({
-        testSlug: activeSlug,
-        rank: 0,
-        entries: [],
-      })),
-    ])
-      .then(([top, aroundMe]) => {
+    const cachedAround = aroundCacheRef.current[activeSlug];
+    if (cachedAround) {
+      setAround(cachedAround.entries);
+      setRank(cachedAround.rank);
+      setAroundLoaded(true);
+    } else {
+      setAround([]);
+      setRank(null);
+      setAroundLoaded(false);
+    }
+
+    let topDone = false;
+    let aroundDone = false;
+    const finishIfReady = () => {
+      if (!mounted) return;
+      if (topDone && aroundDone) {
+        setLoading(false);
+        setHasLoaded(true);
+      }
+    };
+
+    apiGet<LeaderboardResponse>(`/api/leaderboard/top?testSlug=${encodeURIComponent(activeSlug)}&limit=100`)
+      .then((top) => {
         if (!mounted) return;
+        topCacheRef.current[activeSlug] = top.entries;
         setEntries(top.entries);
-        setAround(aroundMe.entries);
-        setRank(aroundMe.rank || null);
+        setHasLoaded(true);
       })
       .catch((err) => {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : 'Failed to load leaderboard');
       })
       .finally(() => {
-        if (!mounted) return;
-        setLoading(false);
+        topDone = true;
+        finishIfReady();
       });
+
+    if (isGuest) {
+      setAroundLoaded(true);
+      aroundDone = true;
+      finishIfReady();
+    } else {
+      apiGet<AroundMeResponse>(`/api/leaderboard/around?testSlug=${encodeURIComponent(activeSlug)}`)
+        .then((aroundMe) => {
+          if (!mounted) return;
+          const nextRank = aroundMe.rank || null;
+          aroundCacheRef.current[activeSlug] = { entries: aroundMe.entries, rank: nextRank };
+          setAround(aroundMe.entries);
+          setRank(nextRank);
+          setAroundLoaded(true);
+        })
+        .catch(() => {
+          if (!mounted) return;
+          aroundCacheRef.current[activeSlug] = { entries: [], rank: null };
+          setAround([]);
+          setRank(null);
+          setAroundLoaded(true);
+        })
+        .finally(() => {
+          aroundDone = true;
+          finishIfReady();
+        });
+    }
 
     return () => {
       mounted = false;
     };
-  }, [activeSlug]);
+  }, [activeSlug, isGuest]);
 
   const renderGroup = (label: string, groupTests: TestDefinition[]) => {
     if (groupTests.length === 0) return null;
@@ -121,22 +171,18 @@ export default function LeaderboardViewClient({ tests, initialSlug }: Leaderboar
         </p>
       ) : null}
 
-      {loading ? (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <div>
-            <div className="skeleton" style={{ height: '1.1rem', width: '80px', borderRadius: '6px', marginBottom: '0.75rem' }} />
-            <div style={{ display: 'grid', gap: '0.35rem' }}>
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="skeleton" style={{ height: '2.2rem', borderRadius: '6px' }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
       {error ? <p style={{ color: 'var(--danger)', margin: 0 }}>{error}</p> : null}
 
-      {!loading && !error ? (
-        <>
+      {loading && !hasLoaded ? (
+        <div style={{ display: 'grid', gap: '0.35rem' }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="skeleton" style={{ height: '2.75rem', borderRadius: '6px' }} />
+          ))}
+        </div>
+      ) : null}
+
+      {!error && hasLoaded ? (
+        <div style={{ display: 'grid', gap: '1.75rem' }}>
           <div>
             <h2 style={{ fontSize: '1.1rem', marginBottom: '0.75rem' }}>Top 100</h2>
             <LeaderboardTable entries={entries} />
@@ -147,6 +193,10 @@ export default function LeaderboardViewClient({ tests, initialSlug }: Leaderboar
             </h3>
             {around.length > 0 ? (
               <LeaderboardTable entries={around} />
+            ) : !isGuest && !aroundLoaded ? (
+              <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.85rem' }}>
+                Loading your rank...
+              </p>
             ) : isGuest ? (
               <div style={{
                 display: 'flex',
@@ -217,7 +267,7 @@ export default function LeaderboardViewClient({ tests, initialSlug }: Leaderboar
               </p>
             )}
           </div>
-        </>
+        </div>
       ) : null}
     </div>
   );
