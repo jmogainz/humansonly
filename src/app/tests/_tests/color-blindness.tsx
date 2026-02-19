@@ -167,32 +167,27 @@ export default function ColorBlindnessTest({ definition, onComplete }: TestGameP
             <div className="game-grid-container">
               {plate?.src ? (
                 <img
+                  className="animate-in"
                   src={plate.src}
                   alt="Ishihara plate"
-                  style={{ 
-                    width: 'min(360px, 80cqh, 80cqw)', 
+                  style={{
+                    width: 'min(360px, 80cqh, 80cqw)',
                     height: 'auto',
                     aspectRatio: '1 / 1',
-                    borderRadius: '50%', 
+                    borderRadius: '50%',
                     border: '4px solid var(--surface-raised)',
                     boxShadow: '0 8px 24px rgba(0,0,0,0.1)'
                   }}
                 />
               ) : (
                 <div
+                  className="skeleton"
                   style={{
-                    width: 'min(360px, 80cqh, 80cqw)', 
+                    width: 'min(360px, 80cqh, 80cqw)',
                     aspectRatio: '1 / 1',
                     borderRadius: '50%',
-                    border: '1px solid var(--border)',
-                    display: 'grid',
-                    placeItems: 'center',
-                    color: 'var(--text-muted)',
-                    background: 'var(--surface-raised)'
                   }}
-                >
-                  Generating plate...
-                </div>
+                />
               )}
             </div>
 
@@ -209,12 +204,12 @@ export default function ColorBlindnessTest({ definition, onComplete }: TestGameP
                 inputMode="numeric"
                 onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
                 placeholder="Enter number seen"
-                style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.25rem', padding: '0.75rem' }}
+                style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.25rem', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}
               />
-              <button type="submit" className="button" disabled={!plate?.src || !guess.trim()} style={{ padding: '0.75rem' }}>Next Plate</button>
+              <button type="submit" className="button" disabled={!plate?.src || !guess.trim()} style={{ padding: '0.75rem', width: '100%' }}>Next Plate</button>
             </form>
 
-            <small style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem', opacity: 0.8 }}>
+            <small style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem' }}>
               Screening only. This is not a medical diagnosis.
             </small>
           </>

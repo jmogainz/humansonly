@@ -128,7 +128,7 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
           />
         ) : (
           <>
-            <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>
+            <p key={phase} className="animate-in" style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>
               {phase === 'show' ? 'Memorize highlighted tiles' : 'Select every tile that flashed'}
             </p>
 
@@ -158,6 +158,8 @@ export default function VisualMemoryTest({ definition, onComplete }: TestGamePro
                               : 'var(--surface-raised)',
                         cursor: phase === 'input' ? 'pointer' : 'default',
                         borderRadius: 'clamp(4px, 1.5cqw, 12px)',
+                        boxShadow: phase === 'show' && isPattern ? '0 0 16px 4px rgba(6,182,212,0.25)' : 'none',
+                        transition: 'background 0.15s ease, box-shadow 0.15s ease',
                       }}
                     />
                   );

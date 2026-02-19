@@ -1,52 +1,18 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import { shuffle } from '@/lib/utils';
 import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
+import { generateFaceSVG } from '@/lib/tests/face-generator';
 
-const FACE_URI_CACHE = new Map<number, string>();
+// Pre-generate pool of unique seeds to ensure variety
+const SEED_POOL = Array.from({ length: 200 }, (_, i) => 1000 + i * 7);
 
-function seeded(seed: number) {
-  let value = seed * 9301 + 49297;
-  return () => {
-    value = (value * 233280 + 12345) % 233280;
-    return value / 233280;
-  };
-}
-
-function faceDataUri(seed: number): string {
-  const cached = FACE_URI_CACHE.get(seed);
-  if (cached) {
-    return cached;
-  }
-
-  const rand = seeded(seed + 1);
-  const skin = `hsl(${18 + rand() * 22} ${35 + rand() * 30}% ${58 + rand() * 20}%)`;
-  const hair = `hsl(${18 + rand() * 32} ${20 + rand() * 30}% ${15 + rand() * 18}%)`;
-  const shirt = `hsl(${rand() * 360} ${45 + rand() * 35}% ${35 + rand() * 25}%)`;
-  const eyeOffset = 10 + rand() * 8;
-  const nose = 2 + rand() * 5;
-  const mouth = 42 + rand() * 10;
-
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='220' height='260' viewBox='0 0 220 260'>
-    <rect width='220' height='260' rx='26' fill='hsl(${200 + rand() * 50} 26% 90%)'/>
-    <circle cx='110' cy='112' r='64' fill='${skin}'/>
-    <ellipse cx='110' cy='72' rx='70' ry='36' fill='${hair}'/>
-    <circle cx='${110 - eyeOffset}' cy='112' r='5' fill='#222'/>
-    <circle cx='${110 + eyeOffset}' cy='112' r='5' fill='#222'/>
-    <rect x='106' y='122' width='${nose}' height='18' rx='4' fill='hsl(20 25% 45%)'/>
-    <path d='M80 ${mouth} q30 22 60 0' stroke='#5d2d2d' stroke-width='4' fill='none' stroke-linecap='round'/>
-    <rect x='44' y='176' width='132' height='72' rx='14' fill='${shirt}'/>
-  </svg>`;
-
-  const uri = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-  FACE_URI_CACHE.set(seed, uri);
-  return uri;
-}
+type Phase = 'study' | 'test' | 'feedback';
 
 type LevelState = {
   level: number;
@@ -55,11 +21,15 @@ type LevelState = {
   studySet: Set<number>;
 };
 
-function buildLevel(level: number, source: number[]): LevelState {
-  const studyCount = 4 + level;
-  const studyIds = source.slice(0, studyCount);
-  const newIds = source.slice(studyCount, studyCount * 2);
+function buildLevel(level: number, pool: number[]): LevelState {
+  // Level 1: 4 study, 8 test (4 seen, 4 new)
+  // Level 7: 10 study, 20 test (10 seen, 10 new)
+  const studyCount = 3 + level;
+  const shuffledPool = shuffle([...pool]);
+  const studyIds = shuffledPool.slice(0, studyCount);
+  const newIds = shuffledPool.slice(studyCount, studyCount * 2);
   const testIds = shuffle([...studyIds, ...newIds]);
+  
   return {
     level,
     studyIds,
@@ -69,19 +39,26 @@ function buildLevel(level: number, source: number[]): LevelState {
 }
 
 export default function FaceMemoryTest({ definition, onComplete }: TestGameProps) {
-  const pool = useMemo(() => shuffle(Array.from({ length: 140 }, (_, index) => index + 1)), []);
+  // Use a stable shuffled pool for the entire session
+  const sessionPool = useMemo(() => shuffle([...SEED_POOL]), []);
+  
   const [started, setStarted] = useState(false);
   const [level, setLevel] = useState(1);
-  const [phase, setPhase] = useState<'study' | 'test'>('study');
-  const [levelState, setLevelState] = useState<LevelState>(() => buildLevel(1, pool));
-  const [timer, setTimer] = useState(8);
+  const [phase, setPhase] = useState<Phase>('study');
+  const [levelState, setLevelState] = useState<LevelState>(() => buildLevel(1, sessionPool.slice(0, 30)));
+  const [timer, setTimer] = useState(0);
   const [testIndex, setTestIndex] = useState(0);
   const [correct, setCorrect] = useState(0);
   const [total, setTotal] = useState(0);
+  const [feedback, setFeedback] = useState<{ isCorrect: boolean; faceId: number } | null>(null);
 
+  const totalStudyTime = useMemo(() => 5 + level * 2, [level]);
+
+  // Start study timer
   useEffect(() => {
     if (!started || phase !== 'study') return;
-    setTimer(6 + level * 2);
+    
+    setTimer(totalStudyTime);
     const interval = window.setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -94,69 +71,68 @@ export default function FaceMemoryTest({ definition, onComplete }: TestGameProps
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [phase, level, started]);
+  }, [phase, level, started, totalStudyTime]);
 
-  const handleAnswer = (choiceSeen: boolean) => {
+  const handleAnswer = useCallback((choiceSeen: boolean) => {
     if (phase !== 'test') return;
+    
     const faceId = levelState.testIds[testIndex];
     const actuallySeen = levelState.studySet.has(faceId);
-    const wasCorrect = (choiceSeen && actuallySeen) || (!choiceSeen && !actuallySeen);
+    const isCorrect = (choiceSeen && actuallySeen) || (!choiceSeen && !actuallySeen);
 
-    const nextCorrect = wasCorrect ? correct + 1 : correct;
+    const nextCorrect = isCorrect ? correct + 1 : correct;
     const nextTotal = total + 1;
+    
     setCorrect(nextCorrect);
     setTotal(nextTotal);
+    setFeedback({ isCorrect, faceId });
+    setPhase('feedback');
 
-    if (testIndex >= levelState.testIds.length - 1) {
-      if (level >= 7) {
-        const accuracy = nextTotal > 0 ? (nextCorrect / nextTotal) * 100 : 0;
-        onComplete({
-          score: accuracy,
-          unit: 'percent',
-          metadata: {
-            correct: nextCorrect,
-            total: nextTotal,
-            levelsCompleted: 7,
-          },
-          label: `${accuracy.toFixed(1)}% accuracy`,
-        });
-        return;
+    // Small delay for feedback before next face or level
+    setTimeout(() => {
+      setFeedback(null);
+      
+      if (testIndex >= levelState.testIds.length - 1) {
+        if (level >= 7) {
+          const accuracy = nextTotal > 0 ? (nextCorrect / nextTotal) * 100 : 0;
+          onComplete({
+            score: accuracy,
+            unit: 'percent',
+            metadata: {
+              correct: nextCorrect,
+              total: nextTotal,
+              levelsCompleted: 7,
+            },
+            label: `${accuracy.toFixed(1)}% accuracy`,
+          });
+        } else {
+          const nextLevel = level + 1;
+          const poolOffset = nextLevel * 20; // Ensure enough faces for later levels
+          setLevel(nextLevel);
+          setLevelState(buildLevel(nextLevel, sessionPool.slice(poolOffset, poolOffset + 40)));
+          setTestIndex(0);
+          setPhase('study');
+        }
+      } else {
+        setTestIndex((prev) => prev + 1);
+        setPhase('test');
       }
-
-      const nextLevel = level + 1;
-      const offset = nextLevel * 14;
-      const nextPool = pool.slice(offset);
-      setLevel(nextLevel);
-      setLevelState(buildLevel(nextLevel, nextPool));
-      setTestIndex(0);
-      setPhase('study');
-      return;
-    }
-
-    setTestIndex((prev) => prev + 1);
-  };
-
-  const currentFace = phase === 'study'
-    ? null
-    : levelState.testIds[testIndex];
-  const studyFaceUris = useMemo(
-    () => levelState.studyIds.map((faceId) => ({ faceId, src: faceDataUri(faceId) })),
-    [levelState.studyIds]
-  );
-  const currentFaceUri = useMemo(
-    () => (currentFace !== null ? faceDataUri(currentFace) : null),
-    [currentFace]
-  );
+    }, 600);
+  }, [phase, level, levelState, testIndex, correct, total, onComplete, sessionPool]);
 
   return (
     <div className="game-container">
       <Scoreboard>
-        <ScoreDisplay label="Level" value={level} status="neutral" />
-        <ScoreDisplay label="Correct" value={`${correct} / ${total}`} status={total > 0 ? (correct === total ? 'success' : 'neutral') : 'neutral'} />
+        <ScoreDisplay label="Level" value={`${level} / 7`} />
+        <ScoreDisplay 
+          label="Accuracy" 
+          value={total > 0 ? `${Math.round((correct / total) * 100)}%` : '—'} 
+          status={total > 0 ? (correct/total > 0.8 ? 'success' : 'neutral') : 'neutral'}
+        />
         {phase === 'study' ? (
           <ScoreDisplay label="Time" value={`${timer}s`} status={timer < 3 ? 'danger' : 'neutral'} />
         ) : (
-           <ScoreDisplay label="Progress" value={`${testIndex + 1} / ${levelState.testIds.length}`} />
+          <ScoreDisplay label="Progress" value={`${testIndex + 1} / ${levelState.testIds.length}`} />
         )}
       </Scoreboard>
 
@@ -169,45 +145,140 @@ export default function FaceMemoryTest({ definition, onComplete }: TestGameProps
         ) : (
           <>
             {phase === 'study' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, minHeight: 0 }}>
-                <p style={{ margin: 0, color: 'var(--text-muted)', textAlign: 'center', fontSize: '1rem' }}>Study these faces carefully.</p>
-                <div 
-                  style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(90px, 20vw, 150px), 1fr))', 
-                    gap: 'clamp(0.5rem, 2vw, 1rem)', 
-                    overflowY: 'auto',
-                    flex: 1,
-                    paddingRight: '4px'
-                  }}
-                >
-                  {studyFaceUris.map(({ faceId, src }) => (
-                    <img
-                      key={faceId}
-                      src={src}
-                      alt="Study face"
-                      style={{ width: '100%', borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--card-shadow)' }}
-                    />
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '1.5rem', 
+                width: '100%', 
+                height: '100%',
+                maxWidth: '800px'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0' }}>Study Phase</h3>
+                  <p style={{ margin: 0, fontSize: '0.9rem' }}>Memorize these {levelState.studyIds.length} faces.</p>
+                </div>
+
+                <div style={{ 
+                  width: '100%', 
+                  height: '4px', 
+                  background: 'var(--surface-raised)', 
+                  borderRadius: '2px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{ 
+                    height: '100%', 
+                    width: `${(timer / totalStudyTime) * 100}%`,
+                    background: 'var(--accent)',
+                    transition: 'width 1s linear'
+                  }} />
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', 
+                  gap: '1rem',
+                  padding: '1rem',
+                  background: 'var(--surface-raised)',
+                  borderRadius: 'var(--radius-lg)',
+                  overflowY: 'auto',
+                  maxHeight: '60vh'
+                }}>
+                  {levelState.studyIds.map((id) => (
+                    <div key={id} className="animate-in" style={{ 
+                      aspectRatio: '100/140', 
+                      borderRadius: '12px', 
+                      overflow: 'hidden',
+                      boxShadow: 'var(--card-shadow)',
+                      border: '1px solid var(--border)'
+                    }}>
+                      <img 
+                        src={generateFaceSVG(id)} 
+                        alt="Face" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
+                    </div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div 
-                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', flex: 1, justifyContent: 'center' }}
-              >
-                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1rem' }}>
-                  Have you seen this face before?
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                gap: '2rem',
+                width: '100%',
+                maxWidth: '400px'
+              }}>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Have you seen this face?
                 </p>
-                {currentFaceUri ? (
-                  <img
-                    src={currentFaceUri}
-                    alt="Face memory test"
-                    style={{ width: 'min(240px, 60cqh, 60cqw)', height: 'auto', aspectRatio: '220/260', borderRadius: '16px', border: '4px solid var(--surface-raised)', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}
-                  />
-                ) : null}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', width: 'min(400px, 100%)', gap: '0.75rem' }}>
-                  <button className="button" type="button" onClick={() => handleAnswer(true)} style={{ padding: '0.75rem' }}>SEEN</button>
-                  <button className="button buttonGhost" type="button" onClick={() => handleAnswer(false)} style={{ padding: '0.75rem' }}>NEW</button>
+
+                <div style={{ position: 'relative', width: '200px', height: '280px' }}>
+                  <div key={testIndex} className="animate-in" style={{ 
+                    width: '100%', 
+                    height: '100%',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    boxShadow: '0 12px 48px rgba(0,0,0,0.12)',
+                    border: feedback 
+                      ? `4px solid ${feedback.isCorrect ? 'var(--success)' : 'var(--danger)'}` 
+                      : '2px solid var(--border)',
+                    transition: 'border-color 0.2s ease',
+                    position: 'relative'
+                  }}>
+                    <img 
+                      src={generateFaceSVG(levelState.testIds[testIndex])} 
+                      alt="Test face" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
+                    
+                    {feedback && (
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: feedback.isCorrect ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <div style={{
+                          background: feedback.isCorrect ? 'var(--success)' : 'var(--danger)',
+                          color: 'white',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '99px',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}>
+                          {feedback.isCorrect ? 'CORRECT' : 'WRONG'}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '1rem', 
+                  width: '100%' 
+                }}>
+                  <button 
+                    className="button" 
+                    disabled={phase === 'feedback'}
+                    onClick={() => handleAnswer(true)}
+                    style={{ height: '3.5rem', fontSize: '1rem' }}
+                  >
+                    YES (Seen)
+                  </button>
+                  <button 
+                    className="button buttonGhost" 
+                    disabled={phase === 'feedback'}
+                    onClick={() => handleAnswer(false)}
+                    style={{ height: '3.5rem', fontSize: '1rem' }}
+                  >
+                    NO (New)
+                  </button>
                 </div>
               </div>
             )}

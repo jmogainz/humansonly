@@ -136,6 +136,8 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
         ) : (
           <>
             <div
+              key={round.signature}
+              className="animate-in"
               style={{
                 border: '1px solid var(--border)',
                 borderRadius: '12px',
@@ -155,7 +157,7 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
               <div 
                 style={{ 
                   display: 'grid', 
-                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
                   gap: 'clamp(0.4rem, 2vw, 0.75rem)', 
                   justifyContent: 'center',
                   width: '100%',
@@ -174,6 +176,8 @@ export default function SymbolSearchTest({ definition, onComplete }: TestGamePro
                       placeItems: 'center',
                       fontSize: 'clamp(1.2rem, 6vw, 1.6rem)',
                       background: 'var(--surface)',
+                      userSelect: 'none',
+                      WebkitUserSelect: 'none',
                     }}
                   >
                     {symbol}

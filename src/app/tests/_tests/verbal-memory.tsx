@@ -108,13 +108,15 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
         ) : (
           <>
             <div
+              key={word}
+              className="animate-in"
               style={{
                 border: '1px solid var(--border)',
                 borderRadius: '16px',
                 background: 'var(--surface-raised)',
                 width: '100%',
                 maxWidth: '500px',
-                padding: 'clamp(2rem, 8vh, 4rem) 1rem',
+                padding: 'clamp(1.5rem, 6vh, 3rem) 1.5rem',
                 marginInline: 'auto'
               }}
             >
@@ -122,8 +124,8 @@ export default function VerbalMemoryTest({ definition, onComplete }: TestGamePro
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem', maxWidth: '400px', width: '100%', marginInline: 'auto' }}>
-              <button className="button" type="button" onClick={() => answer('seen')}>SEEN</button>
-              <button className="button buttonGhost" type="button" onClick={() => answer('new')}>NEW</button>
+              <button className="button" type="button" style={{ transition: 'all 0.15s ease' }} onClick={() => answer('seen')}>SEEN</button>
+              <button className="button buttonGhost" type="button" style={{ transition: 'all 0.15s ease' }} onClick={() => answer('new')}>NEW</button>
             </div>
           </>
         )}

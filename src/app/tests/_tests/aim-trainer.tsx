@@ -115,7 +115,7 @@ export default function AimTrainerTest({ definition, onComplete }: TestGameProps
                 className="game-grid-container"
                 ref={arenaRef}
                 style={{
-                  borderRadius: '0 0 14px 14px',
+                  borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
                   background: 'linear-gradient(180deg, var(--surface-raised), var(--surface))',
                   position: 'relative',
                   overflow: 'hidden',
@@ -136,15 +136,34 @@ export default function AimTrainerTest({ definition, onComplete }: TestGameProps
                       borderRadius: '999px',
                       border: 'none',
                       cursor: 'crosshair',
-                      background: 'radial-gradient(circle, #ffffff 0 24%, #e35a5a 25% 58%, #ffffff 59% 100%)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      background: 'radial-gradient(circle, #fff 0 24%, var(--danger) 25% 58%, #fff 59% 100%)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.12)'
                     }}
                   />
                 ) : (
                   <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
-                    <p style={{ margin: 0, color: 'var(--text-muted)' }}>
-                      Run complete. Saving result...
-                    </p>
+                    <div
+                      className="animate-in"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '2rem',
+                        background: 'var(--surface)',
+                        borderRadius: 'var(--radius-lg)',
+                        border: '1px solid var(--border)',
+                        boxShadow: 'var(--card-shadow)',
+                      }}
+                    >
+                      <span style={{ fontSize: '2rem' }}>✓</span>
+                      <p style={{ margin: 0, color: 'var(--success)', fontWeight: 600, fontSize: '1rem' }}>
+                        Run complete
+                      </p>
+                      <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                        Saving result...
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

@@ -87,7 +87,8 @@ export default function HueTest({ definition, onComplete }: TestGameProps) {
 
             <div className="game-grid-container">
               <div
-                className="game-grid"
+                key={round.signature}
+                className="game-grid animate-in"
                 style={{
                   gridTemplateColumns: `repeat(${round.grid}, minmax(0, 1fr))`,
                   gap: 'clamp(0.2rem, 1.5cqw, 0.6rem)',
@@ -102,9 +103,10 @@ export default function HueTest({ definition, onComplete }: TestGameProps) {
                       className="game-tile"
                       onClick={() => pick(index)}
                       style={{
-                        border: '1px solid color-mix(in srgb, hsl(0 0% 0%) 12%, transparent)',
+                        border: '1px solid var(--border)',
                         background: `hsl(${hue} 72% 52%)`,
                         borderRadius: 'clamp(6px, 1.5cqw, 12px)',
+                        transition: 'filter 0.12s ease, transform 0.12s ease',
                       }}
                     />
                   );

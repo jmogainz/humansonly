@@ -125,7 +125,7 @@ export const TEST_REGISTRY: TestDefinition[] = [
   {
     slug: 'object-tracking',
     name: 'Object Tracking',
-    description: 'Track highlighted circles while they move.',
+    description: 'Track multiple moving objects simultaneously.',
     category: 'human-benchmark',
     icon: 'object-tracking',
     scoreUnit: 'level',

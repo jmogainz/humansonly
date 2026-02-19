@@ -160,11 +160,13 @@ export default function ChimpTest({ definition, onComplete }: TestGameProps) {
                       className="game-tile"
                       onClick={() => handleCellClick(cell)}
                       style={{
-                        background: showNumber ? 'var(--accent-subtle)' : 'var(--tile-default)',
-                        color: showNumber ? 'var(--tile-text)' : 'transparent',
+                        background: showNumber ? 'var(--accent)' : 'var(--tile-default)',
+                        color: showNumber ? 'var(--accent-foreground)' : 'transparent',
                         cursor: phase === 'hide' ? 'pointer' : 'default',
                         fontSize: 'clamp(0.9rem, 4cqw, 1.4rem)',
-                        fontWeight: 600
+                        fontWeight: 600,
+                        transition: 'background 0.15s ease, color 0.15s ease',
+                        opacity: phase === 'show' && !cell.number ? 0.45 : 1,
                       }}
                     >
                       {cell.number ?? ''}

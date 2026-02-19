@@ -103,6 +103,7 @@ export default function TypingTest({ definition, onComplete }: TestGameProps) {
                       color: isCorrect ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--text-muted)',
                       background: isCurrent ? 'color-mix(in srgb, var(--accent) 30%, transparent)' : 'transparent',
                       borderRadius: '2px',
+                      ...(isCurrent ? { borderRight: '2px solid var(--accent)' } : {}),
                     }}
                   >
                     {char}
@@ -148,15 +149,15 @@ export default function TypingTest({ definition, onComplete }: TestGameProps) {
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              style={{ 
-                fontFamily: 'var(--font-mono)', 
-                width: '100%', 
-                maxWidth: '800px', 
-                marginInline: 'auto', 
+              style={{
+                fontFamily: 'var(--font-mono)',
+                width: '100%',
+                maxWidth: '800px',
+                marginInline: 'auto',
                 fontSize: '1.1rem',
                 minHeight: '140px',
                 padding: '1rem',
-                borderRadius: '12px'
+                borderRadius: 'var(--radius-lg)'
               }}
               autoFocus
             />

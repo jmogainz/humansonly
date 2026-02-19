@@ -54,7 +54,7 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
               />
             ) : (
               <>
-                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: '1rem', textAlign: 'center' }}>{prompt}</p>
+                <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 'clamp(0.85rem, 3vw, 1rem)', textAlign: 'center', letterSpacing: '0.02em' }}>{prompt}</p>
     
                 <div
                   style={{
@@ -69,11 +69,13 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
                     letterSpacing: '0.05em'
                   }}
                 >
-                  {phase === 'show' ? (
-                    <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
-                  ) : (
-                    <div style={{ wordBreak: 'break-all', maxWidth: '100%', opacity: 0.3 }}>{'•'.repeat(Math.min(12, digits))}</div>
-                  )}
+                  <div key={`${digits}-${phase}`} className="animate-in">
+                    {phase === 'show' ? (
+                      <div style={{ wordBreak: 'break-all', maxWidth: '100%' }}>{target}</div>
+                    ) : (
+                      <div style={{ wordBreak: 'break-all', maxWidth: '100%', opacity: 0.3 }}>{'•'.repeat(Math.min(12, digits))}</div>
+                    )}
+                  </div>
                 </div>
     
                 {phase === 'input' ? (
@@ -105,12 +107,12 @@ export default function NumberMemoryTest({ definition, onComplete }: TestGamePro
                       value={guess}
                       onChange={(event) => setGuess(event.target.value.replace(/\D+/g, ''))}
                       placeholder="Type number"
-                      style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '1.4rem', padding: '0.75rem' }}
+                      style={{ fontFamily: 'var(--font-mono)', textAlign: 'center', fontSize: '1.4rem', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}
                     />
-                    <button className="button" type="submit" style={{ padding: '0.75rem' }}>Submit Answer</button>
+                    <button className="button" type="submit">Submit Answer</button>
                   </form>
                 ) : (
-                  <div style={{ height: '84px' }} />
+                  <div style={{ minHeight: '84px' }} />
                 )}
               </>
             )}

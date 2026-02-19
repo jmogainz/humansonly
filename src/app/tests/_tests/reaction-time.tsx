@@ -17,6 +17,7 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
   const [attempts, setAttempts] = useState<number[]>([]);
   const startRef = useRef<number | null>(null);
   const timeoutRef = useRef<number | null>(null);
+  const goFrameRef = useRef<number | null>(null);
   const submittedRef = useRef(false);
   const { triggerFeedback } = useFeedback();
 
@@ -41,18 +42,27 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
       if (timeoutRef.current) {
         window.clearTimeout(timeoutRef.current);
       }
+      if (goFrameRef.current) {
+        window.cancelAnimationFrame(goFrameRef.current);
+      }
     };
   }, []);
 
   const startRound = () => {
     if (submittedRef.current || attempts.length >= TOTAL_ATTEMPTS) return;
     if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
+    if (goFrameRef.current) window.cancelAnimationFrame(goFrameRef.current);
     setPhase('wait');
     startRef.current = null;
     const delay = Math.floor(1000 + Math.random() * 5000);
     timeoutRef.current = window.setTimeout(() => {
-      startRef.current = performance.now();
       setPhase('go');
+      // Start timing on the next frame so it lines up with the visible "go" state.
+      startRef.current = performance.now();
+      goFrameRef.current = window.requestAnimationFrame(() => {
+        startRef.current = performance.now();
+        goFrameRef.current = null;
+      });
     }, delay);
   };
 
@@ -60,7 +70,7 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
     setPhase('idle');
   };
 
-  const handleClick = () => {
+  const handleInteract = () => {
     if (submittedRef.current || attempts.length >= TOTAL_ATTEMPTS) return;
 
     if (phase === 'idle' || phase === 'too-soon') {
@@ -126,11 +136,11 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
           <div
             role="button"
             tabIndex={0}
-            onClick={handleClick}
+            onPointerDown={handleInteract}
             onKeyDown={(event) => {
               if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
-                handleClick();
+                handleInteract();
               }
             }}
             style={{
@@ -142,7 +152,8 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
               placeItems: 'center',
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'background 0ms ease',
+              touchAction: 'manipulation',
+              userSelect: 'none',
               minHeight: 0
             }}
           >
@@ -164,8 +175,13 @@ export default function ReactionTimeTest({ definition, onComplete }: TestGamePro
                 borderRadius: '999px',
                 padding: '0.25rem 0.75rem',
                 fontSize: '0.8rem',
-                background: 'var(--surface-raised)',
-                fontWeight: 500
+                background: attempt < 250
+                  ? 'var(--success)'
+                  : attempt > 450
+                    ? 'var(--warning)'
+                    : 'var(--surface-raised)',
+                color: attempt < 250 || attempt > 450 ? '#fff' : undefined,
+                fontWeight: 600
               }}
             >
               {Math.round(attempt)} ms

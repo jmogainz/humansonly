@@ -4,7 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { TestGameProps } from '../_shared/types';
 import Scoreboard from '@/components/Scoreboard';
 import ScoreDisplay from '@/components/ScoreDisplay';
+import LivesDisplay from '@/components/LivesDisplay';
 import TestStartScreen from '@/components/TestStartScreen';
+import { useFeedback } from '@/components/FeedbackContext';
 
 type Circle = {
   id: number;
@@ -14,6 +16,8 @@ type Circle = {
   vy: number;
   r: number;
   target: boolean;
+  selected: boolean;
+  correct?: boolean; // Used for feedback phase
 };
 
 const MAX_WIDTH = 820;
@@ -37,11 +41,9 @@ function nextArena(parentWidth: number): { width: number; height: number } {
 }
 
 function buildCircles(level: number, width: number, height: number): Circle[] {
-  const areaRatio = (width * height) / (MAX_WIDTH * MAX_HEIGHT);
-  const densityScale = clamp(Math.sqrt(areaRatio), 0.65, 1);
-  const count = Math.max(6, Math.round(Math.min(16, (7 + level * 2) * densityScale)));
-  const targetCount = Math.min(Math.max(2, Math.floor(count * 0.38)), 6);
-
+  const count = Math.min(18, 6 + Math.floor(level / 2));
+  const targetCount = Math.min(6, 2 + Math.floor(level / 4));
+  
   const circles: Circle[] = [];
   const r = circleRadius(width);
   const padding = r + 10;
@@ -56,18 +58,22 @@ function buildCircles(level: number, width: number, height: number): Circle[] {
       y = padding + Math.random() * (height - padding * 2);
       attempts += 1;
     } while (
-      attempts < 80 &&
-      circles.some((circle) => Math.hypot(circle.x - x, circle.y - y) < circle.r + r + 8)
+      attempts < 100 &&
+      circles.some((circle) => Math.hypot(circle.x - x, circle.y - y) < circle.r + r + 12)
     );
+
+    const speed = 1.6 + level * 0.12;
+    const angle = Math.random() * Math.PI * 2;
 
     circles.push({
       id: i,
       x,
       y,
-      vx: (Math.random() * 2 - 1) * (1.5 + level * 0.15),
-      vy: (Math.random() * 2 - 1) * (1.5 + level * 0.15),
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
       r,
       target: i < targetCount,
+      selected: false,
     });
   }
 
@@ -113,196 +119,260 @@ function resolveCollisions(circles: Circle[], width: number, height: number): vo
         b.vx += impulse * nx;
         b.vy += impulse * ny;
       }
-
-      a.x = clamp(a.x, a.r, width - a.r);
-      a.y = clamp(a.y, a.r, height - a.r);
-      b.x = clamp(b.x, b.r, width - b.r);
-      b.y = clamp(b.y, b.r, height - b.r);
     }
+    
+    // Boundary checks after collision resolution
+    const c = circles[i];
+    if (c.x < c.r) { c.x = c.r; c.vx = Math.abs(c.vx); }
+    if (c.x > width - c.r) { c.x = width - c.r; c.vx = -Math.abs(c.vx); }
+    if (c.y < c.r) { c.y = c.r; c.vy = Math.abs(c.vy); }
+    if (c.y > height - c.r) { c.y = height - c.r; c.vy = -Math.abs(c.vy); }
   }
 }
 
 export default function ObjectTrackingTest({ definition, onComplete }: TestGameProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const circlesRef = useRef<Circle[]>([]);
-  const submittedRef = useRef(false);
+  const { triggerFeedback } = useFeedback();
+  
   const [started, setStarted] = useState(false);
   const [arena, setArena] = useState<{ width: number; height: number }>({ width: MAX_WIDTH, height: MAX_HEIGHT });
   const [level, setLevel] = useState(1);
-  const [phase, setPhase] = useState<'highlight' | 'moving' | 'select'>('highlight');
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [targetCount, setTargetCount] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [phase, setPhase] = useState<'memorize' | 'moving' | 'select' | 'feedback'>('memorize');
+  const [selectedCount, setSelectedCount] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+
+  const targetCount = circlesRef.current.filter(c => c.target).length;
+
+  const [colors, setColors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const rootStyles = getComputedStyle(document.documentElement);
+    setColors({
+      bg: rootStyles.getPropertyValue('--surface-raised').trim() || '#232529',
+      text: rootStyles.getPropertyValue('--text-primary').trim() || '#f0f0f0',
+      accent: rootStyles.getPropertyValue('--accent').trim() || '#06b6d4',
+      success: rootStyles.getPropertyValue('--success').trim() || '#10b981',
+      danger: rootStyles.getPropertyValue('--danger').trim() || '#ef4444',
+      warning: rootStyles.getPropertyValue('--warning').trim() || '#f59e0b',
+    });
+  }, [started]);
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !colors.bg) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     ctx.clearRect(0, 0, arena.width, arena.height);
-    const rootStyles = getComputedStyle(document.documentElement);
-    const canvasBg = rootStyles.getPropertyValue('--surface-raised').trim() || '#232529';
-    const circleColor = rootStyles.getPropertyValue('--text-primary').trim() || '#f0f0f0';
-    const highlightColor = rootStyles.getPropertyValue('--warning').trim() || '#f2cf59';
-    const selectedColor = rootStyles.getPropertyValue('--success').trim() || '#5adb7f';
-
-    ctx.fillStyle = canvasBg;
+    ctx.fillStyle = colors.bg;
     ctx.fillRect(0, 0, arena.width, arena.height);
 
     for (const circle of circlesRef.current) {
-      const isTargetVisible = phase === 'highlight' && circle.target;
-      const isSelected = selected.has(circle.id);
+      ctx.save();
+      
+      let fill = colors.text;
+      let stroke: string | null = null;
+      let glow: string | null = null;
+
+      if (phase === 'memorize' && circle.target) {
+        fill = colors.warning;
+        glow = colors.warning;
+      } else if (phase === 'select' && circle.selected) {
+        stroke = colors.accent;
+        glow = colors.accent;
+      } else if (phase === 'feedback') {
+        if (circle.target) {
+           fill = colors.success;
+           glow = colors.success;
+        }
+        if (circle.selected && !circle.target) {
+           stroke = colors.danger;
+           glow = colors.danger;
+        }
+      }
+
+      // Draw shadow/glow
+      if (glow) {
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = glow;
+      }
+
       ctx.beginPath();
       ctx.arc(circle.x, circle.y, circle.r, 0, Math.PI * 2);
-      ctx.fillStyle = isTargetVisible ? highlightColor : circleColor;
+      ctx.fillStyle = fill;
       ctx.fill();
 
-      if (isSelected) {
+      if (stroke) {
+        ctx.strokeStyle = stroke;
         ctx.lineWidth = 3;
-        ctx.strokeStyle = selectedColor;
         ctx.stroke();
       }
+
+      ctx.restore();
     }
-  }, [arena.width, arena.height, phase, selected]);
+  }, [arena, phase, colors]);
 
-  useEffect(() => {
-    if (!started) return;
-    circlesRef.current = buildCircles(level, arena.width, arena.height);
-    setTargetCount(circlesRef.current.filter((circle) => circle.target).length);
-    draw();
-  }, [arena.width, arena.height, level, draw, started]);
-
+  // Initial build and resize handling
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !canvas.parentElement) return;
 
     const updateArena = () => {
       const parentWidth = canvas.parentElement?.getBoundingClientRect().width ?? MAX_WIDTH;
-      setArena(nextArena(parentWidth));
+      const next = nextArena(parentWidth);
+      setArena(next);
     };
 
     updateArena();
-
-    if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(updateArena);
-      observer.observe(canvas.parentElement);
-      return () => observer.disconnect();
-    }
-
-    window.addEventListener('resize', updateArena);
-    return () => window.removeEventListener('resize', updateArena);
+    const observer = new ResizeObserver(updateArena);
+    observer.observe(canvas.parentElement);
+    return () => observer.disconnect();
   }, []);
 
+  // Initialize circles when level or started changes
   useEffect(() => {
-    if (started) {
-      draw();
-    }
-  }, [draw, started]);
-
-  useEffect(() => {
-    if (!started || phase !== 'highlight') return;
-    const id = window.setTimeout(() => {
-      setPhase('moving');
-    }, 1800);
-    return () => window.clearTimeout(id);
-  }, [phase, level, started]);
-
-  useEffect(() => {
-    if (!started || phase !== 'moving') return;
-
-    const startedTime = performance.now();
-    let raf = 0;
-
-    const tick = (time: number) => {
-      const elapsed = time - startedTime;
-      for (const circle of circlesRef.current) {
-        circle.x += circle.vx;
-        circle.y += circle.vy;
-
-        if (circle.x < circle.r || circle.x > arena.width - circle.r) {
-          circle.vx *= -1;
-          circle.x = clamp(circle.x, circle.r, arena.width - circle.r);
-        }
-
-        if (circle.y < circle.r || circle.y > arena.height - circle.r) {
-          circle.vy *= -1;
-          circle.y = clamp(circle.y, circle.r, arena.height - circle.r);
-        }
-      }
-
-      resolveCollisions(circlesRef.current, arena.width, arena.height);
-      draw();
-
-      if (elapsed >= 5000) {
-        setPhase('select');
-        return;
-      }
-
-      raf = requestAnimationFrame(tick);
-    };
-
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, arena.width, arena.height, draw, started]);
-
-  useEffect(() => {
-    if (phase !== 'select' || !started) return;
+    if (!started) return;
+    circlesRef.current = buildCircles(level, arena.width, arena.height);
+    setSelectedCount(0);
+    setIsCorrect(null);
+    setPhase('memorize');
     draw();
-  }, [phase, draw, started]);
+  }, [started, level, arena.width, arena.height, draw]);
 
-  const evaluateSelection = (nextSelected: Set<number>) => {
-    const targetIds = circlesRef.current.filter((circle) => circle.target).map((circle) => circle.id);
-    const correct = targetIds.every((id) => nextSelected.has(id));
-    if (correct) {
-      const nextLevel = level + 1;
-      setLevel(nextLevel);
-      setSelected(new Set());
-      setPhase('highlight');
-      return;
+  // Phase transitions
+  useEffect(() => {
+    if (!started) return;
+
+    if (phase === 'memorize') {
+      const id = window.setTimeout(() => setPhase('moving'), 2000);
+      return () => window.clearTimeout(id);
     }
 
-    if (submittedRef.current) return;
-    submittedRef.current = true;
-    onComplete({
-      score: level,
-      unit: 'level',
-      metadata: {
-        level,
-      },
-      label: `Level ${level}`,
-    });
-  };
+    if (phase === 'moving') {
+      let raf = 0;
+      const start = performance.now();
+      const duration = 5000 + Math.min(3000, level * 200);
 
-  const handleCanvasPointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
+      const tick = (time: number) => {
+        const elapsed = time - start;
+        
+        for (const c of circlesRef.current) {
+          c.x += c.vx;
+          c.y += c.vy;
+          
+          if (c.x < c.r || c.x > arena.width - c.r) {
+            c.vx *= -1;
+            c.x = clamp(c.x, c.r, arena.width - c.r);
+          }
+          if (c.y < c.r || c.y > arena.height - c.r) {
+            c.vy *= -1;
+            c.y = clamp(c.y, c.r, arena.height - c.r);
+          }
+        }
+        
+        resolveCollisions(circlesRef.current, arena.width, arena.height);
+        draw();
+
+        if (elapsed < duration) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          setPhase('select');
+        }
+      };
+      
+      raf = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(raf);
+    }
+
+    if (phase === 'feedback') {
+      const id = window.setTimeout(() => {
+        const targetIds = circlesRef.current.filter(c => c.target).map(c => c.id);
+        const selectedIds = circlesRef.current.filter(c => c.selected).map(c => c.id);
+        const correct = targetIds.length === selectedIds.length && targetIds.every(id => selectedIds.includes(id));
+
+        if (correct) {
+          setLevel(l => l + 1);
+        } else {
+          setLives(l => {
+            const next = l - 1;
+            if (next <= 0) {
+              setSubmitted(true);
+            }
+            return next;
+          });
+          // Re-trigger current level if still have lives
+          if (lives > 1) {
+            circlesRef.current = buildCircles(level, arena.width, arena.height);
+            setSelectedCount(0);
+            setPhase('memorize');
+          }
+        }
+      }, 1500);
+      return () => window.clearTimeout(id);
+    }
+  }, [started, phase, arena, draw, level, lives]);
+
+  // Submission
+  useEffect(() => {
+    if (submitted) {
+      onComplete({
+        score: level - 1,
+        unit: 'level',
+        metadata: { level: level - 1 },
+        label: `Level ${level - 1}`,
+      });
+    }
+  }, [submitted, level, onComplete]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
     if (phase !== 'select') return;
-    const rect = event.currentTarget.getBoundingClientRect();
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
     const scaleX = arena.width / rect.width;
     const scaleY = arena.height / rect.height;
-    const x = (event.clientX - rect.left) * scaleX;
-    const y = (event.clientY - rect.top) * scaleY;
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
-    const hit = circlesRef.current.find((circle) => Math.hypot(circle.x - x, circle.y - y) <= circle.r + 4);
-    if (!hit) return;
-
-    const next = new Set(selected);
-    if (next.has(hit.id)) {
-      next.delete(hit.id);
-    } else {
-      if (next.size >= targetCount) return;
-      next.add(hit.id);
+    const hit = circlesRef.current.find(c => Math.hypot(c.x - x, c.y - y) < c.r + 10);
+    if (hit) {
+      if (hit.selected) {
+        hit.selected = false;
+        setSelectedCount(s => s - 1);
+      } else if (selectedCount < targetCount) {
+        hit.selected = true;
+        setSelectedCount(s => s + 1);
+      }
+      draw();
     }
-    setSelected(next);
+  };
+
+  const handleSubmit = () => {
+    if (selectedCount !== targetCount) return;
+    
+    const targetIds = circlesRef.current.filter(c => c.target).map(c => c.id);
+    const selectedIds = circlesRef.current.filter(c => c.selected).map(c => c.id);
+    const correct = targetIds.length === selectedIds.length && targetIds.every(id => selectedIds.includes(id));
+    
+    setIsCorrect(correct);
+    if (correct) {
+      triggerFeedback('success');
+    }
+    // 'danger' feedback is handled by LivesDisplay when lives decrement
+    
+    setPhase('feedback');
+    draw();
   };
 
   return (
     <div className="game-container">
       <Scoreboard>
         <ScoreDisplay label="Level" value={level} />
-        {phase === 'select' ? (
-           <ScoreDisplay label="Selected" value={`${selected.size} / ${targetCount}`} status={selected.size === targetCount ? 'success' : 'neutral'} />
-        ) : (
-           <ScoreDisplay label="Targets" value={targetCount} />
-        )}
+        <LivesDisplay lives={lives} />
       </Scoreboard>
 
       <div className="game-content">
@@ -313,57 +383,53 @@ export default function ObjectTrackingTest({ definition, onComplete }: TestGameP
           />
         ) : (
           <>
-            <p style={{ color: 'var(--text-muted)', textAlign: 'center', margin: 0, fontSize: '1rem' }}>
-              {phase === 'highlight'
-                ? `Memorize ${targetCount} targets`
-                : phase === 'moving'
-                  ? 'Track while circles move'
-                  : `Select ${targetCount} targets, then submit`}
-            </p>
+            <div style={{ textAlign: 'center', minHeight: '1.5rem', marginBottom: '0.5rem' }}>
+              <p className="animate-in" style={{ margin: 0, color: phase === 'feedback' ? (isCorrect ? 'var(--success)' : 'var(--danger)') : 'var(--text-muted)', fontSize: '1.1rem', fontWeight: phase === 'feedback' ? 600 : 400 }}>
+                {phase === 'memorize' && `Memorize the ${targetCount} highlighted targets`}
+                {phase === 'moving' && 'Keep your eyes on them...'}
+                {phase === 'select' && `Select the ${targetCount} targets you tracked`}
+                {phase === 'feedback' && (isCorrect ? 'Correct!' : 'Incorrect')}
+              </p>
+            </div>
 
-            <div className="game-grid-container" style={{ flex: 1 }}>
+            <div className="game-grid-container" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <canvas
                 ref={canvasRef}
                 width={arena.width}
                 height={arena.height}
-                onPointerDown={handleCanvasPointerDown}
+                onPointerDown={handlePointerDown}
                 style={{
                   width: '100%',
-                  height: '100%',
+                  height: 'auto',
                   maxWidth: `${MAX_WIDTH}px`,
-                  maxHeight: `${MAX_HEIGHT}px`,
-                  margin: '0 auto',
-                  borderRadius: '12px',
+                  borderRadius: '16px',
+                  background: 'var(--surface-raised)',
                   border: '1px solid var(--border)',
                   cursor: phase === 'select' ? 'pointer' : 'default',
-                  background: 'var(--surface-raised)',
-                  touchAction: 'manipulation',
+                  touchAction: 'none',
+                  boxShadow: phase === 'select' ? '0 0 20px rgba(6, 182, 212, 0.1)' : 'none',
+                  transition: 'box-shadow 0.3s ease',
                 }}
               />
             </div>
-            {phase === 'select' && (
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', alignItems: 'center', flexShrink: 0 }}>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+            <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1rem' }}>
+              {phase === 'select' && (
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                    {selectedCount} / {targetCount} selected
+                  </span>
                   <button
-                    type="button"
-                    className="button buttonGhost"
-                    onClick={() => setSelected(new Set())}
-                    style={{ padding: '0.5rem 1rem' }}
-                  >
-                    Clear
-                  </button>
-                  <button
-                    type="button"
                     className="button"
-                    disabled={selected.size !== targetCount}
-                    onClick={() => evaluateSelection(selected)}
-                    style={{ padding: '0.5rem 1.5rem' }}
+                    onClick={handleSubmit}
+                    disabled={selectedCount !== targetCount}
+                    style={{ minWidth: '120px' }}
                   >
                     Submit
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </>
         )}
       </div>

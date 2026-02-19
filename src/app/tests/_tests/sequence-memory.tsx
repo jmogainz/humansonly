@@ -123,7 +123,8 @@ export default function SequenceMemoryTest({ definition, onComplete }: TestGameP
                         boxShadow: active ? '0 0 20px color-mix(in srgb, var(--accent) 40%, transparent)' : 'none',
                         cursor: phase === 'input' ? 'pointer' : 'default',
                         borderRadius: 'clamp(8px, 2.5cqw, 16px)',
-                        borderWidth: '2px'
+                        opacity: phase === 'show' && activeCell !== index ? 0.55 : 1,
+                        transition: 'background 0.1s ease, box-shadow 0.1s ease, opacity 0.1s ease'
                       }}
                     />
                   );
