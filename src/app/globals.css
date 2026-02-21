@@ -98,6 +98,7 @@ body {
   color: var(--text-primary);
   font-family: var(--font-body);
   transition: background-color 0.1s ease, color 0.1s ease;
+  overflow-x: hidden;
 }
 
 /* Layout */
